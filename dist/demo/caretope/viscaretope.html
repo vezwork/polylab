@@ -3,7 +3,24 @@
     outline: 1px dashed black;
   }
 </style>
+<h1>Caretope Preview Visualization Demo</h1>
 <canvas id="c" width="600" height="600"></canvas>
+<p>
+  In this demo, you can place CaretSinks with your mouse and watch as they are
+  automatically organized into lines. Once you've inserted a bunch of
+  CaretSinks, you can navigate them with your keyboard Arrow Keys.
+</p>
+<h2>Controls</h2>
+<ul>
+  <li>
+    s - insert CaretSink at mouse position in the current insertion-focused
+    ContainerSink
+  </li>
+  <li>
+    c - insert ContainerSink at mouse position and change insertion-focus to it
+  </li>
+  <li>d - move insertion-focus from ContainerSink to its parent</li>
+</ul>
 <script type="module">
   import { CaretSink, ContainerSink } from "./caretope_sink.js";
   import { Caret } from "./caretope_caret.js";

@@ -1,6 +1,6 @@
 import { CaretSink, ContainerSink, Sink } from "./caretope_sink.js";
 
-export class Caret {
+export abstract class Caret {
   isVerticalLinear: boolean = true;
   private carrySink: CaretSink | null = null;
 

@@ -1,8 +1,8 @@
 import { getBounds } from "./geom.js";
-export const drawSelectedCaretHost = (ctx) => (c) => {
+export const drawSelectedCaretHost = (ctx, color) => (c) => {
     ctx.save();
     const { top, right, bottom, left } = getBounds(c);
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = color;
     ctx.fillRect(left, top, right - left, bottom - top);
     ctx.restore();
 };

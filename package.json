@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "watch": "tsc --watch & cpx --watch \"./src/**/*.{html,png,jpg,svg}\" ./dist/ & http-server --no-cache"
+    "watch": "tsc --watch & cpx --watch \"./src/**/*.{html,png,jpg,svg,js}\" ./dist/ & http-server --no-cache"
   },
   "devDependencies": {
     "cpx": "^1.5.0",

@@ -95,6 +95,7 @@ export function makeCaretFunctions({ getBounds, }) {
         ];
     }
     function lines(els) {
+        console.log("hello");
         const done = new Set([undefined]);
         return yIntervalLines(els).map((line) => line.filter(({ data }) => {
             if (done.has(data))

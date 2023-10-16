@@ -1,0 +1,26 @@
+Okay, I just got initmultiplayernote items working. Now the problem I am having is undoing inserts when another player deleted them already.
+This results in an error "moving caret to a deleted caret!" and other subsequent errors. What should happen?
+
+- sol 1: everyone keeps track of deleted things and undel works for everyone.
+  - downside: if you insert something, someone else deletes it, then you undo and redo, you'll bring back the thing they deleted
+  - amendment: deletion history: keep track of who deleted it so only they can undelete it.
+    - downside: confusing and possibly incorrect unless really thought thru
+    - upside: could make for fully reversible operations if done right (collaborative undo)
+      (collaborative undo is when undo/redo is the same as doing nothing for others(?) ish)
+      (e.g. you insert something, someone deletes part, you undo ins, they undo del, you redo ins and everything is back)
+
+- sol 2: network deletes are hard deletes and undo/redos of del and undel on hard deleted sinks causes the history group to be skipped
+  - downside: skipping is a bit tricky because 1. the whole group must do nothing if that one part fails, 2. undo then redo is confusing
+
+- sol 3: everyone keeps track of all ops, the document state is a reduction of all ops, and past ops can be removed
+  - note: what does it mean for ops that depended on the ops removed? (e.g. A ins then B del, A undo ins) (invalidated?)
+  - downside/okside: storing entire edit history.
+    - amendment: at a certain point just store a state entry and people can't undo past that.
+  - downside: will get expensive to reduce to current state without optimizations
+  - downside: different from how I am currently doing it
+  - upside: easy to reason about and definitely correct (good for API too)
+
+- [x] sol 4: soft failure of ops. Just add logic to allow operations to soft fail if the stuff they need isn't there.
+  - downside: hard to reason about down the linear
+  - upside: very easy to add and probably works well enough (google docs pretty much does this)
+  - downside: extra history isn't skipped

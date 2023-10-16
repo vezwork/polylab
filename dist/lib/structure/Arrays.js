@@ -71,3 +71,24 @@ export function worst(els, valueOf) {
 export function sortFirst(els, compare) {
     return els.reduce((acc, el) => (acc === null || compare(el, acc) > 0 ? el : acc), null);
 }
+// adapted from https://stackoverflow.com/a/20261974/5425899
+export function locationOf(element, array, comparer, start = 0, end = array.length) {
+    if (array.length === 0)
+        return -1;
+    var pivot = (start + end) >> 1; // should be faster than dividing by 2
+    var c = comparer(element, array[pivot]);
+    if (end - start <= 1)
+        return c == -1 ? pivot - 1 : pivot;
+    switch (c) {
+        case -1:
+            return locationOf(element, array, comparer, start, pivot);
+        case 0:
+            return pivot;
+        case 1:
+            return locationOf(element, array, comparer, pivot, end);
+    }
+}
+export function insert(element, array, comparer) {
+    array.splice(locationOf(element, array, comparer) + 1, 0, element);
+    return array;
+}

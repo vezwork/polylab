@@ -2,7 +2,7 @@ import { makeNestedCaretFunctions } from "../../../lib/caret/nestedCaret.js";
 import { centerBesideD, justBesideD, textD, translateD, justOverD, transformD, draw, caretable, drawables, getBounds, lineD, } from "../../../lib/draw/draw4.js";
 import { scale, translation, _ } from "../../../lib/math/CtxTransform.js";
 import { makeTreeFunctions } from "../../../lib/structure/tree.js";
-import { drawBoundRight, drawLineBetweenBoundRights, drawNestedCaretLines, } from "../../../lib/draw/draw4Debug.js";
+import { drawBoundRight, drawLineBetweenBoundRights, } from "../../../lib/draw/draw4Debug.js";
 import { setupFullscreenCanvas } from "../../../lib/draw/setupFullscreenCanvas.js";
 import { first } from "../../../lib/structure/Iterable.js";
 import { onArrowKeyDown, onKeyDown } from "../../../lib/input/onKeyDown.js";
@@ -94,10 +94,6 @@ function anim() {
         if (belower)
             drawLineBetweenBoundRights(ctx, belower, curFocus, "purple");
     }
-    if (drawBlueLines)
-        drawNestedCaretLines(ctx, linesFromChildren, hasChildren, rend);
-    if (drawLineOutlines)
-        drawNestedCaretLines(ctx, linesFromChildren, hasChildren, parent(curFocus) ?? rend, 1);
     ctx.resetTransform();
     ctx.strokeStyle = "black";
     const { x, y, width, height } = getBounds(curFocus);

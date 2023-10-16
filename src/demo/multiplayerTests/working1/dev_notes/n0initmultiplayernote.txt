@@ -1,0 +1,20 @@
+I just got multiplayer working but have a few problems:
+
+- the initial state is not synced, so one player creates their caret before the other player even joins.
+  - sol 1: store state on the server and send it to clients when they join
+  - [x] sol 2: one client is the host and other clients can request state from them
+  - note: its interesting that the state isn't synced! You only share the parts of the document that you'readonly
+    there for and it works! Maybe could come back to this idea.
+
+- selections are not visible. This would require registering carets as anchors to other carets.
+  - [x] sol 1: create an object that represents a caret and its object. Make it so that you can only create this, not raw carets.
+
+- there is artificial lag I added so that messages would not be sent before the WSChannel is open.
+  - sol 1: add a buffer to the channel.
+  - [x] sol 2: restructure app so stuff doesn't happen until channel is connected.
+
+- history has been disabled because I'm not sure how to handle apiUndel yet.
+  - note: the reason I don't know what to do is because currently other clients do not keep track
+    of caretSinks that you delete, only you keep track of them. Is that okay? Is undel just ins for
+    other clients? How do we know where to ins? How do we not mix up refs? (current serialization should work)
+  - [x] sol 1: find closest non-deleted caretSink to the left of the deleted one and insert after that

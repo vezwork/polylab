@@ -5,7 +5,7 @@ because, for example, the anchor may need to be in a particular place when undoi
 even if it was not displaced.
 
 Solution ideas:
-1. separate caret movement from insertion and deletion and allow for undoing caret movement.
+1. [x] separate caret movement from insertion and deletion and allow for undoing caret movement.
   - further: add history grouping / history recording
   - note: displacement is different from recording caret movement. We do not want to undo other people's caret movement.
 2. add `caretRangeIns` and `caretRangeDel` and allow adding these to history.

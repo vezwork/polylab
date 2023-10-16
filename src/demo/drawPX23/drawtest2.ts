@@ -21,7 +21,6 @@ import {
   pathD,
 } from "../../lib/draw/draw4.js";
 import { withIndex } from "../../lib/structure/Iterable.js";
-import { isConvexShapesIntersecting } from "../../lib/math/collision.js";
 import {
   apply,
   id,
@@ -33,8 +32,6 @@ import {
 } from "../../lib/math/CtxTransform.js";
 import { add, rotate, setLength, sub, Vec2 } from "../../lib/math/Vec2.js";
 import { makeTreeFunctions } from "../../lib/structure/tree.js";
-import * as Fn from "../../lib/structure/Functions.js";
-import * as Iter from "../../lib/structure/Iterable.js";
 
 const c = document.getElementById("c") as HTMLCanvasElement;
 const ctx = c.getContext("2d") as CanvasRenderingContext2D;
@@ -255,7 +252,7 @@ const { next, lines: uncachedLines } = makeNestedCaretFunctions<DrawTree>({
 const cacheForAbove = new Map();
 const cacheForBelow = new Map();
 const cacheForLines = new Map();
-const lines = (t: DrawTree): YInterval<DrawTree>[][] => {
+const lines = (t: DrawTree): DrawTree[][] => {
   if (cacheForLines.has(t)) return cacheForLines.get(t);
   else {
     const l = uncachedLines(children(t));
@@ -481,8 +478,9 @@ document.body.addEventListener("keydown", (e) => {
     const nextFocus = next(curFocus, e.key as any);
     if (nextFocus) curFocus = nextFocus;
     console.log(
-      "path address system works",
-      goToPath(rootIndexPath(curFocus)) === curFocus
+      "path address system works yay",
+      goToPath(rootIndexPath(curFocus)) === curFocus,
+      [...rootIndexPath(curFocus)]
     );
   }
   if (e.key === "a") drawSinks = !drawSinks;
@@ -498,35 +496,29 @@ function drawStuff(focus: DrawTree, depth = 3) {
   ctx.save();
   ctx.strokeStyle = "blue";
   for (const line of lines(focus)) {
-    for (const [
-      {
-        n,
-        interval: [top, bottom],
-        data,
-      },
-      i,
-    ] of withIndex(line)) {
+    for (const [data, i] of withIndex(line)) {
+      const { top, bottom, left, right } = getBounds(data);
       ctx.beginPath();
 
       if (i === 0) {
-        ctx.moveTo(n, top);
-        ctx.lineTo(n, bottom);
+        ctx.moveTo(left, top);
+        ctx.lineTo(left, bottom);
       }
       if (i === line.length - 1) {
-        ctx.moveTo(n, top);
-        ctx.lineTo(n, bottom);
+        ctx.moveTo(left, top);
+        ctx.lineTo(left, bottom);
       } else {
         const next = line[i + 1];
         //if (i % 2 === 1) {
         //ctx.moveTo(n, bottom);
         //ctx.lineTo(n, top);
         // } else {
-        ctx.moveTo(n, top);
+        ctx.moveTo(left, top);
         //}
 
-        ctx.lineTo(next.n, next.interval[0]);
-        ctx.moveTo(n, bottom);
-        ctx.lineTo(next.n, next.interval[1]);
+        ctx.lineTo(getBounds(next).left, getBounds(next).top);
+        ctx.moveTo(left, bottom);
+        ctx.lineTo(getBounds(next).left, getBounds(next).bottom);
       }
       ctx.stroke();
       if (data && hasChildren(data)) {

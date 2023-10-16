@@ -1,16 +1,16 @@
 import { getBounds } from "./geom.js";
-import { Caret } from "./manager.js";
-import { CaretHost } from "./state.js";
+import { Caret } from "./caret.js";
+import { CaretSink } from "./state.js";
 
 export const drawSelectedCaretHost =
-  (ctx: CanvasRenderingContext2D) => (c: CaretHost) => {
+  (ctx: CanvasRenderingContext2D, color: string) => (c: CaretSink) => {
     ctx.save();
     const { top, right, bottom, left } = getBounds(c);
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = color;
     ctx.fillRect(left, top, right - left, bottom - top);
     ctx.restore();
   };
-const drawCaretHost = (ctx: CanvasRenderingContext2D) => (c: CaretHost) => {
+const drawCaretHost = (ctx: CanvasRenderingContext2D) => (c: CaretSink) => {
   const { top, right, bottom, left } = getBounds(c);
   ctx.save();
   ctx.beginPath();
@@ -35,7 +35,7 @@ const drawCaret = (ctx: CanvasRenderingContext2D) => (c: Caret) => {
 
 export const drawScene =
   (ctx: CanvasRenderingContext2D) =>
-  (cs: readonly Caret[], chs: readonly CaretHost[]) => {
+  (cs: readonly Caret[], chs: readonly CaretSink[]) => {
     ctx.strokeStyle = "black";
     ctx.fillStyle = "black";
     chs.map(drawCaretHost(ctx));

@@ -1,0 +1,6 @@
+History is currently manually grouped, but it could be
+automatically grouped based around rules for how things
+should combine e.g: (from VS code)
+- caret movements grouped with everything
+- inserts are grouped into small batches (naturally breaking at spaces or something)
+- deletes are grouped in lines

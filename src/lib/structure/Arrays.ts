@@ -97,3 +97,36 @@ export function sortFirst<T>(els: T[], compare: (el1: T, el2: T) => number) {
     null as null | T
   );
 }
+
+// adapted from https://stackoverflow.com/a/20261974/5425899
+export function locationOf<T>(
+  element: T,
+  array: T[],
+  comparer: (t1: T, t2: T) => number,
+  start = 0,
+  end = array.length
+) {
+  if (array.length === 0) return -1;
+
+  var pivot = (start + end) >> 1; // should be faster than dividing by 2
+
+  var c = comparer(element, array[pivot]);
+  if (end - start <= 1) return c == -1 ? pivot - 1 : pivot;
+
+  switch (c) {
+    case -1:
+      return locationOf(element, array, comparer, start, pivot);
+    case 0:
+      return pivot;
+    case 1:
+      return locationOf(element, array, comparer, pivot, end);
+  }
+}
+export function insert<T>(
+  element: T,
+  array: T[],
+  comparer: (t1: T, t2: T) => number
+) {
+  array.splice(locationOf(element, array, comparer) + 1, 0, element);
+  return array;
+}

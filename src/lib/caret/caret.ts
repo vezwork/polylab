@@ -180,6 +180,7 @@ export function makeCaretFunctions<CaretHost>({
   }
 
   function lines(els: Iterable<CaretHost>): CaretHost[][] {
+    console.log("hello");
     const done = new Set<CaretHost | undefined>([undefined]);
     return yIntervalLines(els).map((line) =>
       (

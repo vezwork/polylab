@@ -1,0 +1,32 @@
+I finally have it end to end working! I just tested with Sharon and there are two glaring issues:
+
+- concurrent edits sometimes resulted in Sharon's inserts being before the initial "y"
+  - I think this is because the serialization is index based
+  - sol: id based serialization, canonical ordering def, pre-inserting network ops if they have earlier canonical order.
+
+- it got very laggy very quickly
+  - individual edits came in one at a time up to 10 seconds after they were performed
+  - it crashed for Sharon after a lot of inserts
+  - its strange to me because I don't think it should be that laggy, im not %100 sure where the lag is coming from...
+    it is probably the spatial nav tho. It degenerates when carets from previous sessions stick around for sure.
+
+what to do next:
+- fix the above two issues
+- clean up code
+  - shouldn't need an "initial y"
+  - could a "single char interaction" be used to programmaticaly determine the behaviour for arbitrary length interactions?
+    e.g. A undo, B del, A redo type stuff
+
+- make nice visuals and produce demos
+
+- newlines
+- nesting
+
+- invitational testing
+
+- multicarets
+- search
+- displacement implementation? (see displacement note)
+- collaborative history implementation? (see moremultiplayer note)
+- op creation API (auto diff recording?)
+- yjs version?

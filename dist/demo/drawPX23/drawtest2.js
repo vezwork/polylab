@@ -172,7 +172,7 @@ document.body.addEventListener("keydown", (e) => {
         const nextFocus = next(curFocus, e.key);
         if (nextFocus)
             curFocus = nextFocus;
-        console.log("path address system works", goToPath(rootIndexPath(curFocus)) === curFocus);
+        console.log("path address system works yay", goToPath(rootIndexPath(curFocus)) === curFocus, [...rootIndexPath(curFocus)]);
     }
     if (e.key === "a")
         drawSinks = !drawSinks;
@@ -190,15 +190,16 @@ function drawStuff(focus, depth = 3) {
     ctx.save();
     ctx.strokeStyle = "blue";
     for (const line of lines(focus)) {
-        for (const [{ n, interval: [top, bottom], data, }, i,] of withIndex(line)) {
+        for (const [data, i] of withIndex(line)) {
+            const { top, bottom, left, right } = getBounds(data);
             ctx.beginPath();
             if (i === 0) {
-                ctx.moveTo(n, top);
-                ctx.lineTo(n, bottom);
+                ctx.moveTo(left, top);
+                ctx.lineTo(left, bottom);
             }
             if (i === line.length - 1) {
-                ctx.moveTo(n, top);
-                ctx.lineTo(n, bottom);
+                ctx.moveTo(left, top);
+                ctx.lineTo(left, bottom);
             }
             else {
                 const next = line[i + 1];
@@ -206,11 +207,11 @@ function drawStuff(focus, depth = 3) {
                 //ctx.moveTo(n, bottom);
                 //ctx.lineTo(n, top);
                 // } else {
-                ctx.moveTo(n, top);
+                ctx.moveTo(left, top);
                 //}
-                ctx.lineTo(next.n, next.interval[0]);
-                ctx.moveTo(n, bottom);
-                ctx.lineTo(next.n, next.interval[1]);
+                ctx.lineTo(getBounds(next).left, getBounds(next).top);
+                ctx.moveTo(left, bottom);
+                ctx.lineTo(getBounds(next).left, getBounds(next).bottom);
             }
             ctx.stroke();
             if (data && hasChildren(data)) {

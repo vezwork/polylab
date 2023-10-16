@@ -1,0 +1,8 @@
+I keep wondering how this idea of history can extend to arbitrary editors.
+I picture an apocalypse chess board or a bezier curve editor or a draggable
+rubik's cube. It seems that there are some operations that overwrite (drag bezier curve handle),
+some that add new data (add text in text editor), some that delete data (remove text), and some that transform data
+(commute in a math editor).
+Is there a way so that people can add these operations to their editors without
+having to think about implementing history for them? Are there other sorts
+of operations that I'm not considering?

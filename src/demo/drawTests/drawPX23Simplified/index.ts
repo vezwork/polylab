@@ -19,7 +19,6 @@ import { makeTreeFunctions } from "../../../lib/structure/tree.js";
 import {
   drawBoundRight,
   drawLineBetweenBoundRights,
-  drawNestedCaretLines,
 } from "../../../lib/draw/draw4Debug.js";
 import { setupFullscreenCanvas } from "../../../lib/draw/setupFullscreenCanvas.js";
 import { first } from "../../../lib/structure/Iterable.js";
@@ -165,16 +164,6 @@ function anim() {
     const belower = next(curFocus, "ArrowDown");
     if (belower) drawLineBetweenBoundRights(ctx, belower, curFocus, "purple");
   }
-  if (drawBlueLines)
-    drawNestedCaretLines(ctx, linesFromChildren, hasChildren, rend);
-  if (drawLineOutlines)
-    drawNestedCaretLines(
-      ctx,
-      linesFromChildren,
-      hasChildren,
-      parent(curFocus) ?? rend,
-      1
-    );
 
   ctx.resetTransform();
   ctx.strokeStyle = "black";

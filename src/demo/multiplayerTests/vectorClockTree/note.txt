@@ -1,0 +1,27 @@
+// TODO monday:
+// 1. adapt https://codepen.io/vez/pen/WNaWwEP to linked lists instead of just clocks (clocks replaced with ll index)
+//   - place these events in a linked list for each id
+//   - implement something that gets the ll index to the event in a linked list
+//   - adapt linearizing / sorting to use the ll index
+//   - adapt all references / serializations to be ll indices
+// 2. adapt linked lists to trees instead (ll index replaced with tree path)
+//   - trees are linearized into a linked list to the head, then existing strategy is applied for linearization of events from all ids and reducing
+//   - undo and redo ammounts to "change head" commands
+//   - branching is just an action (or maybe a different field) that says what event (with the same creator id) it is after
+//     - trees are constructed based on this
+//     - clients will probably always move head to the latest created action
+// 3. clean up, test, and start applying to action based text editing with carets and all.
+//  - note: vanity caret positions (caret movements not associated to an action) will be sent over a separate channel.
+
+// TODO ELSEWHERE (just writing all my end of friday notes here):
+// - nested editing (inserting nested text editors)
+// - drag and drop (nesting)
+//   - vanity mouse position sharing
+// - mild perf optimization for spatial editing if necessary
+// - bug aria about sponsorship
+// - visual notes on the tree based multiplayer once it is working
+
+// aside:
+// - we need to separate the events by id because of the tie breaking algorithm (id alphetical)
+//   and in the future of ownership for undoing and redoing.
+// - don't need guuids because we might as well handled name collisions anyway??? idk maybe wack

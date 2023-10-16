@@ -114,7 +114,7 @@ sink.downSibling(carryX?: number): CaretSink | null
 sink.line(): CaretSink[]
 ```
 
-Why is the argument to the `CaretSink` constructor a function? idk tbh lol
+> note: I will probably change the argument to the constructor to an object instead of a function that returns an object.
 
 ### [`ContainerSink`](./caretope_sink.ts)
 

@@ -1,4 +1,4 @@
-import { insertIntoSorted } from "../../../lib/structure/Arrays.js";
+import { insertIntoSorted, locationOf } from "../../../lib/structure/Arrays.js";
 import { compareEventClocksAlphabetical, setup } from "./liblog.js";
 
 type Tree<V> = {
@@ -20,7 +20,11 @@ const insertChild =
     return newNode;
   };
 
-export const setupTree = (id, myOnUpdate) => {
+export const setupTree = (
+  id,
+  stateUpdate: Function = () => {},
+  changeUpdate: Function = () => {}
+) => {
   let treeRoots: { [key: string]: Tree<any> } = {};
   let treeHeads: { [key: string]: Tree<any> } = {};
   const init = () => {
@@ -41,7 +45,7 @@ export const setupTree = (id, myOnUpdate) => {
     if (candidate !== undefined) me.do({ id, redo: true });
   };
 
-  let mainLinearizedEvents = [];
+  let mainLinearizedEvents: any[] = [];
   me.onUpdate((wrapEv) => {
     const { ev } = wrapEv;
     const { v, id, undo, redo } = ev;
@@ -54,11 +58,13 @@ export const setupTree = (id, myOnUpdate) => {
       const newNode = insertChild(treeHeads[id])(wrapEv);
       treeHeads[id] = newNode;
 
-      insertIntoSorted(
+      const index = locationOf(
         wrapEv,
         mainLinearizedEvents,
         compareEventClocksAlphabetical
       );
+      mainLinearizedEvents.splice(index + 1, 0, wrapEv);
+      changeUpdate("add", mainLinearizedEvents[index]?.ev, wrapEv.ev);
     } else if (undo) {
       const candidate = treeHeads[id].parent;
       if (candidate) {
@@ -67,21 +73,26 @@ export const setupTree = (id, myOnUpdate) => {
           (w) => w !== treeHeads[id].v
         );
 
+        changeUpdate("del", treeHeads[id].v.ev);
         treeHeads[id] = candidate;
       }
     } else if (redo) {
       const candidate = treeHeads[id].children.at(-1);
       if (candidate) {
         treeHeads[id] = candidate;
-        insertIntoSorted(
+
+        const index = locationOf(
           candidate.v,
           mainLinearizedEvents,
           compareEventClocksAlphabetical
         );
+        mainLinearizedEvents.splice(index + 1, 0, candidate);
+        changeUpdate("add", mainLinearizedEvents[index].ev, candidate.v.ev);
       }
     }
 
-    myOnUpdate(mainLinearizedEvents);
+    stateUpdate(mainLinearizedEvents);
+
     // TODO: make this an onchange reduce?
     //   what data is needed to maintain references in this map? (hint: character positions in output string)
   });

@@ -3,89 +3,31 @@ import * as DoubleLinkedList from "../../lib/structure/doubleLinkedList.js";
 import { Caret } from "../caretope/caretope_caret.js";
 import { CaretSink, ContainerSink } from "../caretope/caretope_sink.js";
 import { setupTree } from "../multiplayerTests/6_vectorClockTree/libtree.js";
+import {
+  Model,
+  Sinkable,
+  initModel,
+  insertAfter,
+  remove,
+  treeNode,
+} from "./data.js";
 import { render } from "./draw.js";
 
 const ctx = setupFullscreenCanvas("c");
-
-type Sinkable = DoubleLinkedList.Node<any> | { s: any[] };
-
-const insertAfter =
-  <T>(after: DoubleLinkedList.Node<T> | null) =>
-  (
-    data: T,
-    caret: Caret,
-    renderedBounds,
-    nodeFromSink,
-    sinkFromNode,
-    container
-  ) => {
-    const newNode = DoubleLinkedList.insertAfter(after)(data);
-
-    const sink = new CaretSink(() => {
-      const [left, top, width, height] = renderedBounds.get(newNode)!;
-      return {
-        top,
-        left,
-        right: left + 1,
-        bottom: top + height,
-      };
-    });
-    nodeFromSink.set(sink, newNode);
-    sinkFromNode.set(newNode, sink);
-    container.addChild(sink);
-
-    caret.caretSink = sink;
-
-    return newNode;
-  };
-const remove = <T>(
-  node: DoubleLinkedList.Node<T>,
-  caret: Caret,
-  renderedBounds,
-  nodeFromSink,
-  sinkFromNode,
-  container
-) => {
-  const prev = DoubleLinkedList.remove(node);
-
-  if (caret.caretSink === sinkFromNode.get(node))
-    caret.caretSink = sinkFromNode.get(prev)!;
-  container.removeChild(sinkFromNode.get(node)!);
-  renderedBounds.delete(node);
-  sinkFromNode.delete(node);
-  nodeFromSink.delete(sinkFromNode.get(node)!);
-
-  return prev;
-};
 
 const me = setupTree("testUser1", (evs) => {
   // URGENT!
   // TODO: make this a change map instead of a state map
   // will need to add `remove` fn and `insertAfter` fn
+
+  // update next day: nvm lets do saved state instead lol
+  //  - otherwise I have to write inverses for everything :|
+  // want to make it so I can just write the update function and
+  // the state is automatically saved but we will see how that works
   // URGENT!
 
-  const container = new ContainerSink(() => ({
-    top: 0,
-    left: 0,
-    right: 100,
-    bottom: 0,
-  }));
-
-  const renderedBounds = new Map<Sinkable, [number, number, number, number]>();
-  const nodeFromSink = new Map<CaretSink, Sinkable>();
-  const sinkFromNode = new Map<Sinkable, CaretSink>();
-
-  const caret = new Caret();
-
-  const start: DoubleLinkedList.Node<any> = insertAfter(null)(
-    null,
-    caret,
-    renderedBounds,
-    nodeFromSink,
-    sinkFromNode,
-    container
-  );
-  renderedBounds.set(start, [0, 0, 1, 54]);
+  const [model, start] = initModel();
+  const { nodeFromSink, caret, container, renderedBounds } = model;
 
   for (const {
     ev: { v },
@@ -93,76 +35,19 @@ const me = setupTree("testUser1", (evs) => {
     console.log("V", v);
     const { del, insNode, ins, move } = v;
     const curNode = nodeFromSink.get(caret.currentCaretSink!)!;
-    if (del) {
-      if ("s" in curNode) 1;
-      else
-        remove(
-          curNode,
-          caret,
-          renderedBounds,
-          nodeFromSink,
-          sinkFromNode,
-          container
-        );
-    }
+    if (del)
+      if ("s" in curNode) null;
+      else remove(curNode, model);
+
     if (insNode) {
-      if ("s" in curNode) {
-        const newNode = { s: [] };
-        curNode.s.push(newNode);
-
-        const sink = new CaretSink(() => {
-          const [left, top, width, height] = renderedBounds.get(newNode)!;
-          return {
-            top,
-            left,
-            right: left + 1,
-            bottom: top + height,
-          };
-        });
-        nodeFromSink.set(sink, newNode);
-        sinkFromNode.set(newNode, sink);
-        container.addChild(sink);
-        caret.caretSink = sink;
-      } else {
-        const newNode = {
-          s: [],
-        };
-        insertAfter(curNode)(
-          newNode,
-          caret,
-          renderedBounds,
-          nodeFromSink,
-          sinkFromNode,
-          container
-        );
-
-        const sink = new CaretSink(() => {
-          const [left, top, width, height] = renderedBounds.get(newNode)!;
-          return {
-            top,
-            left,
-            right: left + 1,
-            bottom: top + height,
-          };
-        });
-        nodeFromSink.set(sink, newNode);
-        sinkFromNode.set(newNode, sink);
-        container.addChild(sink);
-        caret.caretSink = sink;
-      }
+      const tnode = treeNode(model);
+      if ("s" in curNode) curNode.s.push(tnode);
+      else insertAfter(curNode)(tnode, model);
     }
-    if (ins) {
-      if ("s" in curNode) 1;
-      else
-        insertAfter(curNode)(
-          ins,
-          caret,
-          renderedBounds,
-          nodeFromSink,
-          sinkFromNode,
-          container
-        );
-    }
+    if (ins)
+      if ("s" in curNode) null;
+      else insertAfter(curNode)(ins, model);
+
     if (move) {
       // TODO: make this "ephemeral"!
       container.calculateChildLines(); // TODO: don't do this every move!!

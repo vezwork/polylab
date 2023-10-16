@@ -37,10 +37,28 @@ const LRIGHT = 320;
 
 let t = 5;
 
+const endPos = (x, y) =>
+  [LLEFT + (lchVals(x, y, 1)[0] / 100) * (LRIGHT - LLEFT), LY] as [
+    number,
+    number
+  ];
+
+const cartersianFromSpherical = (inclination, azimuth) => [
+  Math.sin(inclination) * Math.cos(azimuth),
+  Math.sin(inclination) * Math.sin(azimuth),
+  Math.cos(inclination),
+];
+
+const sphericalFromPolar = (dist, angle) => [2 * Math.atan(1 / dist), angle];
+const polarFromCartesian = (center, p) => [
+  distance(center, p),
+  angleBetween(center, p),
+];
+const degFromRad = (thetaRad) => (thetaRad / Math.PI) * 180;
+
 const lchVals = (x, y, greyish): [number, number, number] => {
-  const theta = angleBetween(CENTER, [x, y]);
-  const thetaDeg = (theta / (Math.PI * 2)) * 360 + 180;
-  const dist = distance(CENTER, [x, y]);
+  const [dist, theta] = polarFromCartesian(CENTER, [x, y]);
+  const thetaDeg = degFromRad(theta) + 180;
   const distPercent = (dist / MAXDIST) * 100;
   //if (distPercent < 0) return false;
   return [distPercent * 1.1, (100 - distPercent) * 1.5 * greyish, thetaDeg];
@@ -50,7 +68,7 @@ const lchValsToCssLchString = ([l, c, h]) =>
 const getColor = (x, y, greyish) =>
   lchValsToCssLchString(lchVals(x, y, greyish));
 
-const DENSITY = 0.5;
+const DENSITY = 1.5;
 const rand: any = {};
 for (let x = TOPLEFT[0]; x < BOTTOMRIGHT[0]; x += DENSITY) {
   rand[x] = {};
@@ -73,7 +91,6 @@ function easeInOutExpo(x: number): number {
 
 const draw = () => {
   requestAnimationFrame(draw);
-  console.log(t);
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, c.width, c.height);
   t += 0.05;
@@ -169,26 +186,26 @@ CanvasCapture.beginVideoRecord({
   name: "myVideo",
 });
 
-const endPos = (x, y) =>
-  [LLEFT + (lchVals(x, y, 1)[0] / 100) * (LRIGHT - LLEFT), LY] as [
-    number,
-    number
-  ];
-
 c.addEventListener("click", (e) => {
   const x = e.offsetX;
   const y = e.offsetY;
+  const [dist, angle] = polarFromCartesian(CENTER, [x, y]);
+  const spherical = sphericalFromPolar(dist, angle);
+  const cart = cartersianFromSpherical(spherical[0], spherical[1]);
+  console.log("polar", dist, angle);
+  console.log("spherical", spherical);
+  console.log("cart", cart);
   console.log(
     `${x}, ${y} => %c ${getColor(x, y, 1)}`,
     `background:${getColor(x, y, 1)}; color: white;`
   );
-  if (!CanvasCapture.isRecording()) {
-    CanvasCapture.beginVideoRecord({
-      format: CanvasCapture.MP4,
-      quality: 1,
-      name: "myVideo",
-    });
-  } else {
-    CanvasCapture.stopRecord();
-  }
+  // if (!CanvasCapture.isRecording()) {
+  //   CanvasCapture.beginVideoRecord({
+  //     format: CanvasCapture.MP4,
+  //     quality: 1,
+  //     name: "myVideo",
+  //   });
+  // } else {
+  //   CanvasCapture.stopRecord();
+  // }
 });

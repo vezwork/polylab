@@ -9,6 +9,7 @@ export const recursiveJSONLift = (fn) => (arg) => {
     }
     return fn(arg);
 };
+export const isObject = (v) => typeof v === "object" && !Array.isArray(v) && v !== null;
 export const objectLift = (fn) => (arg) => Object.fromEntries(Object.entries(arg).map(([key, value]) => [key, fn(value, key)]));
 export const objectFilter = (fn) => (arg) => Object.fromEntries(Object.entries(arg).filter(([key, value]) => fn(value, key)));
 export const objectZipUntil = (fn) => (arg1) => (arg2) => {

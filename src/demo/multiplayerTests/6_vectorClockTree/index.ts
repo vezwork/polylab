@@ -49,10 +49,16 @@ function ok(myId) {
     if (candidate !== null)
       me.do({ id: myId, head: [...rootIndexPath(candidate)] });
   };
+  const redo = () => {
+    const candidate = treeHeads[myId].children.at(-1);
+    if (candidate !== undefined)
+      me.do({ id: myId, head: [...rootIndexPath(candidate)] });
+  };
 
-  div.addEventListener("keydown", ({ key, metaKey }) => {
+  div.addEventListener("keydown", ({ key, metaKey, shiftKey }) => {
     if (key.length === 1 && !metaKey) newHead({ fn: "ins", key });
     else if (key === "Backspace") newHead({ fn: "del" });
+    else if (metaKey && shiftKey && key === "z") redo();
     else if (metaKey && key === "z") undo();
   });
 

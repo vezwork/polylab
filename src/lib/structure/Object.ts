@@ -11,6 +11,9 @@ export const recursiveJSONLift = (fn) => (arg) => {
   return fn(arg);
 };
 
+export const isObject = (v) =>
+  typeof v === "object" && !Array.isArray(v) && v !== null;
+
 export const objectLift =
   <V>(fn: (v: V, key: string) => any) =>
   (arg: { [key: string]: V }) =>

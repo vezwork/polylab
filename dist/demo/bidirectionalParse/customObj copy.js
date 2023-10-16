@@ -1,6 +1,6 @@
 import { _, _headTail, alpha, any, call, cases, char, flatStrings, i_, ichar, ior, istar, istr, iw, map, num, star, tryUnwrap, until, unwrap, } from "../../lib/parse/bidirectional1.js";
 import { isObject } from "../../lib/structure/Object.js";
-import { test } from "./testrunner1.js";
+import { test } from "./testrunner.js";
 /*******
  * BIDIRECTIONAL OBJECT PARSER DEF.
  *******/

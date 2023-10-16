@@ -1,11 +1,22 @@
 import { find, some } from "../../lib/structure/Iterable.js";
-import { EditorElement, focus } from "./editor2.js";
+import { EditorElement, focus, lastChildOrLeftOrParent, onLeftFocusLastChild, onRightFocusSelf, rightOrParentRight, } from "./editor2.js";
 import { SymbolEditor } from "./symbolEditor.js";
 export class LineEditor extends EditorElement {
+    left = lastChildOrLeftOrParent(this);
+    right = rightOrParentRight(this);
+    focusFromLeft = onLeftFocusLastChild(this);
+    focusFromRight = onRightFocusSelf(this);
     constructor() {
         super();
-        this.style.display = "block";
-        this.style.outline = "solid 1px #87CEEB";
+        this.baseStyleEl.textContent += `
+      :host {
+        display: block;
+        outline: solid 1px #87CEEB
+      }
+      :host([isFocused=true]) { /* browser :focus happens if children are focused too :( */
+          border-left: 4px solid red;
+      }
+    `;
         this.addEventListener("keydown", (e) => {
             if (e.key.length === 1) {
                 const newEl = new SymbolEditor(e.key);
@@ -21,7 +32,7 @@ export class LineEditor extends EditorElement {
                 const childLine = find(this.editorChildren(), (c) => c.contains(e.target));
                 if (childLine === null)
                     return;
-                childLine.left();
+                this.left(childLine);
                 this.removeChild(childLine);
             }
         });

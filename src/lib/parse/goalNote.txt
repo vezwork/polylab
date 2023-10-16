@@ -1,0 +1,31 @@
+// const reverse = (p) => ({ str }) => {
+//   const out = p({ str: strReverse(str) });
+//   return { result: strReverse(out.result), str: out.str };
+// };
+// if " then parse string
+//const jsStrBody = reverse(
+//  _(not(char("\\")), s(_(not(char("\n"), any))))
+//); /* anything, can't end with / */
+
+// want: ignore comments, ignore strings, ignore balanced stuff, fail on close without open
+/*
+  myThing = _(
+    not(char(']')),
+    not(char('}')),
+    not(char(')')),
+    case(
+      ...otherParserCases,
+      [str('"'), before('"')(jsStrBody)]],
+      [str("'"), before("'")(jsStrBody)]],
+      [str("`"), before("`")(jsTemplateLiteralBody)]],
+      [str("```"), before("```")(jsTemplateLiteralBody)]],
+      [str('//'), before('\n')(s(any))]],
+      [str('/*'), before('*./')(s(any))]],
+      [str('//'), before('\n')(s(any))]],
+      [char('['), before(']')(myThing)],
+      [char('{'), before('}')(myThing)],
+      [char('('), before(')')(myThing)],
+      [any, nothing]
+    )
+  )
+  */

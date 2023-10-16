@@ -8,11 +8,12 @@ const thro = (er) => {
 // forward: IN => { result: OUT, str: IN }
 // backward: OUT => { string: IN, left: OUT}
 export const _ = (...parsers) => ({
-  forward: (inp) => {
+  forward: (parent, inp) => {
     let str = inp;
-    let result: any[] = [];
+    let result: any = [];
+    result.parent = parent;
     for (const parser of parsers) {
-      const out = parser.forward(str);
+      const out = parser.forward(result, str);
       str = out.str;
       if (out.result !== null) result.push(out.result);
     }
@@ -33,12 +34,13 @@ export const _ = (...parsers) => ({
   },
 });
 export const star = (p) => ({
-  forward: (inp) => {
+  forward: (parent, inp) => {
     let str = inp;
-    let result: any[] = [];
+    let result: any = [];
+    result.parent = parent;
     try {
       while (true) {
-        const out = p.forward(str);
+        const out = p.forward(result, str);
         str = out.str;
         if (out.result !== null) result.push(out.result);
       }
@@ -61,12 +63,14 @@ export const star = (p) => ({
 export const plus = (p) => _(p, star(p));
 
 export const or = (...parsers) => ({
-  forward: (str) => {
+  forward: (parent, str) => {
     let i = 0;
     for (const parser of parsers) {
       try {
-        const out = parser.forward(str);
-        return { result: { out: out.result, i }, str: out.str };
+        const result: any = { i, parent };
+        const out = parser.forward(result, str);
+        result.out = out.result;
+        return { result, str: out.str };
       } catch (e) {}
       i++;
     }
@@ -75,11 +79,13 @@ export const or = (...parsers) => ({
   backward: (arg) => [...parsers][arg.i].backward(arg.out),
 });
 export const namedOr = (obj: { [name: string]: any }) => ({
-  forward: (str) => {
+  forward: (parent, str) => {
     for (const [name, parser] of Object.entries(obj)) {
       try {
-        const out = parser.forward(str);
-        return { result: { out: out.result, name }, str: out.str };
+        const result: any = { name, parent };
+        const out = parser.forward(result, str);
+        result.out = out.result;
+        return { result, str: out.str };
       } catch (e) {}
     }
     thro("or fail parsing " + str);
@@ -88,7 +94,7 @@ export const namedOr = (obj: { [name: string]: any }) => ({
 });
 
 export const single = (cond, errMsg?: string) => ({
-  forward: (str) =>
+  forward: (parent, str) =>
     cond(str.charAt(0))
       ? { result: str.charAt(0), str: str.slice(1) }
       : thro("single fail parsing '" + str + "' with errMsg: " + errMsg),
@@ -103,9 +109,9 @@ export const w = star(char(" "));
 export const str = (chars) => _(...[...chars].map((c) => char(c)));
 
 export const not = (p) => ({
-  forward: (str) => {
+  forward: (parent, str) => {
     try {
-      p.forward(str);
+      p.forward(parent, str);
     } catch (e) {
       return { result: null, str };
     }
@@ -115,17 +121,14 @@ export const not = (p) => ({
 });
 
 export const call = (pf) => ({
-  forward: (arg) => pf().forward(arg),
+  forward: (parent, arg) => pf().forward(parent, arg),
   backward: (arg) => pf().backward(arg),
 });
 
 export const map = (mapper) => (p) => ({
-  forward: (inp) => {
-    const out = p.forward(inp);
-    return {
-      result: mapper.forward(out.result),
-      str: out.str,
-    };
+  forward: (parent, inp) => {
+    const out = p.forward(parent, inp);
+    return { result: mapper.forward(out.result), str: out.str };
   },
   backward: (out) => p.backward(mapper.backward(out)),
 });
@@ -140,6 +143,8 @@ export const tryUnwrap = map({
       : val,
   backward: (val) => (!Array.isArray(val) ? [val] : val),
 });
+
+// flatStrings map implementation
 export const forward = (val) => {
   const res = val.reduce((acc, o) => {
     if (
@@ -164,12 +169,12 @@ export const flatStrings = map({
   backward,
 });
 export const ignore = (filler) => (p) => ({
-  forward: (inp) => {
-    const out = p.forward(inp);
-    return {
-      result: null,
-      str: out.str,
-    };
+  forward: (parent, inp) => {
+    const result: any = { parent };
+    const out = p.forward(result, inp);
+    result.result = null;
+    result.str = out.str;
+    return result;
   },
   backward: () => ({ ...p.backward(filler), take: false }),
 });

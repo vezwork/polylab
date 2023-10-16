@@ -21,7 +21,7 @@ import {
   unwrap,
 } from "../../lib/parse/bidirectional1.js";
 import { isObject } from "../../lib/structure/Object.js";
-import { test } from "./testrunner.js";
+import { test } from "./testrunner1.js";
 
 /*******
  * BIDIRECTIONAL OBJECT PARSER DEF.

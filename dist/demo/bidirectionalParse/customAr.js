@@ -1,5 +1,5 @@
 import { any, call, cases, char, flatStrings, i_, ichar, istar, iw, marker, or, star, until, unwrap, } from "../../lib/parse/bidirectional1.js";
-import { test } from "./testrunner.js";
+import { test } from "./testrunner1.js";
 const OBJECT_START = "[";
 const OBJECT_END = "]";
 const VALUE_END = ",";

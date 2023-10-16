@@ -10,55 +10,130 @@ const getBoundingClientRect = (element) => {
     return { top, right, bottom, left, width, height, x, y };
 };
 const getBounds = getBoundingClientRect;
-let carryX = null;
-const { lines } = makeCaretFunctions({
+export let carryX = null;
+export const { lines } = makeCaretFunctions({
     getBounds,
 });
-const { belowInFirstLine, aboveInLastLine, nextLine, curLine, prevLine, closestInLine, after, before, } = makeCaretLineOpFunctions({
+export const { belowInFirstLine, aboveInLastLine, nextLine, curLine, prevLine, closestInLine, after, before, } = makeCaretLineOpFunctions({
     getBounds,
 });
 const closestChildToPosition = (e) => (p) => closestElementToPosition(e, e.editorChildren(), p);
-const firstSpatialChild = (e) => lines(e.editorChildren())?.at(0)?.at(0) ?? null;
-const lastSpatialChild = (e) => lines(e.editorChildren())?.at(-1)?.at(-1) ?? null;
+export const firstSpatialChild = (e) => lines(e.editorChildren())?.at(0)?.at(0) ?? null;
+export const lastSpatialChild = (e) => lines(e.editorChildren())?.at(-1)?.at(-1) ?? null;
 // This will be a caret service which manages multicursors and selection and stuff
 let CARET = null;
-let FOCUS_SIDE = null;
-export const focus = (el, side = "right") => {
+export const focus = (el) => {
     if (el === null)
         return null;
-    CARET?.setAttribute("isFocused" + FOCUS_SIDE, "false");
+    CARET?.setAttribute("isFocused", "false");
     CARET = el;
-    el.setAttribute("isFocused" + side, "true");
-    FOCUS_SIDE = side;
+    el.setAttribute("isFocused", "true");
     el.focus();
     return el;
 };
-const parent = (e) => e.editorParent();
-const children = (e) => e.editorChildren();
-const onRightFocusSelf = (e) => () => focus(e, "left");
-const onRightFocusFirstChild = (e) => () => [...children(e)].length > 0
+export const parent = (e) => e.editorParent();
+export const children = (e) => e.editorChildren();
+export const onRightFocusSelf = (e) => () => focus(e);
+export const onRightFocusFirstChild = (e) => () => [...children(e)].length > 0
     ? firstSpatialChild(e).focusFromRight()
     : focus(e);
-const onLeftFocusSelf = (e) => () => focus(e, "right");
-const onLeftFocusLastChild = (e) => () => [...children(e)].length > 0 ? lastSpatialChild(e).focusFromLeft() : focus(e);
-const leftToChild = (e) => () => {
-    if ([...children(e)].length > 0) {
-        return focus(lastSpatialChild(e));
+export const onLeftFocusSelf = (e) => () => focus(e);
+export const onLeftFocusLastChild = (e) => () => [...children(e)].length > 0 ? lastSpatialChild(e).focusFromLeft() : focus(e);
+export const lastChildOrLeftOrParentLeft = (par) => (e) => [...children(e)].length > 0
+    ? focus(lastSpatialChild(e))
+    : leftOrParentLeft(par)(e);
+export const lastChildOrLeftOrParent = (par) => (e) => [...children(e)].length > 0
+    ? focus(lastSpatialChild(e))
+    : leftOrParent(par)(e);
+export const leftOrParentLeft = (par) => (e) => {
+    carryX = null;
+    const be = before(e, lines(children(par)));
+    if (be === null) {
+        const grandparent = parent(par);
+        return grandparent !== null ? leftOrParentLeft(grandparent)(par) : null; // different than right to sibling
     }
-    else {
-        return parent(e)?.focusLeftSibling(e) ?? null;
-    }
+    else
+        return be.focusFromLeft();
 };
-const leftToSibling = (e) => () => parent(e)?.focusLeftSibling(e) ?? null;
-const rightToChild = (e) => () => {
-    if ([...children(e)].length > 0) {
-        return focus(firstSpatialChild(e), "left");
+export const leftOrParent = (par) => (e) => {
+    const be = before(e, lines(children(par)));
+    if (be === null) {
+        focus(par); // different than right to sibling
     }
-    else {
-        return parent(e)?.focusRightSibling(e) ?? null;
-    }
+    else
+        return be.focusFromLeft();
 };
-const rightToSibling = (e) => () => parent(e)?.focusRightSibling(e) ?? null;
+export const firstChildOrRightOrParent = (par) => (e) => [...children(e)].length > 0
+    ? focus(firstSpatialChild(e))
+    : rightOrParent(par)(e);
+export const firstChildOrRightOrParentRight = (par) => (e) => [...children(e)].length > 0
+    ? focus(firstSpatialChild(e))
+    : rightOrParentRight(par)(e);
+const rightOrParent = (par) => (e) => {
+    carryX = null;
+    const af = after(e, lines(children(par)));
+    if (af === null)
+        return focus(par); // `this.right()` to skip highlighting parent
+    else
+        return af.focusFromRight();
+};
+export const rightOrParentRight = (par) => (e) => {
+    const af = after(e, lines(children(par)));
+    if (af === null) {
+        const grandparent = parent(par);
+        return grandparent !== null ? rightOrParentRight(grandparent)(par) : null; // different than right to sibling
+    }
+    else
+        return af.focusFromRight();
+};
+const up = (par) => (child) => {
+    carryX ??= getBounds(child).right;
+    const siblingUp = closestInLine(child, prevLine(child, lines(children(par))), carryX);
+    if (siblingUp === null) {
+        const grandparent = parent(par);
+        if (grandparent === null)
+            return focusFirstInLine(par)(child);
+        const parFocus = up(grandparent)(par);
+        if (parFocus)
+            return parFocus;
+        else
+            return focusFirstInLine(par)(child);
+    }
+    else
+        return siblingUp.focusFromUp();
+};
+const down = (par) => (child) => {
+    carryX ??= getBounds(child).right;
+    const siblingUp = closestInLine(child, nextLine(child, lines(children(par))), carryX);
+    if (siblingUp === null) {
+        const grandparent = parent(par);
+        if (grandparent === null)
+            return focusLastInLine(par)(child);
+        const parFocus = down(grandparent)(par);
+        if (parFocus)
+            return parFocus;
+        else
+            return focusLastInLine(par)(child);
+    }
+    else
+        return siblingUp.focusFromDown();
+};
+const focusFirstInLine = (par) => (child) => {
+    // for focusing the first in a line once it is found that there is nothing above in any parent
+    const cand = curLine(child, lines(children(par))).at(0);
+    if (cand && cand !== child)
+        return focus(cand);
+    else
+        return null;
+};
+const focusLastInLine = (par) => (child) => {
+    // for focusing the first in a line once it is found that there is nothing above in any parent
+    const cand = curLine(child, lines(children(par))).at(-1);
+    if (cand && cand !== child)
+        return focus(cand);
+    else
+        return null;
+};
 /** EditorElement just contains data (some data is functions) */
 export class EditorElement extends HTMLElement {
     // these properties should be overwritable data (i.e. canvas editors would have their own way of figuring this out)
@@ -66,120 +141,29 @@ export class EditorElement extends HTMLElement {
     editorDescendents = () => this.querySelectorAll(`[iseditor=true]`);
     editorChildren = () => Iter.filter(this.editorDescendents(), (d) => d.editorParent() === this);
     // these properties should be overwritable data
-    up() {
-        return parent(this)?.focusUpSibling(this) ?? null;
-    }
-    down() {
-        return parent(this)?.focusDownSibling(this) ?? null;
-    }
-    right = () => {
-        // FOCUS_SIDE seems dangerous here because `this` might not even be focused?
-        if (FOCUS_SIDE === "left") {
-            if ([...children(this)].length > 0) {
-                return rightToChild(this)();
-            }
-            else {
-                focus(this, "right");
-            }
-        }
-        else {
-            return rightToSibling(this)();
-        }
-    };
-    left = leftToSibling(this);
-    // this is not really an interface property, its just used for the default implementation
-    focusRightSibling(sibling) {
-        carryX = null;
-        const af = after(sibling, lines(children(this)));
-        if (af === null)
-            return focus(this, "right"); // `this.right()` to skip highlighting parent
-        else
-            return af.focusFromRight();
-    }
+    up = up(this);
+    down = down(this);
+    right = rightOrParent(this);
+    left = lastChildOrLeftOrParentLeft(this);
     // this should be a "hook" property of the interface. This editor is allowed to decide how it deals with being focused from the right (I think)
-    focusFromRight = onRightFocusSelf(this);
-    focusLeftSibling(sibling) {
-        carryX = null;
-        const af = before(sibling, lines(children(this)));
-        if (af === null)
-            return parent(this)?.focusLeftSibling(this) ?? null;
-        else
-            return af.focusFromLeft();
-    }
+    focusFromRight = onRightFocusFirstChild(this);
     focusFromLeft = onLeftFocusSelf(this);
-    focusUpSibling(sibling) {
-        carryX ??= getBounds(sibling).right;
-        const up = closestInLine(sibling, prevLine(sibling, lines(children(this))), carryX);
-        if (up === null) {
-            const par = parent(this);
-            if (par) {
-                const parFocus = par.focusUpSibling(this);
-                if (parFocus)
-                    return parFocus;
-                else
-                    return this.focusFirstInLine(sibling);
-            }
-            else
-                return this.focusFirstInLine(sibling);
-        }
-        else
-            return up.focusFromUp();
-    }
-    focusFirstInLine(sibling) {
-        // for focusing the first in a line once it is found that there is nothing above in any parent
-        const cand = curLine(sibling, lines(children(this))).at(0);
-        if (cand && cand !== sibling)
-            return focus(cand);
-        else
-            return null;
-    }
-    focusFromUp() {
-        if ([...children(this)].length > 0)
-            return (aboveInLastLine(carryX, lines(children(this)))?.focusFromUp() ?? null);
-        else
-            return focus(this);
-    }
-    // Down is a copy paste of up, with prevLine replaced with nextLine and aboveInLastLine replaced with belowInFirstLine
-    focusDownSibling(sibling) {
-        carryX ??= getBounds(sibling).right;
-        const down = closestInLine(sibling, nextLine(sibling, lines(children(this))), carryX);
-        if (down === null) {
-            const par = parent(this);
-            if (par) {
-                const parFocus = par.focusDownSibling(this);
-                if (parFocus)
-                    return parFocus;
-                else
-                    return this.focusLastInLine(sibling);
-            }
-            else
-                return this.focusLastInLine(sibling);
-        }
-        else
-            return down.focusFromDown();
-    }
-    focusLastInLine(sibling) {
-        const cand = curLine(sibling, lines(children(this))).at(-1);
-        if (cand && cand !== sibling)
-            return focus(cand);
-        else
-            return null;
-    }
-    focusFromDown() {
-        if ([...children(this)].length > 0)
-            return (belowInFirstLine(carryX, lines(children(this)))?.focusFromDown() ??
-                null);
-        else
-            return focus(this);
-    }
+    focusFromUp = () => [...children(this)].length > 0
+        ? aboveInLastLine(carryX, lines(children(this)))?.focusFromUp() ?? null
+        : focus(this);
+    focusFromDown = () => [...children(this)].length > 0
+        ? belowInFirstLine(carryX, lines(children(this)))?.focusFromDown() ??
+            null
+        : focus(this);
     slotEl;
+    baseStyleEl;
     constructor() {
         super();
         // const meta = (this.constructor as typeof EditorElement).meta;
         this.setAttribute("iseditor", "true");
         this.attachShadow({ mode: "open" });
-        const baseStyleEl = document.createElement("style");
-        baseStyleEl.textContent = `
+        this.baseStyleEl = document.createElement("style");
+        this.baseStyleEl.textContent = `
         :host {
           contain: paint; 
 
@@ -199,10 +183,7 @@ export class EditorElement extends HTMLElement {
         :host(:focus) {
           outline: none;
         }
-        :host([isFocusedLeft=true]) { /* browser :focus happens if children are focused too :( */
-          border-left: 4px solid black;
-        }
-        :host([isFocusedRight=true]) { /* browser :focus happens if children are focused too :( */
+        :host([isFocused=true]) { /* browser :focus happens if children are focused too :( */
           border-right: 4px solid black;
         }
         :host([isSelected=true]) { /* browser :focus happens if children are focused too :( */
@@ -210,7 +191,7 @@ export class EditorElement extends HTMLElement {
         }
       `;
         this.slotEl = document.createElement("slot");
-        this.shadowRoot.append(baseStyleEl, this.slotEl);
+        this.shadowRoot.append(this.baseStyleEl, this.slotEl);
         if (!this.hasAttribute("tabindex"))
             this.setAttribute("tabindex", "0"); // make tabbable by default
         this.addEventListener("mousedown", (e) => {
@@ -235,13 +216,13 @@ export class EditorElement extends HTMLElement {
         this.addEventListener("keydown", (e) => {
             if (isArrowKey(e.key)) {
                 if (e.key === "ArrowRight")
-                    this.right();
+                    parent(this)?.right(this);
                 if (e.key === "ArrowLeft")
-                    this.left();
+                    parent(this)?.left(this);
                 if (e.key === "ArrowUp")
-                    this.up();
+                    parent(this)?.up(this);
                 if (e.key === "ArrowDown")
-                    this.down();
+                    parent(this)?.down(this);
                 e.preventDefault();
                 e.stopPropagation();
             }
@@ -269,7 +250,7 @@ function* traverseEditors(start, end) {
             if (cur === end)
                 return;
             yield cur; // don't include start when going to the right
-            cur = cur.right();
+            cur = parent(cur)?.right(cur);
         }
     }
     if (comp === "<") {
@@ -278,7 +259,7 @@ function* traverseEditors(start, end) {
             if (cur === end)
                 return;
             yield cur; // include start when going to the left
-            cur = cur.left();
+            cur = parent(cur)?.left(cur);
         }
     }
 }

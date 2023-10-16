@@ -1,8 +1,17 @@
-import { find, some } from "../../lib/structure/Iterable.js";
-import { EditorElement, focus } from "./editor2.js";
+import { find, indexOf, some } from "../../lib/structure/Iterable.js";
+import {
+  EditorElement,
+  children,
+  firstChildOrRightOrParent,
+  focus,
+  leftOrParent,
+} from "./editor2.js";
 import { LineEditor } from "./lineEditor.js";
 
 export class MultiLineEditor extends EditorElement {
+  left = leftOrParent(this);
+  right = firstChildOrRightOrParent(this);
+
   lines: LineEditor[] = [];
 
   constructor() {
@@ -31,13 +40,18 @@ export class MultiLineEditor extends EditorElement {
         e.stopPropagation();
       }
       if (e.key === "Backspace") {
-        const childLine = find(this.lines, (c) =>
+        const childLine = indexOf(this.lines, (c) =>
           c.contains(e.target as HTMLElement)
         );
         if (childLine === null) return;
-        childLine.up();
-        this.lines = this.lines.filter((ed) => ed !== childLine);
-        if (this.lines.length === 0) this.lines = [new LineEditor()];
+        const line = this.lines.at(childLine);
+        if (!line) return;
+        const abover = this.lines.at(childLine - 1);
+        if (!abover) return;
+        abover?.append(...children(line));
+        focus(abover ?? null);
+
+        this.lines = this.lines.filter((ed, i) => i !== childLine);
         this.render();
       }
     });

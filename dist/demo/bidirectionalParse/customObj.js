@@ -12,7 +12,7 @@ const customObj = map({
     forward: Object.fromEntries,
     backward: Object.entries,
 })(i_(ichar(OBJECT_START), star(customObjEntry), iw, ichar(OBJECT_END)));
-test(tryUnwrap(istar(any)))("doggies");
-test(customObj)("{ abc: { dog : 3, cat : r{}e, },  beep :123,   }");
-test(istar(cases([isObject, customObj], [(_) => true, any])))(`const a = { abc: { dog : 3, cat : r{}e, },  beep :123,   };
+test(tryUnwrap(istar(any)), "customObject")("doggies");
+test(customObj, "customObject")("{ abc: { dog : 3, cat : r{}e, },  beep :123,   }");
+test(istar(cases([isObject, customObj], [(_) => true, any])), "customObject")(`const a = { abc: { dog : 3, cat : r{}e, },  beep :123,   };
 let b = a.abc`);

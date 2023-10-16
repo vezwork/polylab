@@ -1,0 +1,16 @@
+// if `right` returns null, simply focus parent
+// else focus recursive (return value): case parent then `firstSpatialChild(recursive case)`, else base case
+
+// if I don't have children, use `left`
+// - if `left` returns null, call `left` on parent recursively until non null
+//   - if recursive calls are never non null, then dont change focus
+// - else focus recursive `left` return
+// else focus `lastSpatialChild(me)`
+
+// If `up` returns null, call `up` on parent recursively until non null, then focus non null value or `aboveInLastLine(non null value)`
+// - if recursive calls are never non null, then focus first in my line
+// else focus return value or `aboveInLastLine(return value)`
+
+// If `down` returns null, call `down` on parent recursively until non null, then focus non null value or `belowInFirstLine(non null value)`
+// - if recursive calls are never non null, then focus last in my line
+// else focus return value or `belowInFirstLine(return value)`

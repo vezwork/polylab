@@ -137,11 +137,9 @@ export const forward = (val) => {
             acc.push(o);
         return acc;
     }, []);
-    console.log("flat for res", res);
     return res;
 };
 export const backward = (val) => {
-    console.log(val);
     return val.flatMap((o) => {
         if (typeof o === "string")
             return o.split("");

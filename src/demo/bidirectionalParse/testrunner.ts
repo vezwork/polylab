@@ -1,5 +1,5 @@
-export const test = (p) => (inp) => {
-  console.group("bidirectional parse test");
+export const test = (p, parserName) => (inp) => {
+  console.group("TEST: " + parserName);
   try {
     console.log(inp, "\n----->");
     const result = p.forward(inp).result;

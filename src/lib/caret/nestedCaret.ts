@@ -1,5 +1,6 @@
-import { Bounds, makeCaretFunctions } from "./caret.js";
+import { Bounds, makeCaretFunctions } from "./caretLines.js";
 import { makeTreeFunctions } from "../structure/tree.js";
+import { makeCaretLineOpFunctions } from "./caretLineOps.js";
 
 export function makeNestedCaretFunctions<CaretHost>({
   getBounds,
@@ -14,10 +15,21 @@ export function makeNestedCaretFunctions<CaretHost>({
   getCarryX: (c: CaretHost) => number | null;
   setCarryX: (c: CaretHost) => (carryX: number | null) => void;
 }) {
-  const { lines, belowInFirstLine, aboveInLastLine, to } =
-    makeCaretFunctions<CaretHost>({
-      getBounds,
-    });
+  const { lines } = makeCaretFunctions<CaretHost>({
+    getBounds,
+  });
+
+  const {
+    belowInFirstLine,
+    aboveInLastLine,
+    nextLine,
+    prevLine,
+    closestInLine,
+    after,
+    before,
+  } = makeCaretLineOpFunctions<CaretHost>({
+    getBounds,
+  });
 
   const EdElTree = makeTreeFunctions<CaretHost>({
     parent,
@@ -28,18 +40,53 @@ export function makeNestedCaretFunctions<CaretHost>({
     lines(children(e))?.at(0)?.at(0) ?? null;
   const lastSpatialChild = (e: CaretHost) =>
     lines(children(e))?.at(-1)?.at(-1) ?? null;
-  const toChild = (
-    parent: CaretHost,
-    child: CaretHost,
-    direction: "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight"
-  ) =>
-    to(
-      children(parent),
-      child,
-      direction,
-      getCarryX(parent),
-      EdElTree.isRoot(parent)
-    );
+
+  // if `right` returns null, simply focus parent
+  // else focus recursive (return value): case parent then `firstSpatialChild(recursive case)`, else base case
+  const right = (e: CaretHost) => {
+    setCarryX(e)(null);
+
+    const par = parent(e);
+    if (par === null) return null;
+
+    return after(e, lines(children(par)));
+  };
+  // if I don't have children, use `left`
+  // - if `left` returns null, call `left` on parent recursively until non null
+  //   - if recursive calls are never non null, then dont change focus
+  // - else focus `left` return
+  // else focus `lastSpatialChild(me)`
+  const left = (e: CaretHost) => {
+    setCarryX(e)(null);
+
+    const par = parent(e);
+    if (par === null) return null;
+
+    return before(e, lines(children(par)));
+  };
+  // If `up` returns null, call `up` on parent recursively until non null, then focus non null value or `aboveInLastLine(non null value)`
+  // - if recursive calls are never non null, then focus first in my line
+  // else focus return value or `aboveInLastLine(return value)`
+  const up = (e: CaretHost) => {
+    setCarryX(e)(getCarryX(e) ?? getBounds(e).right);
+
+    const par = parent(e);
+    if (par === null) return null;
+
+    return closestInLine(e, prevLine(e, lines(children(par))), getCarryX(par));
+  };
+
+  // If `down` returns null, call `down` on parent recursively until non null, then focus non null value or `belowInFirstLine(non null value)`
+  // - if recursive calls are never non null, then focus last in my line
+  // else focus return value or `belowInFirstLine(return value)`
+  const down = (e: CaretHost) => {
+    setCarryX(e)(getCarryX(e) ?? getBounds(e).right);
+
+    const par = parent(e);
+    if (par === null) return null;
+
+    return closestInLine(e, nextLine(e, lines(children(par))), getCarryX(par));
+  };
 
   const next = (
     e: CaretHost,
@@ -63,7 +110,15 @@ export function makeNestedCaretFunctions<CaretHost>({
     const par = parent(e);
     if (par === null) return null;
 
-    let eNext = toChild(par, e, direction);
+    const chs = children(par);
+    const eNext =
+      "ArrowUp" === direction
+        ? closestInLine(e, prevLine(e, lines(chs)), getCarryX(par))
+        : "ArrowRight" === direction
+        ? after(e, lines(chs))
+        : "ArrowDown" === direction
+        ? closestInLine(e, nextLine(e, lines(chs)), getCarryX(par))
+        : before(e, lines(chs));
 
     return eNext
       ? zoomIn(eNext, direction)
@@ -86,9 +141,9 @@ export function makeNestedCaretFunctions<CaretHost>({
       const myBound = getBounds(editor);
       const closestIn =
         direction === "ArrowDown"
-          ? belowInFirstLine(x, children(editor))
+          ? belowInFirstLine(x, lines(children(editor)))
           : direction === "ArrowUp"
-          ? aboveInLastLine(x, children(editor))
+          ? aboveInLastLine(x, lines(children(editor)))
           : null;
       if (
         closestIn &&
@@ -107,9 +162,9 @@ export function makeNestedCaretFunctions<CaretHost>({
     if (comp === ">") {
       let cur: CaretHost | null | undefined = start;
       while (cur) {
-        yield cur; // don't include start when going to the right
         if (cur === end) return;
         cur = next(cur, "ArrowRight");
+        yield cur; // don't include start when going to the right
       }
     }
     if (comp === "<") {

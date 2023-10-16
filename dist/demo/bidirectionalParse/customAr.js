@@ -9,7 +9,7 @@ const customArEntry = i_(iw, unwrap(flatStrings(until(or(char(VALUE_END), char(O
 //     backward: Object.entries,
 //   })
 const customAr = i_(ichar(OBJECT_START), star(customArEntry), ichar(OBJECT_END));
-test(customAr)("[3, [re,123,],   ,  123,  ]");
+test(customAr, "customArray")("[3, [re,123,],   ,  123,  ]");
 // test(customAr)("[[ 3, re, ],  123,   ]");
-test(istar(cases([(a) => a?.message, call(() => marker("hi")(customAr))], [() => true, any])))(`const a = [ [ 3, re, ],  123,   ];
+test(istar(cases([(a) => a?.message, call(() => marker("hi")(customAr))], [() => true, any])), "customArray")(`const a = [ [ 3, re, ],  123,   ];
   let b = a[0]`);

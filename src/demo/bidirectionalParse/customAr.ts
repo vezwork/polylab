@@ -48,7 +48,7 @@ const customAr = i_(
   ichar(OBJECT_END)
 );
 
-test(customAr)("[3, [re,123,],   ,  123,  ]");
+test(customAr, "customArray")("[3, [re,123,],   ,  123,  ]");
 // test(customAr)("[[ 3, re, ],  123,   ]");
 
 test(
@@ -57,7 +57,8 @@ test(
       [(a) => a?.message, call(() => marker("hi")(customAr))],
       [() => true, any]
     )
-  )
+  ),
+  "customArray"
 )(
   `const a = [ [ 3, re, ],  123,   ];
   let b = a[0]`

@@ -172,6 +172,10 @@ const tail = ([_,...rest]) => rest
   In functional languages, data constructors are functions that have opposites!
   You give a constructor an input, and you get out a data structure as output.
   With a data structure, you can get back all the inputs used to construct it.
+  Here's an example of some code to get back all the inputs used to construct an
+  object in JavaScript (of course you can also destrcucture objects in JS, but
+  I'm trying to illustrate that you can write code to do this without fancy
+  destructuring syntax)
 </p>
 <pre>
 const exampleObject = { propertyName1: 'hello', propertyName2: 'goodbye'};
@@ -179,32 +183,41 @@ const inputs = Object.entries(exampleObject)
 // [['propertyName1', 'hello'], ['propertyName2', 'goodbye']]
 </pre>
 <p>
-  This is (kind of) the reason that destructuring works! The only way to make
-  data structures is with constructors, and constructors have opposites, so you
-  can always destructure stuff made with data constructors!
+  This is pretty much the reason that pattern matching and destructuring works!
+  The only way to make data structures is with constructors, and constructors
+  have opposites, so you can destructure or pattern match data using
+  constructors!
 </p>
+<pre>
+  // constructor
+  const a = [1,2,3]
+  // constructor opposite
+  const [x,y,z] = a
+</pre>
 <p>
-  Pattern matching is about executing different code depending on how some data
-  was constructed. But in all but the most primitive cases, data can be
-  decomposed in multiple ways. Here's two illustrations of what I mean:
+  Pattern matching using constructors is great!.. But in all but the most
+  primitive cases, things can be decomposed in multiple ways. Here's two
+  illustrations of what I mean:
 </p>
 <img src="reps.svg" />
 <p>
-  Firstly, we have two ways of decomposing any 2D vector: first into cartesian
-  coordinates, and second into polar coordinates. Usually when programming, we
-  construct our 2D vector data one of these two ways, so we can only pattern
-  match on the way we constructed it.
+  In the first row in the illustration above, we have two ways of decomposing
+  any 2D vector: first into cartesian coordinates, and second into polar
+  coordinates. Usually when programming, we construct our 2D vector data one of
+  these two ways, so we can only pattern match on the way we constructed the
+  data.
 </p>
 <p>
-  Secondly, we have multiple ways of writing any number. Numbers can't be
-  destructured in JavaScript, but they can be pattern matched in Agda, like in
-  this definition of `+`:
+  In the second row, we have multiple ways of writing any number. Numbers can't
+  be destructured in JavaScript, but they can be pattern matched in Agda, like
+  in this definition of `+`:
 </p>
 <pre>
 data Number : Set where
 0 : Number
 successor  : Number → Number
 
+_            + _ : Number -> Number -> Number
 0            + y = y
 successor(x) + y = successor(x + y)
 </pre>
@@ -287,7 +300,7 @@ successor(x) + y = successor(x + y)
   <a
     href="https://github.com/vezwork/polylab/blob/main/src/demo/bidirectionalParse/customMiniLang.ts"
     >here</a
-  >.
+  >. Here's an illustration of a traversal:
 </p>
 <img src="bidirectional.svg" />
 

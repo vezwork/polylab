@@ -64,7 +64,7 @@ export const setupTree = (
         compareEventClocksAlphabetical
       );
       mainLinearizedEvents.splice(index + 1, 0, wrapEv);
-      changeUpdate("add", mainLinearizedEvents[index]?.ev, wrapEv.ev);
+      changeUpdate("add", mainLinearizedEvents[index], wrapEv);
     } else if (undo) {
       const candidate = treeHeads[id].parent;
       if (candidate) {
@@ -73,7 +73,7 @@ export const setupTree = (
           (w) => w !== treeHeads[id].v
         );
 
-        changeUpdate("del", treeHeads[id].v.ev);
+        changeUpdate("del", treeHeads[id]);
         treeHeads[id] = candidate;
       }
     } else if (redo) {
@@ -87,7 +87,8 @@ export const setupTree = (
           compareEventClocksAlphabetical
         );
         mainLinearizedEvents.splice(index + 1, 0, candidate);
-        changeUpdate("add", mainLinearizedEvents[index].ev, candidate.v.ev);
+
+        changeUpdate("add", mainLinearizedEvents[index], candidate.v);
       }
     }
 

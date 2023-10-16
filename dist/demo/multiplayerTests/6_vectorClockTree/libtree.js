@@ -45,14 +45,14 @@ export const setupTree = (id, stateUpdate = () => { }, changeUpdate = () => { })
             treeHeads[id] = newNode;
             const index = locationOf(wrapEv, mainLinearizedEvents, compareEventClocksAlphabetical);
             mainLinearizedEvents.splice(index + 1, 0, wrapEv);
-            changeUpdate("add", mainLinearizedEvents[index]?.ev, wrapEv.ev);
+            changeUpdate("add", mainLinearizedEvents[index], wrapEv);
         }
         else if (undo) {
             const candidate = treeHeads[id].parent;
             if (candidate) {
                 // TODO: add removeFromSorted and use it instead of filter
                 mainLinearizedEvents = mainLinearizedEvents.filter((w) => w !== treeHeads[id].v);
-                changeUpdate("del", treeHeads[id].v.ev);
+                changeUpdate("del", treeHeads[id]);
                 treeHeads[id] = candidate;
             }
         }
@@ -62,7 +62,7 @@ export const setupTree = (id, stateUpdate = () => { }, changeUpdate = () => { })
                 treeHeads[id] = candidate;
                 const index = locationOf(candidate.v, mainLinearizedEvents, compareEventClocksAlphabetical);
                 mainLinearizedEvents.splice(index + 1, 0, candidate);
-                changeUpdate("add", mainLinearizedEvents[index].ev, candidate.v.ev);
+                changeUpdate("add", mainLinearizedEvents[index], candidate.v);
             }
         }
         stateUpdate(mainLinearizedEvents);

@@ -1,3 +1,4 @@
+import { MapWithInverse } from "../../lib/structure/data.js";
 import * as DoubleLinkedList from "../../lib/structure/doubleLinkedList.js";
 import { Caret } from "../caretope/caretope_caret.js";
 import { CaretSink, ContainerSink } from "../caretope/caretope_sink.js";
@@ -9,14 +10,12 @@ export const initModel = () => {
         bottom: 0,
     }));
     const renderedBounds = new Map();
-    const nodeFromSink = new Map();
-    const sinkFromNode = new Map();
+    const nodeFromSink = new MapWithInverse();
     const caret = new Caret();
     const model = {
         container,
         renderedBounds,
         nodeFromSink,
-        sinkFromNode,
         caret,
     };
     const start = insertAfter(null)(null, model);
@@ -24,7 +23,7 @@ export const initModel = () => {
     return [model, start];
 };
 export const treeNode = (model) => {
-    const { caret, renderedBounds, nodeFromSink, sinkFromNode, container } = model;
+    const { caret, renderedBounds, nodeFromSink, container } = model;
     const newNode = { s: [] };
     const sink = new CaretSink(() => {
         const [left, top, width, height] = renderedBounds.get(newNode);
@@ -36,13 +35,12 @@ export const treeNode = (model) => {
         };
     });
     nodeFromSink.set(sink, newNode);
-    sinkFromNode.set(newNode, sink);
     container.addChild(sink);
     //caret.caretSink = sink;
     return newNode;
 };
 export const insertAfter = (after) => (data, model) => {
-    const { caret, renderedBounds, nodeFromSink, sinkFromNode, container } = model;
+    const { caret, renderedBounds, nodeFromSink, container } = model;
     const newNode = DoubleLinkedList.insertAfter(after)(data);
     const sink = new CaretSink(() => {
         const [left, top, width, height] = renderedBounds.get(newNode);
@@ -54,13 +52,13 @@ export const insertAfter = (after) => (data, model) => {
         };
     });
     nodeFromSink.set(sink, newNode);
-    sinkFromNode.set(newNode, sink);
     container.addChild(sink);
     caret.caretSink = sink;
     return newNode;
 };
 export const remove = (node, model) => {
-    const { caret, renderedBounds, nodeFromSink, sinkFromNode, container } = model;
+    const { caret, renderedBounds, nodeFromSink, container } = model;
+    const sinkFromNode = nodeFromSink.inverse;
     const prev = DoubleLinkedList.remove(node);
     if (caret.caretSink === sinkFromNode.get(node))
         caret.caretSink = sinkFromNode.get(prev);

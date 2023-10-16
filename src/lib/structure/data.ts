@@ -161,12 +161,13 @@ export class EndoSetMapWithReverse<T> extends SetMapWithReverse<T, T> {
   }
 }
 
+// Like MapWithInverse except that the reverse is a setMap (multiple keys can point to the same value)
 type MapWithReverseArgs<K, V> =
   | ConstructorParameters<typeof Map<K, V>>
   | [{ [REVERSE_KEY]: ReverseMap<V, K> }];
 export class MapWithReverse<K, V> extends Map<K, V> {
   // `super.set` may be used in the Map constructor, so this may be initialized already
-  _reverse: ReverseMap<V, K>;
+  private _reverse: ReverseMap<V, K>;
   get reverse() {
     return this._reverse;
   }
@@ -269,7 +270,7 @@ type MapWithInverseArgs<K, V> =
   | [{ [INVERSE_KEY]: MapWithInverse<V, K> }];
 export class MapWithInverse<K, V> extends Map<K, V> {
   // `super.set` may be used in the Map constructor, so this may be initialized already
-  _inverse: MapWithInverse<V, K>;
+  protected _inverse: MapWithInverse<V, K>;
   get inverse() {
     return this._inverse;
   }
@@ -319,7 +320,7 @@ export class MapWithInverse<K, V> extends Map<K, V> {
 // Could equivalently be called "AutomorphicMap" (https://en.wikipedia.org/wiki/Automorphism)
 // A Set of `EndoMapWithInverse`s and an identity EndoMap generate a group.
 export class EndoMapWithInverse<T> extends MapWithInverse<T, T> {
-  _inverse: EndoMapWithInverse<T>;
+  protected _inverse: EndoMapWithInverse<T>;
   get inverse() {
     return this._inverse;
   }

@@ -304,6 +304,40 @@ successor(x) + y = successor(x + y)
 </p>
 <img src="bidirectional.svg" />
 
+<h2>Future Work</h2>
+<h3>User-defined functions</h3>
+<p>
+  Right now, programs are evaluated forwards and backwards. If you write your
+  program carefully, the entire thing will be an isomorphism. This means that we
+  can let the user define their own bidirectional functions just by writing some
+  lines of code in the body like normal coding. Not all functions written this
+  way would be bidirectional, but its easy to check if they are just by looking
+  at which variables depend on which variables in the body of a function.
+</p>
+<h3>Blending with relational programming</h3>
+<p>
+  We can add a definition to functions for when too many arguments / results are
+  missing for there to be a single answer. For example
+</p>
+<pre>
+const +(a,b) = 3
+</pre>
+<p>
+  could give an iterable which gives all pairs of `a`s and `b`s that add to 3.
+  It could also give a dependency graph: a = 3-b, b = 3-a so that a and b can be
+  filled in later.
+</p>
+<p>
+  Definitions could also be added for when multiple arguments are actually the
+  same variable.
+</p>
+<p>
+  Although this seems tedious, it results in programs that run much faster than
+  relational programs, but can be written in a similar way. Don't get me wrong,
+  relational languages are way more expressive, but I think this could be nice
+  syntax to have for non-relational languages.
+</p>
+
 <h2>
   Comments
   <span

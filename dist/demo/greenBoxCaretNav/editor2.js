@@ -1,4 +1,4 @@
-import { makeCaretFunctions } from "../../lib/caret/caret.js";
+import { makeNestedCaretFunctions } from "../../lib/caret/nestedCaret.js";
 import { closestElementToPosition } from "../../lib/dom/closestElement.js";
 import * as Iter from "../../lib/structure/Iterable.js";
 // Doesn't support selection yet. Traversal would have to be added to makeCaretFunctions
@@ -11,13 +11,15 @@ const parent = (e) => e.parentElement?.closest("[isEditor=true]") ?? null;
 const descendents = (e) => e.querySelectorAll(`[isEditor=true]`);
 const children = (e) => Iter.filter(descendents(e), (d) => parent(d) === e);
 const closestChildToPosition = (e) => (p) => closestElementToPosition(e, children(e), p);
-const setCarryX = (e) => (carryX) => (e.carryX = carryX);
-const { next } = makeCaretFunctions({
+// const setCarryX = (e: EditorElement) => (carryX: number | null) =>
+//   (e.carryX = carryX);
+let carryX = null;
+const { next, traverseEditors } = makeNestedCaretFunctions({
     getBounds: (e) => getBoundingClientRect(e),
     parent,
     children,
-    getCarryX: (e) => e.carryX,
-    setCarryX,
+    getCarryX: (e) => carryX,
+    setCarryX: (_) => (v) => (carryX = v),
 });
 /** EditorElement just contains data (some data is functions) */
 export class EditorElement extends HTMLElement {
@@ -49,6 +51,9 @@ export class EditorElement extends HTMLElement {
         :host([isFocused=true]) { /* browser :focus happens if children are focused too :( */
           border-right: 2px solid black;
         }
+        :host([isSelected=true]) { /* browser :focus happens if children are focused too :( */
+          outline: 2px solid yellow;
+        }
       `;
         this.shadowRoot.append(baseStyleEl, document.createElement("slot"));
         if (!this.hasAttribute("tabindex"))
@@ -63,6 +68,8 @@ export class EditorElement extends HTMLElement {
             e.preventDefault();
             e.stopPropagation();
             closestChildToPosition(this)([e.clientX, e.clientY])?.makeFocused();
+            carryX = null;
+            clearSelection();
         });
         this.addEventListener("mousemove", (e) => {
             if (e.buttons === 1) {
@@ -70,8 +77,10 @@ export class EditorElement extends HTMLElement {
                 e.stopPropagation();
                 const closest = closestChildToPosition(this)([e.clientX, e.clientY]);
                 if (closest) {
+                    select(closest);
                     closest.makeFocused();
                 }
+                carryX = null;
             }
         });
         this.addEventListener("keydown", (e) => {
@@ -81,7 +90,6 @@ export class EditorElement extends HTMLElement {
             }
         });
     }
-    carryX = null;
     makeFocused() {
         this.focus({ preventScroll: true });
         this.setAttribute("isFocused", "true");
@@ -89,7 +97,6 @@ export class EditorElement extends HTMLElement {
     }
     makeUnfocused() {
         this.setAttribute("isFocused", "false");
-        setCarryX(this)(null);
     }
 }
 customElements.define("poly-editor", EditorElement);
@@ -98,4 +105,29 @@ function isArrowKey(key) {
         key === "ArrowRight" ||
         key === "ArrowDown" ||
         key === "ArrowLeft");
+}
+let SELECTION_ANCHOR = null; //⚓
+let SELECTION_END = null;
+// when selection changes the old SELECTION span is cleared and the new one is highlighted
+// function clearSelection()
+function select(editor) {
+    if (SELECTION_ANCHOR === null) {
+        SELECTION_ANCHOR = editor;
+        return;
+    }
+    clearExistingSelection();
+    SELECTION_END = editor;
+    for (const e of traverseEditors(SELECTION_ANCHOR, SELECTION_END))
+        e.setAttribute("isSelected", "true");
+}
+function clearSelection() {
+    clearExistingSelection();
+    SELECTION_ANCHOR = null;
+    SELECTION_END = null;
+}
+function clearExistingSelection() {
+    if (SELECTION_ANCHOR && SELECTION_END) {
+        for (const e of traverseEditors(SELECTION_ANCHOR, SELECTION_END))
+            e.setAttribute("isSelected", "false");
+    }
 }

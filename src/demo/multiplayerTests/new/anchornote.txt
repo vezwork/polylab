@@ -1,0 +1,16 @@
+My code is currently not taking into account the anchor. This is an issue
+because undo and redo does not move the anchor, resulting in incorrect behaviour.
+This is a separate issue from displacement of other carets during undo and redo; 
+because, for example, the anchor may need to be in a particular place when undoing
+even if it was not displaced.
+
+Solution ideas:
+1. separate caret movement from insertion and deletion and allow for undoing caret movement.
+  - further: add history grouping / history recording
+  - note: displacement is different from recording caret movement. We do not want to undo other people's caret movement.
+2. add `caretRangeIns` and `caretRangeDel` and allow adding these to history.
+  - `caretIns` and `caretDel` would have to be modified to move the anchor to the same place as the main caret.
+  - more "dumb" solution. Harder to manage over time probably, but may be simple enough for now?
+
+
+aside: multicaret stuff is suprisiningly complicated! I thought the complexity could be avoided by ignoring unordered edits from peers!

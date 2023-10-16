@@ -1,5 +1,5 @@
-import { makeCaretFunctions } from "../../lib/caret/caret.js";
-import { YInterval } from "../../lib/caret/caretNav.js";
+import { makeNestedCaretFunctions } from "../../lib/caret/nestedCaret.js";
+import { YInterval } from "../../lib/caret/caret.js";
 import {
   centerBesideD,
   centerOverD,
@@ -242,7 +242,7 @@ const {
 });
 
 let carryX: number | null = null;
-const { next, lines: uncachedLines } = makeCaretFunctions<DrawTree>({
+const { next, lines: uncachedLines } = makeNestedCaretFunctions<DrawTree>({
   getBounds,
   getCarryX: () => carryX,
   setCarryX: () => (newCarryX) => (carryX = newCarryX),

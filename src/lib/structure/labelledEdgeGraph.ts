@@ -2,7 +2,7 @@ import { at } from "./Arrays.js";
 import * as Fn from "./Functions.js";
 import * as Iter from "./Iterable.js";
 
-export type EpiInvertible<R> = {
+export type EndoInvertible<R> = {
   v: R;
   inv: (v: R) => R;
 };
@@ -21,30 +21,31 @@ export type EpiInvertible<R> = {
 //  * - i must be in from(to(i)) & o must be in to(from(o))
 //  * - R must be inverted between to and from i.e. if (r, o) in to(i) then (inv(r), i) in from(o)
 //  */
-export type EpiInvertibleMultiRel<T, R> = {
-  to: (t: T) => Iterable<[EpiInvertible<R>, T]>;
-  from: (t: T) => Iterable<[EpiInvertible<R>, T]>;
+
+export type EndoInvertibleMultiRel<T, R> = {
+  to: (t: T) => Iterable<[EndoInvertible<R>, T]>;
+  from: (t: T) => Iterable<[EndoInvertible<R>, T]>;
 };
 export const mapIMR =
   <T, R, T2, R2>(
     mapFrom: (t2: T2) => T,
     mapTo: (
       prev: T2
-    ) => ([r, t]: [EpiInvertible<R>, T]) => [EpiInvertible<R2>, T2] // TODO: what is the condition on mapFrom and mapTo?
+    ) => ([r, t]: [EndoInvertible<R>, T]) => [EndoInvertible<R2>, T2] // TODO: what is the condition on mapFrom and mapTo?
   ) =>
-  (m: EpiInvertibleMultiRel<T, R>): EpiInvertibleMultiRel<T2, R2> => ({
+  (m: EndoInvertibleMultiRel<T, R>): EndoInvertibleMultiRel<T2, R2> => ({
     to: (t2: T2) => Iter.map(m.to(mapFrom(t2)), mapTo(t2)),
     from: (t2: T2) => Iter.map(m.from(mapFrom(t2)), mapTo(t2)),
   });
 
-export type EpiMultiRel<T, R> = (t: T) => Iterable<[R, T]>;
+export type EndoMultiRel<T, R> = (t: T) => Iterable<[R, T]>;
 
 export const mapMR =
   <T, R, T2, R2>(
     mapFrom: (t2: T2) => T,
     mapTo: (prev: T2) => ([r, t]: [R, T]) => [R2, T2] // TODO: what is the condition on mapFrom and mapTo?
   ) =>
-  (m: EpiMultiRel<T, R>): EpiMultiRel<T2, R2> =>
+  (m: EndoMultiRel<T, R>): EndoMultiRel<T2, R2> =>
   (t2: T2) =>
     Iter.map(m(mapFrom(t2)), mapTo(t2));
 

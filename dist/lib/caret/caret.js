@@ -1,76 +1,162 @@
-import { makeCaretNavFunctions } from "./caretNav.js";
-import { makeTreeFunctions } from "../structure/tree.js";
-export function makeCaretFunctions({ getBounds, parent, children, getCarryX, setCarryX, }) {
-    const { lines, childAbove, childAfter, childBefore, childBelow, belowInFirstLine, aboveInLastLine, } = makeCaretNavFunctions({
-        getBounds,
-        children,
-        getCarryX,
-    });
-    const EdElTree = makeTreeFunctions({
-        parent,
-        children,
-    });
-    const firstSpatialChild = (e) => lines(children(e))?.at(0)?.at(0)?.data ?? null;
-    const lastSpatialChild = (e) => lines(children(e))?.at(-1)?.at(-1)?.data ?? null;
-    const toChild = (parent, child, direction) => {
-        const isRoot = EdElTree.isRoot(parent);
+import { findIndex2D, worst, wrapLinesAddXIndex2D, } from "../structure/Arrays.js";
+import { lerp, segXProj } from "../math/Line2.js";
+import { make2DLineFunctions } from "../math/LineT.js";
+import { distance } from "../math/Vec2.js";
+import * as Iter from "../structure/Iterable.js";
+export function makeCaretFunctions({ getBounds, }) {
+    const to = (children, child, direction, carryX, isRoot = false) => {
         if ("ArrowUp" === direction)
-            return childAbove(parent, isRoot)(child);
+            return childAbove(children, carryX, isRoot)(child);
         if ("ArrowRight" === direction)
-            return childAfter(parent)(child);
+            return childAfter(children)(child);
         if ("ArrowDown" === direction)
-            return childBelow(parent, isRoot)(child);
+            return childBelow(children, carryX, isRoot)(child);
         if ("ArrowLeft" === direction)
-            return childBefore(parent)(child);
+            return childBefore(children)(child);
         return null;
     };
-    const next = (e, direction) => {
-        if (direction === "ArrowDown" || direction === "ArrowUp")
-            setCarryX(e)(getCarryX(e) ?? getBounds(e).right);
-        if (direction === "ArrowLeft" || direction === "ArrowRight")
-            setCarryX(e)(null);
-        return direction === "ArrowLeft" && EdElTree.hasChildren(e)
-            ? lastSpatialChild(e)
-            : broadenView(e, direction);
-    };
-    const broadenView = (e, direction) => {
-        const par = parent(e);
-        if (par === null)
-            return null;
-        let eNext = toChild(par, e, direction);
-        return eNext
-            ? zoomIn(eNext, direction)
-            : direction === "ArrowRight"
-                ? par
-                : broadenView(par, direction);
-    };
-    const zoomIn = (editor, direction) => {
-        if (editor === null)
-            return null;
-        if (EdElTree.isLeaf(editor))
-            return editor;
-        if (direction === "ArrowLeft")
-            return editor;
-        else if (direction === "ArrowRight")
-            return zoomIn(firstSpatialChild(editor), direction);
-        else if (direction === "ArrowDown" || direction === "ArrowUp") {
-            const x = getCarryX(editor) ?? 0; // This is guaranteed to be defined in `next` if ArrowDown or ArrowUp was pressed
-            const myBound = getBounds(editor);
-            const closestIn = direction === "ArrowDown"
-                ? belowInFirstLine(x, children(editor))
-                : direction === "ArrowUp"
-                    ? aboveInLastLine(x, children(editor))
-                    : null;
-            if (closestIn &&
-                Math.abs(getBounds(closestIn).right - x) <= Math.abs(myBound.right - x))
-                return zoomIn(closestIn, direction);
-            else
-                return editor;
+    const childAbove = (children, carryX, isRoot = false) => (childEditor) => above(childEditor, children, isRoot, carryX);
+    const childBelow = (children, carryX, isRoot = false) => (childEditor) => below(childEditor, children, isRoot, carryX);
+    const childAfter = (children) => (childEditor) => after(childEditor, children);
+    const childBefore = (children) => (childEditor) => before(childEditor, children);
+    const top = ({ n, interval: [top, _], }) => [n, top]; // assuming interval[0] is top, which is not enforced
+    const yIntervalFromTop = ([n, top]) => ({
+        n,
+        interval: [top, top],
+    });
+    function after(box, boxes) {
+        const ls = lines(boxes);
+        const index = findIndex2D(ls, (p) => p === box);
+        const [y1, x1] = wrapLinesAddXIndex2D(ls, index, +1);
+        return ls[y1]?.[x1] ?? null;
+    }
+    function below(box, boxes, isRoot, carryX) {
+        const ls = lines(boxes);
+        const [y, x] = findIndex2D(ls, (p) => p === box);
+        const nextLine = ls[y + 1] ?? [];
+        const closestInNextLine = worst(nextLine, (data) => carryX ? numXDist(carryX, data) : xDist(box, data));
+        if (closestInNextLine) {
+            return closestInNextLine ?? null;
         }
-        return null;
-    };
+        else if (isRoot) {
+            return ls[y].at(-1) ?? null;
+        }
+        else
+            return null;
+    }
+    function before(box, boxes) {
+        const ls = lines(boxes);
+        const index = findIndex2D(ls, (p) => p === box);
+        const [y1, x1] = wrapLinesAddXIndex2D(ls, index, -1);
+        return ls[y1]?.[x1] ?? null;
+    }
+    function above(box, boxes, isRoot, carryX) {
+        const ls = lines(boxes);
+        const [y, x] = findIndex2D(ls, (p) => p === box);
+        const prevLine = ls[y - 1] ?? [];
+        const closestInPrevLine = worst(prevLine, (data) => carryX ? numXDist(carryX, data) : xDist(box, data));
+        if (closestInPrevLine) {
+            return closestInPrevLine ?? null;
+        }
+        else if (isRoot) {
+            return ls[y].at(0) ?? null;
+        }
+        else
+            return null;
+    }
+    function belowInFirstLine(x, boxes) {
+        const ls = lines(boxes);
+        const firstLine = ls.at(0) ?? [];
+        const closestInFirstLine = worst(firstLine, (data) => numXDist(x, data));
+        return closestInFirstLine ?? null;
+    }
+    function aboveInLastLine(x, boxes) {
+        const ls = lines(boxes);
+        const lastLine = ls.at(-1) ?? [];
+        const closestInLastLine = worst(lastLine, (data) => numXDist(x, data));
+        return closestInLastLine ?? null;
+    }
+    const { mergeAndSort } = make2DLineFunctions({
+        dist,
+        // wish these could be editors/polygons that get deconstructed, projected, then reconstructed somehow
+        xProj: ([p1, p2]) => (p) => yIntervalFromTop(segXProj([top(p1), top(p2)])(top(p))),
+        isPointLeft: (p1) => (p2) => p1.n < p2.n,
+        isPointBelow: (p1) => (p2) => top(p1)[1] > top(p2)[1],
+    });
+    function leftAndRightYIntervalsFromEditorElement(el) {
+        const r = getBounds(el);
+        const yInterval = {
+            interval: [r.top, r.bottom],
+            data: el,
+        };
+        return [
+            { ...yInterval, n: r.left },
+            { ...yInterval, n: r.right },
+        ];
+    }
+    function lines(els) {
+        const done = new Set([undefined]);
+        return yIntervalLines(els).map((line) => line.filter(({ data }) => {
+            if (done.has(data))
+                return false;
+            done.add(data);
+            return true;
+        }).map(({ data }) => data));
+    }
+    function yIntervalLines(els) {
+        const caretSinks = Iter.map(els, leftAndRightYIntervalsFromEditorElement);
+        return mergeAndSort(caretSinks);
+    }
+    function dist(a, b) {
+        const lengths = [];
+        for (let i = 0; i < 1; i += 0.1) {
+            const aP = lerp([
+                [a.n, a.interval[0]],
+                [a.n, a.interval[1]],
+            ])(i);
+            const bP = lerp([
+                [b.n, b.interval[0]],
+                [b.n, b.interval[1]],
+            ])(i);
+            lengths.push(distance(aP, bP));
+        }
+        return lengths.reduce((prev, cur) => prev + cur / lengths.length, 0); // average of 10 distance measurements across the intervals
+        //   const i = seperatingInterval(a.interval, b.interval);
+        //   if (i === null) return Math.sqrt((a.n - b.n) ** 2); // intervals overlap so just get 1D distance
+        //   return xBiasedDist([a.n, i[0]], [b.n, i[1]]);
+    }
+    // Why is there dist and xDist?? Shouldn't there just be one? Or one defined in terms of the other?
+    function numXDist(n, el) {
+        const a = getBounds(el);
+        if (n > a.left && n < a.right)
+            return 0;
+        if (n >= a.right)
+            return n - a.right;
+        if (n <= a.left)
+            return a.left - n;
+        return 0;
+    }
+    function xDist(el1, el2) {
+        const a = getBounds(el1);
+        const b = getBounds(el2);
+        if (a.left > b.left && a.right < b.right)
+            return 0;
+        if (b.left > a.left && b.right < a.right)
+            return 0;
+        if (a.left > b.right)
+            return a.left - b.right;
+        if (b.left < a.right)
+            return b.left - a.right;
+        return 0;
+    }
     return {
-        next,
         lines,
+        to,
+        childAbove,
+        childAfter,
+        childBefore,
+        childBelow,
+        belowInFirstLine,
+        aboveInLastLine,
     };
 }

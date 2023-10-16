@@ -5,5 +5,8 @@
     "strict": true,
     "module": "esnext",
     "target": "esnext"
+  },
+  "watchOptions": {
+    "excludeDirectories": ["./deno"]
   }
 }

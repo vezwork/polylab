@@ -1,4 +1,4 @@
-import { makeCaretFunctions } from "../../lib/caret/caret.js";
+import { makeNestedCaretFunctions } from "../../lib/caret/nestedCaret.js";
 import { centerBesideD, centerOverD, justBesideD, lineD, overD, padD, scaleD, textD, translateD, justOverD, transformD, draw, caretable, drawables, image, pathD, } from "../../lib/draw/draw4.js";
 import { withIndex } from "../../lib/structure/Iterable.js";
 import { apply, id, inv, lerp, scale, translation, _, } from "../../lib/math/CtxTransform.js";
@@ -124,7 +124,7 @@ const { descendentsBreadthFirst: des, hasChildren, nodeAndAncestors, rootIndexPa
     children,
 });
 let carryX = null;
-const { next, lines: uncachedLines } = makeCaretFunctions({
+const { next, lines: uncachedLines } = makeNestedCaretFunctions({
     getBounds,
     getCarryX: () => carryX,
     setCarryX: () => (newCarryX) => (carryX = newCarryX),

@@ -1,4 +1,4 @@
-import { makeCaretFunctions } from "../../lib/caret/caret.js";
+import { makeNestedCaretFunctions } from "../../lib/caret/nestedCaret.js";
 import { closestElementToPosition } from "../../lib/dom/closestElement.js";
 import * as Iter from "../../lib/structure/Iterable.js";
 
@@ -23,15 +23,15 @@ const children = (e: EditorElement) =>
 const closestChildToPosition = (e: EditorElement) => (p: [number, number]) =>
   closestElementToPosition(e, children(e), p);
 
-const setCarryX = (e: EditorElement) => (carryX: number | null) =>
-  (e.carryX = carryX);
-
-const { next } = makeCaretFunctions<EditorElement>({
+// const setCarryX = (e: EditorElement) => (carryX: number | null) =>
+//   (e.carryX = carryX);
+let carryX: number | null = null;
+const { next, traverseEditors } = makeNestedCaretFunctions<EditorElement>({
   getBounds: (e: EditorElement) => getBoundingClientRect(e),
   parent,
   children,
-  getCarryX: (e) => e.carryX,
-  setCarryX,
+  getCarryX: (e) => carryX,
+  setCarryX: (_) => (v) => (carryX = v),
 });
 
 export type EditorArgumentObject = {
@@ -72,6 +72,9 @@ export class EditorElement extends HTMLElement {
         :host([isFocused=true]) { /* browser :focus happens if children are focused too :( */
           border-right: 2px solid black;
         }
+        :host([isSelected=true]) { /* browser :focus happens if children are focused too :( */
+          outline: 2px solid yellow;
+        }
       `;
     (this.shadowRoot as ShadowRoot).append(
       baseStyleEl,
@@ -90,6 +93,8 @@ export class EditorElement extends HTMLElement {
       e.preventDefault();
       e.stopPropagation();
       closestChildToPosition(this)([e.clientX, e.clientY])?.makeFocused();
+      carryX = null;
+      clearSelection();
     });
     this.addEventListener("mousemove", (e) => {
       if (e.buttons === 1) {
@@ -97,8 +102,10 @@ export class EditorElement extends HTMLElement {
         e.stopPropagation();
         const closest = closestChildToPosition(this)([e.clientX, e.clientY]);
         if (closest) {
+          select(closest);
           closest.makeFocused();
         }
+        carryX = null;
       }
     });
     this.addEventListener("keydown", (e) => {
@@ -109,8 +116,6 @@ export class EditorElement extends HTMLElement {
     });
   }
 
-  carryX: number | null = null;
-
   makeFocused() {
     this.focus({ preventScroll: true });
     this.setAttribute("isFocused", "true");
@@ -118,7 +123,6 @@ export class EditorElement extends HTMLElement {
   }
   makeUnfocused() {
     this.setAttribute("isFocused", "false");
-    setCarryX(this)(null);
   }
 }
 customElements.define("poly-editor", EditorElement);
@@ -132,4 +136,33 @@ function isArrowKey(
     key === "ArrowDown" ||
     key === "ArrowLeft"
   );
+}
+
+let SELECTION_ANCHOR: EditorElement | null = null; //⚓
+let SELECTION_END: EditorElement | null = null;
+// when selection changes the old SELECTION span is cleared and the new one is highlighted
+// function clearSelection()
+function select(editor: EditorElement) {
+  if (SELECTION_ANCHOR === null) {
+    SELECTION_ANCHOR = editor;
+    return;
+  }
+  clearExistingSelection();
+
+  SELECTION_END = editor;
+  for (const e of traverseEditors(SELECTION_ANCHOR, SELECTION_END))
+    e.setAttribute("isSelected", "true");
+}
+
+function clearSelection() {
+  clearExistingSelection();
+  SELECTION_ANCHOR = null;
+  SELECTION_END = null;
+}
+
+function clearExistingSelection() {
+  if (SELECTION_ANCHOR && SELECTION_END) {
+    for (const e of traverseEditors(SELECTION_ANCHOR, SELECTION_END))
+      e.setAttribute("isSelected", "false");
+  }
 }

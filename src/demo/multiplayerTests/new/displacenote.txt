@@ -1,0 +1,29 @@
+When carethosts are deleted, all carets pointing to them have to move.
+But what happens if you un-delete a caret host? The caret hosts that
+were pointing to it should return. There's some ways to think about this:
+
+1. carets can secretly point at deleted things but look like they are pointing to the closest thing on the left to the deleted thing
+```
+export const getNotDeletedHostToLeft = (c: CaretHost) => {
+    for (const host of leftOf(c)) {
+        if (!host.deleted) return hosts
+    }
+};
+```
+  - Does this mean carethosts have bounds when deleted?
+    - could define this to be the bounds of the carethost if it lived in a world where it was undeleted
+      - seems a bit wack if someone else inserts stuff
+        - nvm, there is just two possibilities: one where content is inserted before deleted things and one where it is inserted after.
+          currently content is inserted before deleted things.
+2. history keeps track of which carets were moved
+  - what if someone else moves the caret? 
+
+3. displacement tracking (seems incomplete because it can only move back to a specific place, not a sequence of places)
+```
+export type Caret = {
+  at: CaretHost;
+  displacedFrom: CaretHost | null; // a deleted CaretHost
+  readonly color: string;
+};
+```
+ - Or does it mean that carets keep track of where they were displaced from and know how to update their position when carethosts are undeleted?

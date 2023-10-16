@@ -1,0 +1,18 @@
+const ins = 1;
+// create new carethost
+// insert it (update hosts)
+// move all carets to next()
+// save ref to carethost
+// return function to del ref
+const del = 1;
+// mark carethost as del'd
+// update hosts
+// move all carets to prev()
+// save ref to carethost
+// return function undel ref
+const undel = 1;
+
+const netins = 1;
+// same as ins, but no undo
+const netDel = 1;
+// same as del, but no undo

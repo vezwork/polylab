@@ -1,3 +1,12 @@
+export function randomNum() {
+    return Math.round(Math.random() * 0xffffff);
+}
+export function randomRGB() {
+    return rgbFromNum(randomNum());
+}
+export function randomCssRgb() {
+    return cssRgbFromNum(randomNum());
+}
 export function cssRgbFromGradientSample(c1, c2, percent) {
     return cssRgbFromRgb(rgbFromGradientSample(c1, c2, percent));
 }

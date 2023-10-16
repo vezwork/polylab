@@ -1,0 +1,4 @@
+If someone deletes some chars that are in your history, it shouldn't necessarily be
+deleted from your history, but when you ctrl-z it should be "fast-forwarded" so you
+don't have to ctrl-z multiple times to get through history items that don't change
+the document in its current state.

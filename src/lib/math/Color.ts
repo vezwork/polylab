@@ -9,7 +9,6 @@ export function randomRGB() {
 export function randomCssRgb() {
   return cssRgbFromNum(randomNum());
 }
-
 export function cssRgbFromGradientSample(c1, c2, percent) {
   return cssRgbFromRgb(rgbFromGradientSample(c1, c2, percent));
 }

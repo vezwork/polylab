@@ -1,8 +1,9 @@
+import { setupFullscreenCanvas } from "../../lib/draw/setupFullscreenCanvas.js";
 import { randomCssRgb } from "../../lib/math/Color.js";
 import { subAngles } from "../../lib/math/Number.js";
-import { angleBetween, distance, rotateAround, } from "../../lib/math/Vec2.js";
-const c = document.getElementById("c");
-const ctx = c.getContext("2d");
+import { angleBetween, distance, normalVec2FromAngle, rotateAround, } from "../../lib/math/Vec2.js";
+const ctx = setupFullscreenCanvas("c");
+const c = ctx.canvas;
 const mouse = [0, 0];
 let mousedown = false;
 const paths = [
@@ -19,7 +20,8 @@ c.addEventListener("mouseup", (e) => {
     mousedown = false;
 });
 function draw() {
-    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "DarkSlateBlue";
+    ctx.fillRect(0, 0, c.width, c.height);
     {
         const { path, color } = paths.at(-1);
         if (!mousedown && path.length > 0) {
@@ -38,15 +40,24 @@ function draw() {
         if (path[0])
             ctx.moveTo(...path[0]);
         for (let i = 0; i < path.length; i++) {
+            const p_1 = path[i + 1];
             const p0 = path[i];
             const p1 = path[i - 1];
             const p2 = path[i - 2];
+            const p3 = path[i - 3];
             if (p0)
                 ctx.lineTo(...p0);
             // minimize something like the 2nd derivative??
             if (p0 && p1 && p2) {
-                const targetAngle = 0;
-                const interiorAngle = targetAngle + subAngles(angleBetween(p0, p1), angleBetween(p1, p2));
+                const curAngle = subAngles(angleBetween(p0, p1), angleBetween(p1, p2));
+                const prevAngle = p_1
+                    ? subAngles(angleBetween(p_1, p0), angleBetween(p0, p1))
+                    : curAngle;
+                const nextAngle = p3
+                    ? subAngles(angleBetween(p1, p2), angleBetween(p2, p3))
+                    : curAngle;
+                const targetAngle = angleBetween(normalVec2FromAngle(prevAngle), normalVec2FromAngle(nextAngle));
+                const interiorAngleGo = targetAngle + curAngle;
                 // with path length weighting
                 let lenToI = 0;
                 let totalLen = 0;
@@ -61,13 +72,13 @@ function draw() {
                 const b = lenToI / totalLen;
                 for (let j = i; j < path.length; j++) {
                     const pp = path[j];
-                    const res = rotateAround(p1)(pp, b * interiorAngle * 0.01);
+                    const res = rotateAround(p1)(pp, b * interiorAngleGo * 0.01);
                     pp[0] = res[0];
                     pp[1] = res[1];
                 }
                 for (let j = i - 2; j >= 0; j--) {
                     const pp = path[j];
-                    const res = rotateAround(p1)(pp, (1 - b) * -interiorAngle * 0.01);
+                    const res = rotateAround(p1)(pp, (1 - b) * -interiorAngleGo * 0.01);
                     pp[0] = res[0];
                     pp[1] = res[1];
                 }

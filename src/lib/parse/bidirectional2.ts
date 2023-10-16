@@ -13,7 +13,7 @@ export const _ = (...parsers) => ({
     let result: any = [];
     result.parent = parent;
     for (const parser of parsers) {
-      const out = parser.forward(result, str);
+      const out = parser.forward({ key: result.length, node: result }, str);
       str = out.str;
       if (out.result !== null) result.push(out.result);
     }
@@ -33,6 +33,47 @@ export const _ = (...parsers) => ({
     return { str: string, take: true };
   },
 });
+// forward: IN => { result: OUT, str: IN }
+// backward: OUT => { string: IN, left: OUT}
+export const __ = (...parsers) => ({
+  forward: (parent, inp) => {
+    let str = inp;
+    let result: any = [];
+    result.parent = parent;
+    let i = 0;
+    result.i = parsers.length;
+    for (const parser of parsers) {
+      try {
+        const out = parser.forward({ key: result.length, node: result }, str);
+        str = out.str;
+        if (out.result !== null) result.push(out.result);
+      } catch (e) {
+        if (i === 0) thro("__ fail parsing " + str);
+        result.i = i;
+        break;
+      }
+      i++;
+    }
+    return { result, str };
+  },
+  backward: (resultArr) => {
+    let left = resultArr;
+    let string = "";
+    let i = 0;
+    for (const parser of parsers) {
+      if (i >= resultArr.i) break;
+      const out = parser.backward(left[0]);
+      string += out.str;
+      if (out.take === true) {
+        left = left.slice(1);
+      }
+      i++;
+    }
+    if (left.length > 0) thro("backward __ error: not fully consumed");
+    return { str: string, take: true };
+  },
+});
+
 export const star = (p) => ({
   forward: (parent, inp) => {
     let str = inp;
@@ -40,7 +81,7 @@ export const star = (p) => ({
     result.parent = parent;
     try {
       while (true) {
-        const out = p.forward(result, str);
+        const out = p.forward({ key: result.length, node: result }, str);
         str = out.str;
         if (out.result !== null) result.push(out.result);
       }
@@ -68,7 +109,7 @@ export const or = (...parsers) => ({
     for (const parser of parsers) {
       try {
         const result: any = { i, parent };
-        const out = parser.forward(result, str);
+        const out = parser.forward({ node: result }, str);
         result.out = out.result;
         return { result, str: out.str };
       } catch (e) {}
@@ -83,7 +124,7 @@ export const namedOr = (obj: { [name: string]: any }) => ({
     for (const [name, parser] of Object.entries(obj)) {
       try {
         const result: any = { name, parent };
-        const out = parser.forward(result, str);
+        const out = parser.forward({ node: result }, str);
         result.out = out.result;
         return { result, str: out.str };
       } catch (e) {}
@@ -180,6 +221,7 @@ export const ignore = (filler) => (p) => ({
 });
 
 export const i_ = (...ps) => unwrap(_(...ps));
+export const i__ = (...ps) => unwrap(__(...ps)); //dangerous! doesn't keep track of how many parser succeeded so will backward them all
 
 export const until = (cond) => (p) => star(i_(not(cond), p));
 

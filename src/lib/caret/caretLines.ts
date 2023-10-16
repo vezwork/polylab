@@ -103,5 +103,6 @@ export function makeCaretFunctions<CaretHost>({
 
   return {
     lines,
+    yIntervalLines,
   };
 }

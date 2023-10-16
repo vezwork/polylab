@@ -1,27 +1,18 @@
 import { pairs } from "../structure/Iterable.js";
 import { EndoSetMapWithReverse } from "../structure/data.js";
+import { isAside, isRight, segXProj } from "./Line2.js";
 // assumes lines are monotonic in x coord i.e. isPointLeft(l[n], l[n+1]) === true for all l and n.
 export function make2DLineFunctions({ dist, // for mergeAndSort
-xProj, isPointLeft, isPointBelow, }) {
-    function isRight(l1, l2) {
-        if (l1.length === 0 || l2.length === 0)
-            return true;
-        return isPointLeft(l1.at(-1))(l2[0]);
-    }
-    function isLeft(l1, l2) {
-        return isRight(l2, l1);
-    }
-    function isAside(l1, l2) {
-        return isRight(l1, l2) || isLeft(l1, l2);
-    }
+toVec2, }) {
     // -1: point below
     // 0: point and line incomparable
     // 1: point above
     function pointCompareLine(p, line) {
         for (const seg of pairs(line)) {
-            if (!isAside([p], seg)) {
-                const pxOnSeg = xProj(seg)(p);
-                return isPointBelow(pxOnSeg)(p) ? 1 : -1;
+            const vec2Seg = seg.map(toVec2);
+            if (!isAside([toVec2(p)], vec2Seg)) {
+                const pxOnSeg = segXProj(vec2Seg)(toVec2(p));
+                return pxOnSeg[1] > toVec2(p)[1] ? 1 : -1;
             }
         }
         return 0;
@@ -101,7 +92,9 @@ xProj, isPointLeft, isPointBelow, }) {
                     continue;
                 if (!isBeside(l, ol))
                     continue;
-                const [left, right] = isRight(l, ol) ? [l, ol] : [ol, l];
+                const [left, right] = isRight(l.map(toVec2), ol.map(toVec2))
+                    ? [l, ol]
+                    : [ol, l];
                 const distance = dist(left.at(-1), right.at(0));
                 cands.push({ left, right, distance });
             }
@@ -110,8 +103,6 @@ xProj, isPointLeft, isPointBelow, }) {
     };
     return {
         isAside,
-        isRight,
-        isLeft,
         isAbove,
         mergeAndSort,
         sortTransitivelyBeside,

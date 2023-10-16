@@ -1,6 +1,6 @@
 import {
   findIndex2D,
-  worst,
+  least,
   wrapLinesAddXIndex2D,
 } from "../structure/Arrays.js";
 import { Bounds } from "./caretLines.js";
@@ -32,19 +32,19 @@ export function makeCaretLineOpFunctions<CaretHost>({
     line: CaretHost[],
     carryX: number | null
   ) =>
-    worst(line, (data) =>
+    least(line, (data) =>
       carryX ? numXDist(carryX, data!) : xDist(box, data!)
     );
 
   function belowInFirstLine(x: number, lines: CaretHost[][]): CaretHost | null {
     const firstLine = lines.at(0) ?? [];
-    const closestInFirstLine = worst(firstLine, (data) => numXDist(x, data!));
+    const closestInFirstLine = least(firstLine, (data) => numXDist(x, data!));
 
     return closestInFirstLine ?? null;
   }
   function aboveInLastLine(x: number, lines: CaretHost[][]): CaretHost | null {
     const lastLine = lines.at(-1) ?? [];
-    const closestInLastLine = worst(lastLine, (data) => numXDist(x, data!));
+    const closestInLastLine = least(lastLine, (data) => numXDist(x, data!));
 
     return closestInLastLine ?? null;
   }

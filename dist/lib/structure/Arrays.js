@@ -60,10 +60,10 @@ export function wrapLinesAddXIndex2DClamped(array2D, index, addX) {
     return [clampY, clampX];
 }
 // finds the maximum valued element
-export function best(els, valueOf) {
+export function most(els, valueOf) {
     return sortFirst(els, (el1, el2) => valueOf(el1) - valueOf(el2));
 }
-export function worst(els, valueOf) {
+export function least(els, valueOf) {
     return sortFirst(els, (el1, el2) => valueOf(el2) - valueOf(el1));
 }
 // the same as sort, but just takes the first element. Linear time.

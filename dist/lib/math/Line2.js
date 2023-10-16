@@ -16,7 +16,6 @@ export const boundedLerp = (seg) => (t) => lerp(seg)(clamp(0, t, 1));
  * For `p` not on the segment, gives `t` such that `distance(p, lerp(seg)(t))` is minimized.
  */
 export const coLerp = ([start, end]) => (p) => basisProj(sub(end, start))(sub(p, start));
-// can be thought of as some sort of composed lens? `lens([v, p], [xInVec, xInVec], ([x1, x2]) => x1 === 0 ? 0 : x2/x1)`
 const thing = (v) => (p) => v[0] === 0 ? 0 : p[0] / v[0];
 export const segXProj = (seg) => (p) => boundedLerp(seg)(thing(sub(seg[1], seg[0]))(sub(p, seg[0])));
 export const segLeft = ([p1, p2]) => (p1[0] > p2[0] ? p1 : p2);

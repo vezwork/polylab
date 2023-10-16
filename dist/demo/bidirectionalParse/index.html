@@ -1,3 +1,357 @@
-<script src="./customMiniLang.js" type="module"></script>
-<script src="./customObj.js" type="module"></script>
-<script src="./customAr.js" type="module"></script>
+<style>
+  body {
+    color: hsl(280, 8%, 15%);
+    background: hsl(279, 55%, 94%);
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+</style>
+<link
+  rel="stylesheet"
+  data-name="vs/editor/editor.main"
+  href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.min.css"
+/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/loader.min.js"></script>
+
+<script>
+  // require is provided by loader.min.js.
+  require.config({
+    paths: {
+      vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs",
+    },
+  });
+  window.editorLoad = new Promise((resolve) => {
+    require(["vs/editor/editor.main"], () => {
+      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: true,
+        noSyntaxValidation: true,
+        noSuggestionDiagnostics: true,
+      });
+      window.editor = monaco.editor.create(
+        document.getElementById("container"),
+        {
+          value: `const array(+( *(10,a), 50),b) = array(100, 2)`,
+          fontLigatures: true,
+          fontFamily: '"fira code"',
+          fontSize: "16px",
+          minimap: {
+            enabled: false,
+          },
+          language: "typescript",
+          scrollbar: {
+            vertical: "hidden",
+            horizontal: "hidden",
+            handleMouseWheel: false,
+          },
+          theme: "vs-light",
+          quickSuggestions: false,
+          lightbulb: { enabled: false },
+        }
+      );
+      monaco.editor.defineTheme("default", {
+        base: "vs",
+        inherit: true,
+        rules: [
+          {
+            token: "number",
+            foreground: "#6d5aff",
+          },
+          {
+            token: "keyword",
+            foreground: "#6e0495",
+          },
+        ],
+        colors: {},
+      });
+      monaco.editor.setTheme("default");
+      resolve(window.editor);
+    });
+  });
+</script>
+<script type="module">
+  import { run } from "./customMiniLang.js";
+
+  function calc() {
+    try {
+      console.log(window.editor.getValue(), run(window.editor.getValue()));
+      document.getElementById("result").innerText =
+        "forward:\n" +
+        [...run(window.editor.getValue()).entries()]
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("\n") +
+        "\nbackward:\n" +
+        [...run(window.editor.getValue(), true).entries()]
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("\n");
+    } catch (e) {
+      console.warn(e);
+      document.getElementById("result").innerHTML =
+        '<span style="color:red">no result</span>';
+    }
+  }
+
+  const editor = await window.editorLoad;
+  calc();
+  editor.getModel().onDidChangeContent(calc);
+</script>
+
+<h1>Bidirectional Language Note</h1>
+elliot evans<br />
+aug 25 2023<br />
+<svg
+  style="display: inline; vertical-align: middle"
+  xmlns="http://www.w3.org/2000/svg"
+  width="50"
+  height="50"
+  viewBox="17046.44 -2294.6295875956366 104.79 101.82"
+>
+  <defs />
+  <g transform="matrix(1, 0, 0, 1, 17080.08, -2226.1496)" opacity="1">
+    <path
+      d="M0,0 Q0,-1.3774 0.01,-1.7756 T0.0708,-2.3952 0.17,-2.7394 0.31,-2.9307 0.49,-3.037 0.75,-3.0961 1.36,-3.1289 2.36,-3.1472 3.41,-3.1573 4.48,-3.163 5.53,-3.1661 6.40,-3.1678 7.04,-3.1688 7.48,-3.1693 7.83,-3.1696 8.09,-3.1698 8.31,-3.1699 8.53,-3.1699 8.75,-3.17 9.01,-3.17 9.43,-3.17 9.97,-3.17 10.47,-3.1567 11.01,-3.0893 11.59,-2.9719 12.04,-2.8533 12.37,-2.7141 12.67,-2.5523 12.99,-2.3691 13.28,-2.1918 13.55,-2.0177 13.83,-1.8121 14.09,-1.6312 14.35,-1.4374 14.59,-1.2342 14.81,-1.0368 15.06,-0.8027 15.32,-0.546 15.60,-0.2923 15.90,-0.0536 16.22,0.1924 16.54,0.4668 16.82,0.7059 17.06,0.8499 17.24,0.9144 17.35,0.9191 17.43,0.8884 17.54,0.8336 17.75,0.7142 18.11,0.5102 18.61,0.2435 19.19,-0.0491 19.93,-0.3894 20.73,-0.754 21.40,-1.0699 22.10,-1.4143 22.85,-1.7878 23.57,-2.1331 24.18,-2.4272 24.61,-2.6328 25.02,-2.8115 25.49,-3.0152 26.02,-3.2373 26.50,-3.4362 26.95,-3.6289 27.53,-3.8649 28.08,-4.0671 28.50,-4.1884 28.84,-4.2557 29.14,-4.2932 29.40,-4.314 29.62,-4.3255 29.79,-4.332 29.95,-4.3355 30.13,-4.3375 30.37,-4.3253 30.63,-4.2763 30.94,-4.1402 31.44,-3.9402 32.02,-3.7135 32.54,-3.4631 33.01,-3.2462 33.42,-3.0791 33.74,-2.964 33.98,-2.9 34.16,-2.8311 34.27,-2.7351 34.32,-2.6418 34.37,-2.5588 34.48,-2.4305 34.63,-2.2725 34.82,-2.0781 35.11,-1.8301 35.52,-1.5546 36.02,-1.1838 36.61,-0.7045 37.19,-0.2049 37.71,0.2572 38.17,0.6494 38.52,0.9363 38.77,1.1201 38.93,1.1911 39.03,1.1529 39.05,1.0538 38.98,0.9322 38.86,0.7424 38.70,0.5436 38.56,0.3887 38.44,0.2204 38.29,0.0692 38.14,-0.0615 37.96,-0.2208 37.74,-0.4071 37.53,-0.5972 37.30,-0.7739 37.02,-0.9655 36.69,-1.1874 36.37,-1.4063 36.10,-1.6256 35.84,-1.8653 35.56,-2.1273 35.23,-2.404 34.87,-2.691 34.59,-2.9194 34.37,-3.0707 34.13,-3.2104 33.88,-3.3657 33.58,-3.5253 33.22,-3.7007 32.87,-3.9003 32.53,-4.1112 32.17,-4.3351 31.68,-4.6194 31.05,-4.9129 30.45,-5.1471 29.86,-5.3883 29.27,-5.589 28.76,-5.7005 28.30,-5.7625 27.85,-5.7969 27.52,-5.8161 27.27,-5.8267 27.07,-5.8326 26.89,-5.8359 26.69,-5.8377 26.49,-5.8387 26.29,-5.8393 25.99,-5.8396 25.57,-5.8398 25.17,-5.8399 24.79,-5.8399 24.31,-5.84 23.77,-5.8 23.26,-5.7267 22.86,-5.6526 22.62,-5.5804 22.40,-5.498 22.21,-5.3945 22.09,-5.2925 21.99,-5.2159 21.85,-5.12 21.65,-4.9933 21.45,-4.8697 21.21,-4.701 20.88,-4.4695 20.54,-4.2276 20.30,-4.0087 20.13,-3.8404 19.94,-3.7025 19.78,-3.5859 19.66,-3.5211 19.57,-3.4673 19.52,-3.373 19.48,-3.2561 19.43,-3.2201 19.38,-3.2822 19.35,-3.3968 19.33,-3.5693 19.33,-3.774 19.32,-3.9544 19.32,-4.1835 19.32,-4.473 19.32,-4.7316 19.32,-4.9552 19.32,-5.1417 19.32,-5.3276 19.32,-5.5575 19.32,-5.8563 19.32,-6.1778 19.32,-6.5631 19.32,-7.0172 19.30,-7.425 19.23,-7.8671 19.16,-8.3749 19.07,-8.8903 18.96,-9.4478 18.88,-9.9753 18.78,-10.5728 18.69,-11.3291 18.64,-12.1004 18.61,-12.9466 18.57,-13.8745 18.49,-14.9189 18.42,-15.9502 18.38,-16.8165 18.34,-17.549 18.27,-18.227 18.21,-18.8681 18.14,-19.4088 18.04,-19.9803 17.97,-20.5089 17.93,-20.9337 17.91,-21.2786 17.90,-21.5103 17.89,-21.6768 17.89,-21.8293 17.89,-21.994 17.89,-22.2699 17.89,-22.6765 17.89,-23.0979 17.86,-23.4898 17.80,-23.9364 17.73,-24.4312 17.69,-24.8261 17.67,-25.2411 17.66,-25.7249 17.65,-26.1692 17.65,-26.6272 17.65,-27.1194 17.60,-27.7017 17.52,-28.443 17.47,-29.2414 17.44,-30.0161 17.42,-30.8043 17.39,-31.5844 17.33,-32.24 17.27,-32.7665 17.24,-33.1946 17.23,-33.5125 17.19,-33.7269 17.13,-33.8838 17.10,-34.0754 17.05,-34.4529 16.91,-34.9603 16.76,-35.3801 16.67,-35.7177 16.62,-35.9942 16.60,-36.1923 16.57,-36.3201 16.50,-36.3912 16.38,-36.4306 16.25,-36.4526 16.14,-36.4648 15.99,-36.4715 15.81,-36.4753 15.63,-36.4774 15.44,-36.4785 15.24,-36.4792 15.05,-36.4796 14.86,-36.4798 14.63,-36.4799 14.40,-36.4799 14.14,-36.48 13.85,-36.48 13.51,-36.48 13.14,-36.48 12.74,-36.48 12.37,-36.48 12.06,-36.48 11.74,-36.48 11.40,-36.48 11.04,-36.48 10.59,-36.48 10.02,-36.48 9.48,-36.48 8.93,-36.48 8.41,-36.48 7.94,-36.4622 7.46,-36.379 6.96,-36.244 6.39,-36.0622 5.77,-35.8258 5.22,-35.5788 4.71,-35.355 4.27,-35.155 3.97,-34.9595 3.74,-34.7842 3.52,-34.5891 3.33,-34.3851 3.19,-34.1851 3.01,-33.9674 2.80,-33.7419 2.63,-33.5478 2.49,-33.4155 2.40,-33.3042 2.32,-33.2001 2.20,-33.0823 2.04,-32.9591 1.91,-32.8351 1.78,-32.6684 1.63,-32.4492 1.47,-32.2207 1.32,-32.0005 1.17,-31.7714 1.00,-31.5153 0.84,-31.2575 0.72,-31.0298 0.66,-30.7988 0.58,-30.5661 0.50,-30.3746 0.45,-30.2326 0.42,-30.1026 0.37,-29.957 0.26,-29.794 0.10,-29.5367 -0.055,-29.2227 -0.2572,-28.9238 -0.4739,-28.62 -0.661,-28.3467 -0.8094,-28.1283 -0.8985,-27.9646 -0.9481,-27.8248 -1.0178,-27.5117 -1.1232,-27.0133 -1.2373,-26.5742 -1.3318,-26.2235 -1.4265,-25.9465 -1.5214,-25.7548 -1.5741,-25.6038 -1.6034,-25.5088 -1.6041,-25.4871 -1.5734,-25.5084 -1.523,-25.5535 -1.4395,-25.6142 -1.2842,-25.6656 -1.1068,-25.6942 -0.9483,-25.7101 -0.7802,-25.7567 -0.6246,-25.8248 -0.4782,-25.8671 -0.3057,-25.8906 -0.121,-25.9037 0.05,-25.9465 0.20,-26.008 0.34,-26.0444 0.55,-26.0647 0.78,-26.0759 0.97,-26.0822 1.16,-26.0857 1.32,-26.0876 1.50,-26.0887 1.70,-26.0893 1.87,-26.0896 2.01,-26.0898 2.16,-26.1254 2.32,-26.1808 2.51,-26.2115 2.70,-26.2708 2.88,-26.346 3.07,-26.3878 3.27,-26.4465 3.54,-26.5236 3.87,-26.5753 4.23,-26.6041 4.71,-26.6534 5.23,-26.723 5.67,-26.7705 6.07,-26.7969 6.49,-26.8116 6.85,-26.8598 7.15,-26.9287 7.43,-26.9693 7.71,-26.9918 7.98,-27.0043 8.21,-27.0268 8.47,-27.0816 8.74,-27.1564 8.98,-27.2424 9.24,-27.3369 9.51,-27.4316 9.75,-27.5397 10.00,-27.642 10.27,-27.7455 10.53,-27.8453 10.78,-27.9496 11.03,-28.0831 11.29,-28.2416 11.54,-28.3831 11.78,-28.4972 12.03,-28.6184 12.21,-28.7302 12.33,-28.8367 12.46,-29.007 12.61,-29.2261 12.79,-29.4389 12.95,-29.6571 13.13,-29.8605 13.35,-30.078 13.58,-30.3099 13.81,-30.5366 14.04,-30.7736 14.25,-30.9853 14.42,-31.1495 14.55,-31.283 14.64,-31.3928 14.69,-31.4893 14.73,-31.5785 14.79,-31.6969 14.87,-31.8693 14.98,-32.074 15.11,-32.2722 15.25,-32.4889 15.47,-32.7938 15.71,-33.1231 15.96,-33.4372 16.18,-33.7361 16.37,-33.9911 16.57,-34.2328 16.73,-34.4692 16.89,-34.6895 17.06,-34.8719 17.23,-35.0577 17.37,-35.2298 17.49,-35.3476 17.56,-35.4709 17.60,-35.6082 17.63,-35.7312 17.67,-35.8151 18.25,-35.8617 19.55,-35.8876 20.89,-35.902 22.38,-35.9766 23.93,-36.0848 25.04,-36.1449 25.83,-36.1782 26.46,-36.1968 26.97,-36.2071 27.32,-36.2128 27.56,-36.216 27.77,-36.2178 27.96,-36.2188 28.17,-36.2193 28.42,-36.2196 28.67,-36.2198 28.89,-36.2199 29.11,-36.2199 29.34,-36.22 29.50,-36.22 29.63,-36.22 29.76,-36.22 29.87,-36.1978 29.99,-36.1432 30.12,-36.0574 30.28,-35.9675 30.45,-35.8731 30.69,-35.6873 30.93,-35.4686 31.12,-35.2959 31.4,-35.0467 31.77,-34.7505 32.11,-34.5348 32.41,-34.3727 32.70,-34.216 32.95,-34.0578 33.13,-33.9299 33.31,-33.8167 33.50,-33.6782 33.68,-33.5213 33.89,-33.3496 34.09,-33.1676 34.28,-32.9732 34.46,-32.7896 34.68,-32.561 34.93,-32.3073 35.12,-32.1219 35.30,-31.9433 35.48,-31.7641 35.62,-31.6201 35.71,-31.5068 35.74,-31.4127 35.71,-31.3448 35.65,-31.3071 35.57,-31.2862 35.48,-31.2323 35.35,-31.1602 34.89,-31.0179 34.06,-30.7557 L33.61,-30.61 "
+      stroke="#ae3ec9"
+      fill="none"
+      stroke-linecap="round"
+      stroke-width="3.5"
+      stroke-dasharray="none"
+      stroke-dashoffset="0"
+    />
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 17113.7, -2256.76)" opacity="1">
+    <path
+      d="M0,0 Q-1.0219,0.1022 -1.3503,0.1306 T-1.8811,0.1748 -2.2494,0.1993 -2.5274,0.2129 -2.7662,0.2205 -3.0301,0.2247 -3.2855,0.2271 -3.5363,0.2284 -3.7845,0.2291 -4.0935,0.2784 -4.4519,0.3591 -4.7621,0.4084 -5.0633,0.4357 -5.415,0.451 -5.786,0.4594 -6.101,0.4641 -6.3627,0.4667 -6.597,0.4682 -6.8471,0.469 -7.0928,0.4694 -7.3359,0.4697 -7.591,0.4698 -7.8616,0.4699 -8.1675,0.4699 -8.4929,0.47 -8.8338,0.47 -9.152,0.47 -9.4244,0.47 -9.6735,0.47 -9.9985,0.47 -10.3768,0.47 -10.6959,0.47 -10.9599,0.43 -11.2265,0.3634 -11.4835,0.3019 -11.7352,0.2122 -11.9928,0.0979 -12.2204,0.0055 -12.4779,-0.088 -12.7299,-0.1822 -12.9121,-0.2523 -13.0867,-0.329 -13.3081,-0.4117 -13.5822,-0.5131 -13.8767,-0.6339 -14.1781,-0.7677 -14.4544,-0.8842 -14.6879,-0.9934 -14.8843,-1.1163 -15.1557,-1.5223 -15.5763,-2.305 L-15.81,-2.74 "
+      stroke="#ae3ec9"
+      stroke-linecap="round"
+      stroke-width="3.5"
+    />
+  </g>
+</svg>
+<span style="color: #ae3ec9"
+  >This is a sprouting note, it will be refined from feedback and as I
+  learn</span
+>
+
+<p>
+  This is an interactive note about a little language that is about calling
+  functions on both the right side (like usual) and the left side of `=`. Scroll
+  down to the interactive code editor below if you just want to try it out. The
+  language is inspired by destructuring, or pattern matching.
+</p>
+Pattern Matching in Agda / Haskell:
+<pre>
+head (x :: xs) = x 
+tail (x :: xs) = xs</pre
+>
+Destructuring in JavaScript:
+<pre>
+const head = ([x,..._]) => x
+const tail = ([_,...rest]) => rest
+</pre>
+<h2>Background</h2>
+<p>
+  I think I first started thinking about this little language when I was
+  learning Agda during
+  <a
+    href="https://www.uwo.ca/math/faculty/kapulkin/seminars/hottest_summer_school_2022.html"
+    >HoTTest Summer School</a
+  >. In Agda, I learned how to define isomorphisms.
+</p>
+<p>
+  An isomorphism is a function with an opposite: you can give it an input and
+  get an output, but then you can also give it an output and get back the same
+  input.
+</p>
+<img src="iso_example.svg" />
+<p>
+  In functional languages, data constructors are functions that have opposites!
+  You give a constructor an input, and you get out a data structure as output.
+  With a data structure, you can get back all the inputs used to construct it.
+</p>
+<pre>
+const exampleObject = { propertyName1: 'hello', propertyName2: 'goodbye'};
+const inputs = Object.entries(exampleObject)
+// [['propertyName1', 'hello'], ['propertyName2', 'goodbye']]
+</pre>
+<p>
+  This is (kind of) the reason that destructuring works! The only way to make
+  data structures is with constructors, and constructors have opposites, so you
+  can always destructure stuff made with data constructors!
+</p>
+<p>
+  Pattern matching is about executing different code depending on how some data
+  was constructed. But in all but the most primitive cases, data can be
+  decomposed in multiple ways. Here's two illustrations of what I mean:
+</p>
+<img src="reps.svg" />
+<p>
+  Firstly, we have two ways of decomposing any 2D vector: first into cartesian
+  coordinates, and second into polar coordinates. Usually when programming, we
+  construct our 2D vector data one of these two ways, so we can only pattern
+  match on the way we constructed it.
+</p>
+<p>
+  Secondly, we have multiple ways of writing any number. Numbers can't be
+  destructured in JavaScript, but they can be pattern matched in Agda, like in
+  this definition of `+`:
+</p>
+<pre>
+data Number : Set where
+0 : Number
+successor  : Number → Number
+
+0            + y = y
+successor(x) + y = successor(x + y)
+</pre>
+<p>
+  But there's lots of other ways of writing numbers, so why can't we pattern
+  match them in other ways? For some other examples, we can write any number as
+  a sum of two other numbers, or as a product or exponential. Once again, why
+  can't we pattern match against these other ways of writing numbers?
+</p>
+<h2>How to code in this language</h2>
+<p>
+  Okay, so I've tried to write down my thoughts around this mini-language up to
+  this point. Now, let me just talk about what it is. The language has a few
+  built-in functions:
+</p>
+<ul>
+  <li>+</li>
+  <li>*</li>
+  <li>**</li>
+  <li>array</li>
+</ul>
+
+<p>
+  Each of these functions can be used on the left or the right side of the `=`.
+  The grammar is very roughly:
+</p>
+<pre>
+  program ::= [line][program] | [endOfInput]
+  line ::= const [funcCall] | [positiveInteger] | [varName] = [funcCall] | [positiveInteger] | [varName]
+</pre>
+<p>
+  In each line, only one variable that does not have a value is allowed to
+  occur, unless you are destructuring an array. Each entry of an array may have
+  one variable without a value. Although it may look like one, this language is
+  not a relational language (like e.g. miniKanren). It can't find solutions from
+  constraints. It is actually just a convenient syntax for calling functions
+  forward and backward.
+</p>
+<p>
+  Anyway, please try it out! Let me know your thoughts in the comments below or
+  on <a href="https://mathstodon.xyz/@vez">mastodon</a> or
+  <a href="https://twitter.com/elliotokay">X (formerly twitter)</a>.
+</p>
+<h2>Demo</h2>
+<div
+  id="container"
+  style="
+    margin: 20px 0;
+    border-radius: 15px;
+    height: 200px;
+    width: 100%;
+    padding: 15px;
+    background: white;
+    overflow: hidden;
+  "
+></div>
+<div
+  id="result"
+  style="
+    margin: 20px 0;
+    border-radius: 15px;
+    width: 100%;
+    padding: 15px;
+    background: white;
+    font-family: 'fira code';
+  "
+></div>
+
+<h2>How its evaluated:</h2>
+<p>
+  +, *, **, array all currently have definitions per "missing" argument or
+  output (e.g. one definition for each of +(a,2)=2, +(2,a)=2, +(2,2)=a). In
+  contrast to relational languages where there is one definition that works in
+  all these cases.
+</p>
+<p>
+  To figure out the value of a variable, the syntax tree is traversed, starting
+  at that variable's node, and the values are filled in using the definitions
+  mentioned above. You can see the (very rough) code
+  <a
+    href="https://github.com/vezwork/polylab/blob/main/src/demo/bidirectionalParse/customMiniLang.ts"
+    >here</a
+  >.
+</p>
+<img src="bidirectional.svg" />
+
+<h2>
+  Comments
+  <span
+    style="
+      background: #ae3ec9;
+      color: hsl(279, 55%, 94%);
+      padding: 4px;
+      font-size: 10px;
+      border-radius: 5px;
+    "
+    >very new and simple comments system using val.town, please be kind and
+    don't link stuff</span
+  >
+</h2>
+<textarea
+  id="commenttext1"
+  style="width: 100%; height: 80px"
+  placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
+></textarea>
+<button id="commentbutton1">Submit comment</button>
+<button id="reportbutton">
+  Report comments for containing abuse or innapropriate content
+</button>
+<script>
+  function appendComment(str) {
+    const div = document.createElement("div");
+    div.style.display = "block";
+    div.style.margin = "10px 0";
+    div.style.background = "white";
+    div.style.padding = "10px";
+    div.style.borderRadius = "10px";
+    div.textContent = str;
+    document.body.append(div);
+  }
+
+  fetch("https://api.val.town/v1/run/vez.getComments")
+    .then((resp) => resp.json())
+    .then((comments) => comments.forEach(appendComment));
+
+  const text = document.getElementById("commenttext1");
+  const button = document.getElementById("commentbutton1");
+  button.addEventListener("click", async () => {
+    const value = text.value;
+
+    button.textContent = "🔄";
+    await fetch(
+      "https://api.val.town/v1/run/vez.addComment?args=" +
+        JSON.stringify([value])
+    );
+    button.textContent = "✅";
+    button.disabled = true;
+    text.disabled = true;
+    text.value = "";
+    appendComment(str);
+  });
+  document
+    .getElementById("reportbutton")
+    .addEventListener("click", async () => {
+      await fetch("https://api.val.town/v1/run/vez.reportComments");
+      document.getElementById("reportbutton").disabled = true;
+      document.getElementById("reportbutton").textContent =
+        "reported to elliot";
+    });
+</script>

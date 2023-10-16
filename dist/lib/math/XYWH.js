@@ -1,6 +1,6 @@
 import { clamp } from "./Number.js";
 // adapted from https://gamedev.stackexchange.com/a/154040/159980
-export function xBiasedDist([ax, ay, aw, ah], [bx, by, bw, bh]) {
+export function dist([ax, ay, aw, ah], [bx, by, bw, bh]) {
     const [rx1, ry1, rx2, ry2] = [
         Math.min(ax, bx),
         Math.min(ay, by),
@@ -11,7 +11,7 @@ export function xBiasedDist([ax, ay, aw, ah], [bx, by, bw, bh]) {
     const rh = ry2 - ry1;
     const iw = Math.max(0, rw - aw - bw);
     const ih = Math.max(0, rh - ah - bh);
-    return Math.sqrt(iw ** 2 + ih ** 4);
+    return Math.sqrt(iw ** 2 + ih ** 2);
 }
 export function isPointInside([x, y], [bx, by, bw, bh]) {
     return x >= bx && x <= bx + bw && y >= by && y <= by + bh;

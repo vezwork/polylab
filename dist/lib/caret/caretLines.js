@@ -59,5 +59,6 @@ export function makeCaretFunctions({ getBounds, }) {
     }
     return {
         lines,
+        yIntervalLines,
     };
 }

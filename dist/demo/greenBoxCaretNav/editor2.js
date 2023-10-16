@@ -66,10 +66,13 @@ export const leftOrParent = (par) => (e) => {
 export const firstChildOrRightOrParent = (par) => (e) => [...children(e)].length > 0
     ? focus(firstSpatialChild(e))
     : rightOrParent(par)(e);
-export const firstChildOrRightOrParentRight = (par) => (e) => [...children(e)].length > 0
+export const firstChildOrRightOrParentRight = (e) => [...children(e)].length > 0
     ? focus(firstSpatialChild(e))
-    : rightOrParentRight(par)(e);
-const rightOrParent = (par) => (e) => {
+    : rightOrParentRight(e);
+const rightOrParent = (e) => {
+    const par = e.editorParent();
+    if (!par)
+        throw "no parent rightOrParent";
     carryX = null;
     const af = after(e, lines(children(par)));
     if (af === null)
@@ -86,37 +89,39 @@ export const rightOrParentRight = (par) => (e) => {
     else
         return af.focusFromRight();
 };
-const up = (par) => (child) => {
+const up = (child) => {
+    const par = child.editorParent();
+    if (!par)
+        throw "no parent up";
     carryX ??= getBounds(child).right;
     const siblingUp = closestInLine(child, prevLine(child, lines(children(par))), carryX);
-    if (siblingUp === null) {
-        const grandparent = parent(par);
-        if (grandparent === null)
-            return focusFirstInLine(par)(child);
-        const parFocus = up(grandparent)(par);
-        if (parFocus)
-            return parFocus;
-        else
-            return focusFirstInLine(par)(child);
-    }
-    else
+    if (siblingUp !== null)
         return siblingUp.focusFromUp();
+    const grandparent = parent(par);
+    if (grandparent === null)
+        return focusFirstInLine(par)(child);
+    const parFocus = up(par);
+    if (parFocus)
+        return parFocus;
+    else
+        return focusFirstInLine(par)(child);
 };
-const down = (par) => (child) => {
+const down = (child) => {
+    const par = child.editorParent();
+    if (!par)
+        throw "no parent up";
     carryX ??= getBounds(child).right;
     const siblingUp = closestInLine(child, nextLine(child, lines(children(par))), carryX);
-    if (siblingUp === null) {
-        const grandparent = parent(par);
-        if (grandparent === null)
-            return focusLastInLine(par)(child);
-        const parFocus = down(grandparent)(par);
-        if (parFocus)
-            return parFocus;
-        else
-            return focusLastInLine(par)(child);
-    }
-    else
+    if (siblingUp !== null)
         return siblingUp.focusFromDown();
+    const grandparent = parent(par);
+    if (grandparent === null)
+        return focusLastInLine(par)(child);
+    const parFocus = down(par);
+    if (parFocus)
+        return parFocus;
+    else
+        return focusLastInLine(par)(child);
 };
 const focusFirstInLine = (par) => (child) => {
     // for focusing the first in a line once it is found that there is nothing above in any parent
@@ -140,12 +145,52 @@ export class EditorElement extends HTMLElement {
     editorParent = () => this.parentElement?.closest("[iseditor=true]") ?? null;
     editorDescendents = () => this.querySelectorAll(`[iseditor=true]`);
     editorChildren = () => Iter.filter(this.editorDescendents(), (d) => d.editorParent() === this);
+    wrapMode = "Thru";
+    focusableRegions = new Set(["Right"]);
+    focusedRegion = null;
     // these properties should be overwritable data
     up = up(this);
     down = down(this);
-    right = rightOrParent(this);
-    left = lastChildOrLeftOrParentLeft(this);
-    // this should be a "hook" property of the interface. This editor is allowed to decide how it deals with being focused from the right (I think)
+    right = () => {
+        if (this.focusedRegion === null)
+            throw "should not be possible right focusedRegion check";
+        if (this.focusedRegion === "Right") {
+            //rightOrParent
+            const par = this.editorParent();
+            if (!par)
+                throw "no parent rightOrParent";
+            carryX = null;
+            const af = after(this, lines(children(par)));
+            if (af === null)
+                return par.focusFromRightChild();
+            else
+                return af.focusFromRight();
+        }
+        if (this.focusedRegion === "Left") {
+            if ([...children(this)].length > 0) {
+                return focus(firstSpatialChild(this));
+            }
+            else {
+                if (this.focusableRegions.has("Right"))
+                    this.focusedRegion = "Right";
+                else {
+                    //rightOrParent
+                    const par = this.editorParent();
+                    if (!par)
+                        throw "no parent rightOrParent";
+                    carryX = null;
+                    const af = after(this, lines(children(par)));
+                    if (af === null)
+                        return par.focusFromRightChild();
+                    else
+                        return af.focusFromRight();
+                }
+            }
+        }
+    };
+    left = () => { };
+    //lastChildOrLeftOrParentLeft(this);
+    focusFromRightChild = () => { };
     focusFromRight = onRightFocusFirstChild(this);
     focusFromLeft = onLeftFocusSelf(this);
     focusFromUp = () => [...children(this)].length > 0
@@ -216,13 +261,13 @@ export class EditorElement extends HTMLElement {
         this.addEventListener("keydown", (e) => {
             if (isArrowKey(e.key)) {
                 if (e.key === "ArrowRight")
-                    parent(this)?.right(this);
+                    this.left();
                 if (e.key === "ArrowLeft")
-                    parent(this)?.left(this);
+                    this.left();
                 if (e.key === "ArrowUp")
-                    parent(this)?.up(this);
+                    this.up();
                 if (e.key === "ArrowDown")
-                    parent(this)?.down(this);
+                    this.down();
                 e.preventDefault();
                 e.stopPropagation();
             }

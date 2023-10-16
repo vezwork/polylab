@@ -1,0 +1,63 @@
+<div id="editor"></div>
+<script type="module">
+  import { CaretSink, ContainerSink, Caret } from "./caretope.js";
+
+  const c = new ContainerSink(() => ({
+    top: 0,
+    left: 0,
+    right: 100,
+    bottom: 0,
+  }));
+
+  const c1 = new CaretSink(
+    () => ({
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 30,
+    }),
+    "c1"
+  );
+  const c2 = new CaretSink(
+    () => ({
+      top: 0,
+      left: 10,
+      right: 10,
+      bottom: 30,
+    }),
+    "c2"
+  );
+  const c3 = new CaretSink(
+    () => ({
+      top: 50,
+      left: 0,
+      right: 0,
+      bottom: 80,
+    }),
+    "c3"
+  );
+  c.addChild(c1);
+  c.addChild(c2);
+  c.addChild(c3);
+  c.calculateChildLines();
+
+  const caret = new Caret(c3);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") {
+      caret.moveLeft();
+      console.log(caret.caretSink.name);
+    }
+    if (e.key === "ArrowRight") {
+      caret.moveRight();
+      console.log(caret.caretSink.name);
+    }
+    if (e.key === "ArrowUp") {
+      caret.moveUp();
+      console.log(caret.caretSink.name);
+    }
+    if (e.key === "ArrowDown") {
+      caret.moveDown();
+      console.log(caret.caretSink.name);
+    }
+  });
+</script>

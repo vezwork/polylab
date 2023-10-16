@@ -4,7 +4,7 @@ import { Vec2 } from "./Vec2.js";
 export type XYWH = [number, number, number, number];
 
 // adapted from https://gamedev.stackexchange.com/a/154040/159980
-export function xBiasedDist([ax, ay, aw, ah]: XYWH, [bx, by, bw, bh]: XYWH) {
+export function dist([ax, ay, aw, ah]: XYWH, [bx, by, bw, bh]: XYWH) {
   const [rx1, ry1, rx2, ry2] = [
     Math.min(ax, bx),
     Math.min(ay, by),
@@ -15,7 +15,7 @@ export function xBiasedDist([ax, ay, aw, ah]: XYWH, [bx, by, bw, bh]: XYWH) {
   const rh = ry2 - ry1;
   const iw = Math.max(0, rw - aw - bw);
   const ih = Math.max(0, rh - ah - bh);
-  return Math.sqrt(iw ** 2 + ih ** 4);
+  return Math.sqrt(iw ** 2 + ih ** 2);
 }
 
 export function isPointInside([x, y]: Vec2, [bx, by, bw, bh]: XYWH): boolean {

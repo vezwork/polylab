@@ -1,4 +1,4 @@
-import { findIndex2D, worst, wrapLinesAddXIndex2D, } from "../structure/Arrays.js";
+import { findIndex2D, least, wrapLinesAddXIndex2D, } from "../structure/Arrays.js";
 export function makeCaretLineOpFunctions({ getBounds, }) {
     function after(box, lines) {
         const index = findIndex2D(lines, (p) => p === box);
@@ -13,15 +13,15 @@ export function makeCaretLineOpFunctions({ getBounds, }) {
     const curLine = (box, lines) => lines[findIndex2D(lines, (p) => p === box)[0]] ?? [];
     const nextLine = (box, lines) => lines[findIndex2D(lines, (p) => p === box)[0] + 1] ?? [];
     const prevLine = (box, lines) => lines[findIndex2D(lines, (p) => p === box)[0] - 1] ?? [];
-    const closestInLine = (box, line, carryX) => worst(line, (data) => carryX ? numXDist(carryX, data) : xDist(box, data));
+    const closestInLine = (box, line, carryX) => least(line, (data) => carryX ? numXDist(carryX, data) : xDist(box, data));
     function belowInFirstLine(x, lines) {
         const firstLine = lines.at(0) ?? [];
-        const closestInFirstLine = worst(firstLine, (data) => numXDist(x, data));
+        const closestInFirstLine = least(firstLine, (data) => numXDist(x, data));
         return closestInFirstLine ?? null;
     }
     function aboveInLastLine(x, lines) {
         const lastLine = lines.at(-1) ?? [];
-        const closestInLastLine = worst(lastLine, (data) => numXDist(x, data));
+        const closestInLastLine = least(lastLine, (data) => numXDist(x, data));
         return closestInLastLine ?? null;
     }
     // Why is there dist and xDist?? Shouldn't there just be one? Or one defined in terms of the other?

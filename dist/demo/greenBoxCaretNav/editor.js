@@ -1,4 +1,4 @@
-import { findIndex2D, worst, wrapLinesAddXIndex2D, } from "../../lib/structure/Arrays.js";
+import { findIndex2D, least, wrapLinesAddXIndex2D, } from "../../lib/structure/Arrays.js";
 import { closestElementToPosition } from "../../lib/dom/closestElement.js";
 import * as Fn from "../../lib/structure/Functions.js";
 import * as Iter from "../../lib/structure/Iterable.js";
@@ -250,7 +250,7 @@ function after(box, boxes) {
 function below(box, boxes, carryX) {
     const { lines, index: [y, x], } = linesAndIndex(box, boxes);
     const nextLine = lines[y + 1] ?? [];
-    const closestInNextLine = worst(nextLine, ({ data }) => carryX ? numXDist(carryX, data) : xDist(box, data));
+    const closestInNextLine = least(nextLine, ({ data }) => carryX ? numXDist(carryX, data) : xDist(box, data));
     return closestInNextLine?.data ?? null;
 }
 function before(box, boxes) {
@@ -261,7 +261,7 @@ function before(box, boxes) {
 function above(box, boxes, carryX) {
     const { lines, index: [y, x], } = linesAndIndex(box, boxes);
     const prevLine = lines[y - 1] ?? [];
-    const closestInPrevLine = worst(prevLine, ({ data }) => carryX ? numXDist(carryX, data) : xDist(box, data));
+    const closestInPrevLine = least(prevLine, ({ data }) => carryX ? numXDist(carryX, data) : xDist(box, data));
     return closestInPrevLine?.data ?? null;
 }
 function numXDist(n, el) {

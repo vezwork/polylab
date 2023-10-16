@@ -1,39 +1,27 @@
 import { pairs } from "../structure/Iterable.js";
 import { EndoSetMapWithReverse } from "../structure/data.js";
+import { isAside, isRight, segXProj } from "./Line2.js";
+import { Vec2 } from "./Vec2.js";
 
 // assumes lines are monotonic in x coord i.e. isPointLeft(l[n], l[n+1]) === true for all l and n.
 export function make2DLineFunctions<T>({
   dist, // for mergeAndSort
-  xProj,
-  isPointLeft,
-  isPointBelow,
+  toVec2,
 }: {
   dist: (t1: T, t2: T) => number;
-  xProj: (seg: [T, T]) => (p: T) => T; // returns the point on `seg` with the same x coord as `p`
-  isPointLeft: (p1: T) => (p2: T) => boolean;
-  isPointBelow: (p1: T) => (p2: T) => boolean;
+  toVec2: (t: T) => Vec2;
 }) {
   type LineT = T[];
-
-  function isRight(l1: LineT, l2: LineT) {
-    if (l1.length === 0 || l2.length === 0) return true;
-    return isPointLeft(l1.at(-1) as T)(l2[0]);
-  }
-  function isLeft(l1: LineT, l2: LineT) {
-    return isRight(l2, l1);
-  }
-  function isAside(l1: LineT, l2: LineT) {
-    return isRight(l1, l2) || isLeft(l1, l2);
-  }
 
   // -1: point below
   // 0: point and line incomparable
   // 1: point above
   function pointCompareLine(p: T, line: LineT): -1 | 0 | 1 {
     for (const seg of pairs(line)) {
-      if (!isAside([p], seg)) {
-        const pxOnSeg = xProj(seg)(p);
-        return isPointBelow(pxOnSeg)(p) ? 1 : -1;
+      const vec2Seg = seg.map(toVec2) as [Vec2, Vec2];
+      if (!isAside([toVec2(p)], vec2Seg)) {
+        const pxOnSeg = segXProj(vec2Seg)(toVec2(p));
+        return pxOnSeg[1] > toVec2(p)[1] ? 1 : -1;
       }
     }
     return 0;
@@ -125,7 +113,9 @@ export function make2DLineFunctions<T>({
           if (l.length === 0 || ol.length === 0) continue;
           if (!isBeside(l, ol)) continue;
 
-          const [left, right] = isRight(l, ol) ? [l, ol] : [ol, l];
+          const [left, right] = isRight(l.map(toVec2), ol.map(toVec2))
+            ? [l, ol]
+            : [ol, l];
           const distance = dist(left.at(-1) as T, right.at(0) as T);
           cands.push({ left, right, distance });
         }
@@ -135,8 +125,6 @@ export function make2DLineFunctions<T>({
 
   return {
     isAside,
-    isRight,
-    isLeft,
     isAbove,
     mergeAndSort,
     sortTransitivelyBeside,

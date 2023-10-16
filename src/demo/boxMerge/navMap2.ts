@@ -1,5 +1,5 @@
 import { positive, XYWH } from "../../lib/math/XYWH.js";
-import { findIndex2D, worst } from "../../lib/structure/Arrays.js";
+import { findIndex2D, least } from "../../lib/structure/Arrays.js";
 import { make2DLineFunctions } from "../../lib/math/LineT.js";
 import { seperatingInterval } from "../../lib/math/NumberInterval.js";
 import { segXProj } from "../../lib/math/Line2.js";
@@ -148,7 +148,7 @@ function below(box: XYWH, boxes: XYWH[]): YInterval | null {
   const { lines, index } = linesAndIndex(box, boxes);
 
   const nextLine = lines[index[0] + 1] ?? [];
-  return worst(nextLine, (caretSink) => Math.abs(box[0] - caretSink.n)) ?? null;
+  return least(nextLine, (caretSink) => Math.abs(box[0] - caretSink.n)) ?? null;
 }
 
 const top = ({ n, interval: [top, _] }: YInterval): [number, number] => [
@@ -179,12 +179,7 @@ const { mergeAndSort, sortTransitivelyBeside, isAbove } =
       if (i === null) return Math.sqrt((a.n - b.n) ** 2); // intervals overlap so just get 1D distance
       return xBiasedDist([a.n, i[0]], [b.n, i[1]]);
     },
-    xProj:
-      ([p1, p2]) =>
-      (p) =>
-        yIntervalFromTop(segXProj([top(p1), top(p2)])(top(p))),
-    isPointLeft: (p1) => (p2) => p1.n < p2.n,
-    isPointBelow: (p1) => (p2) => top(p1)[1] > top(p2)[1],
+    toVec2: top,
   });
 
 function leftYIntervalFromBox(box: XYWH): YInterval {

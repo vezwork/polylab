@@ -1,0 +1,153 @@
+<style>
+  #c {
+    outline: 1px dashed black;
+  }
+</style>
+<canvas id="c" width="600" height="600"></canvas>
+<script type="module">
+  import { CaretSink, ContainerSink } from "./caretope_sink.js";
+  import { Caret } from "./caretope_caret.js";
+
+  const c = document.getElementById("c");
+  const ctx = c.getContext("2d");
+
+  const ogRoot = new ContainerSink(() => ({
+    top: 0,
+    left: 0,
+    right: 100,
+    bottom: 0,
+  }));
+  let rootSink = ogRoot;
+
+  let i = 0;
+  let x = 0;
+  let y = 0;
+  c.addEventListener("mousemove", (e) => {
+    x = e.offsetX;
+    y = e.offsetY;
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "c") {
+      const closureX = x;
+      const closureY = y;
+      const newChild = new ContainerSink(
+        () => ({
+          top: closureY - 50,
+          left: closureX,
+          right: closureX + 120,
+          bottom: closureY + 50,
+        }),
+        i++
+      );
+      newChild.isLinesWrapped = false;
+      newChild.enterBehaviour = "nearest";
+      rootSink.addChild(newChild);
+      rootSink.calculateChildLines();
+      caret.caretSink = newChild;
+      rootSink = newChild;
+      render();
+    }
+    if (e.key === "d") {
+      rootSink = rootSink.parent ?? rootSink;
+    }
+    if (e.key === "s") {
+      const closureX = x;
+      const closureY = y;
+      const newChild = new CaretSink(
+        () => ({
+          top: closureY - 10,
+          left: closureX,
+          right: closureX + 2,
+          bottom: closureY + 10,
+        }),
+        i++
+      );
+      rootSink.addChild(newChild);
+      rootSink.calculateChildLines();
+      caret.caretSink = newChild;
+
+      render();
+    }
+  });
+  const caret = new Caret(rootSink);
+
+  const render = (container = ogRoot, shouldClear = true) => {
+    if (shouldClear) ctx.clearRect(0, 0, c.width, c.height);
+
+    ctx.save();
+    {
+      ctx.globalAlpha = ctx.globalAlpha - 0.1;
+
+      for (const line of container.cachedLines) {
+        ctx.beginPath();
+        for (const sink of line) ctx.lineTo(sink.left, sink.top + 10);
+        ctx.stroke();
+      }
+
+      ctx.save();
+      if (container === rootSink) ctx.strokeStyle = "red";
+
+      ctx.beginPath();
+      ctx.moveTo(container.left, container.top);
+      ctx.lineTo(container.right, container.top);
+      ctx.lineTo(container.right, container.bottom);
+      ctx.lineTo(container.left, container.bottom);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillText(container.name, container.left, container.top);
+      ctx.restore();
+
+      let minLeft = Infinity;
+      let minTop = Infinity;
+      let maxRight = -Infinity;
+      let maxBottom = -Infinity;
+      for (const line of container.cachedLines) {
+        for (const sink of line) {
+          if (sink instanceof ContainerSink) render(sink, false);
+          else {
+            minLeft = Math.min(sink.left, minLeft);
+            minTop = Math.min(sink.top, minTop);
+            maxRight = Math.max(sink.right, maxRight);
+            maxBottom = Math.max(sink.bottom, maxBottom);
+            ctx.fillRect(
+              sink.left,
+              sink.top,
+              sink.right - sink.left,
+              sink.bottom - sink.top
+            );
+            ctx.fillText(sink.name, sink.left, sink.top);
+          }
+        }
+      }
+
+      ctx.save();
+      ctx.filter = "blur(5px)";
+      const sink = caret.caretSink;
+      ctx.fillStyle = "red";
+      ctx.fillRect(sink.left, sink.top, 5, sink.bottom - sink.top);
+      ctx.filter = "blur(15px)";
+      for (const s of caret.caretSink.line()) {
+        ctx.fillStyle = "blue";
+        ctx.fillRect(s.left, s.top, 5, s.bottom - s.top);
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  };
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") {
+      caret.moveLeft();
+    }
+    if (e.key === "ArrowRight") {
+      caret.moveRight();
+    }
+    if (e.key === "ArrowUp") {
+      caret.moveUp();
+    }
+    if (e.key === "ArrowDown") {
+      caret.moveDown();
+    }
+    render();
+  });
+</script>

@@ -29,7 +29,6 @@ export const coLerp =
   (p: Vec2): number =>
     basisProj(sub(end, start))(sub(p, start));
 
-// can be thought of as some sort of composed lens? `lens([v, p], [xInVec, xInVec], ([x1, x2]) => x1 === 0 ? 0 : x2/x1)`
 const thing =
   (v: Vec2) =>
   (p: Vec2): number =>

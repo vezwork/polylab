@@ -252,9 +252,10 @@ successor(x) + y = successor(x + y)
   In each line, only one variable that does not have a value is allowed to
   occur, unless you are destructuring an array. Each entry of an array may have
   one variable without a value. Although it may look like one, this language is
-  not a relational language (like e.g. miniKanren). It can't find solutions from
-  constraints. It is actually just a convenient syntax for calling functions
-  forward and backward.
+  not a relational language (like e.g. miniKanren). It is
+  <a href="https://en.wikipedia.org/wiki/Imperative_programming">imperitive</a>.
+  It can't find solutions from constraints. It is mostly a convenient syntax for
+  calling isomorphisms both forward and backward.
 </p>
 <p>
   Anyway, please try it out! Let me know your thoughts in the comments below or
@@ -288,10 +289,15 @@ successor(x) + y = successor(x + y)
 
 <h2>How its evaluated:</h2>
 <p>
-  +, *, **, array all currently have definitions per "missing" argument or
-  output (e.g. one definition for each of +(a,2)=2, +(2,a)=2, +(2,2)=a). In
-  contrast to relational languages where there is one definition that works in
-  all these cases.
+  The language is evaluated sequentially, line by line. Evaluation of each line
+  computes and stores the value of one or more variables that don't already have
+  values.
+</p>
+<p>
+  +, *, **, and array all have definitions per "missing" argument or output
+  (e.g. one definition for each of +(a,2)=2, +(2,a)=2, +(2,2)=a). In contrast to
+  relational languages where there is one definition that works in all these
+  cases.
 </p>
 <p>
   To figure out the value of a variable, the syntax tree is traversed, starting
@@ -314,6 +320,15 @@ successor(x) + y = successor(x + y)
   way would be bidirectional, but its easy to check if they are just by looking
   at which variables depend on which variables in the body of a function.
 </p>
+<p>Arguments to functions could also be destructured.</p>
+<pre>
+  const myFunc = (*(a,2), b) <=> {
+    const c = +(a,b)
+    return array(b,c)
+  }
+  const ex1 = myFunc(12, 4)
+  const myFunc(ex2, ex3) = array(4, 10)
+</pre>
 <h3>Blending with relational programming</h3>
 <p>
   We can add a definition to functions for when too many arguments / results are
@@ -337,6 +352,34 @@ const +(a,b) = 3
   relational languages are way more expressive, but I think this could be nice
   syntax to have for non-relational languages.
 </p>
+<h3>Vec2, number representation, graph functions</h3>
+<p>I want to add more functions and try them out.</p>
+<pre>
+  // vec2 functions
+  const myV = array(3,4)
+  const array(x,y) = myV // x now has value 4, y now has value 5
+  const polar(length, angle) = myV // length now has value 5, angle now has value 0.6435
+  const myX = array(5,6)
+  const +(myV, myVToMyX) = myX // myVToMyX now has value array(2,2)
+
+  // number representation functions
+  const num = 5
+  const binNum = binary(num) // binNum now has value array(1,0,1)
+  const binary(num2) = array(1,0,0,0) // num2 now has value 8
+
+  // tree functions
+  const tree0 = node(node(), node(), node())
+  const (rooted(forest)) = tree0 // forest now has the value array(node(), node(), node())
+  const tree1 = growLeafs(tree0) // tree1 now has the value node(node(node()),node(node()),node(node()))
+  const growLeafs(tree2) = tree1 // tree2 now has the value node(node(), node(), node())
+</pre>
+<h3>Destructuring visual literals</h3>
+<p>
+  My other project <a href="https://elliot.website/editor/">Polytope</a> is a
+  text editor that allows for embedded visual literals. What if you could
+  destructure visual literals?
+</p>
+<img src="graph_destructure.svg" />
 
 <h2>
   Comments

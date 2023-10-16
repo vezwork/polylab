@@ -1,4 +1,4 @@
-<img src="caretope.svg" align="left">
+<img src="caretope.svg" height="80" align="left">
 <path d="M14.82 45.3402C16.4 45.3402 17.87 45.0802 19.23 44.5602C20.61 44.0402 21.88 43.3802 23.04 42.5802L25.5 45.8802C24.12 47.0602 22.46 47.9902 20.52 48.6702C18.58 49.3502 16.68 49.6902 14.82 49.6902C11.68 49.6902 9 49.0202 6.78 47.6802C4.58 46.3202 2.9 44.4202 1.74 41.9802C0.58 39.5202 0 36.6402 0 33.3402C0 30.1802 0.58 27.3502 1.74 24.8502C2.92 22.3302 4.61 20.3502 6.81 18.9102C9.03 17.4702 11.72 16.7502 14.88 16.7502C16.9 16.7502 18.79 17.0602 20.55 17.6802C22.33 18.2802 23.96 19.1902 25.44 20.4102L22.98 23.7702C21.64 22.8302 20.29 22.1302 18.93 21.6702C17.59 21.1902 16.22 20.9502 14.82 20.9502C12.1 20.9502 9.86 21.9702 8.1 24.0102C6.34 26.0502 5.46 29.1602 5.46 33.3402C5.46 36.1402 5.86 38.4302 6.66 40.2102C7.48 41.9702 8.59 43.2702 9.99 44.1102C11.41 44.9302 13.02 45.3402 14.82 45.3402Z" fill="#F4672B"/>
 <path d="M52.2366 42.1002C52.2366 43.3602 52.4466 44.2802 52.8666 44.8602C53.2866 45.4402 53.9366 45.8702 54.8166 46.1502L53.51 49.0002C52.15 48.8202 51.0366 49.0802 50.0166 48.4002C48.9966 47.7002 48.2566 46.6502 47.7966 45.2502C46.6566 46.7102 45.2366 47.8202 43.5366 48.5802C41.8366 49.3202 39.9566 49.6902 37.8966 49.6902C34.7366 49.6902 32.2466 48.8002 30.4266 47.0202C28.6066 45.2402 27.6966 42.8802 27.6966 39.9402C27.6966 36.6802 28.9666 34.1802 31.5066 32.4402C34.0466 30.7002 37.7166 29.8302 42.5166 29.8302H47.1666V27.1902C47.1666 24.9102 46.4966 23.3002 45.1566 22.3602C43.8366 21.4002 41.9966 20.9202 39.6366 20.9202C38.5966 20.9202 37.3766 21.0502 35.9766 21.3102C34.5766 21.5502 33.0566 21.9602 31.4166 22.5402L30.0966 18.7302C32.0366 18.0102 33.8566 17.5002 35.5566 17.2002C37.2566 16.9002 38.8766 16.7502 40.4166 16.7502C44.3566 16.7502 47.3066 17.6702 49.2666 19.5102C51.2466 21.3302 52.2366 23.8102 52.2366 26.9502V42.1002ZM39.1866 45.8502C40.7466 45.8502 42.2366 45.4602 43.6566 44.6802C45.0766 43.8802 46.2466 42.7802 47.1666 41.3802V33.2502H42.6066C39.1266 33.2502 36.6666 33.8502 35.2266 35.0502C33.8066 36.2502 33.0966 37.8602 33.0966 39.8802C33.0966 41.8402 33.5966 43.3302 34.5966 44.3502C35.6166 45.3502 37.1466 45.8502 39.1866 45.8502Z" fill="#F4672B"/>
 <path d="M58.9931 49.0002V45.1302H63.9131V21.2802H58.9931V17.4102H67.7531L68.6831 24.8802C69.9031 22.2802 71.3831 20.2702 73.1231 18.8502C74.8631 17.4302 77.1631 16.7202 80.0231 16.7202C80.9031 16.7202 81.6831 16.7902 82.3631 16.9302C83.0631 17.0502 83.7731 17.2102 84.4931 17.4102L83.0231 21.9102C82.3631 21.7302 81.7631 21.6002 81.2231 21.5202C80.6831 21.4202 80.0631 21.3702 79.3631 21.3702C76.9431 21.3702 74.8631 22.2302 73.1231 23.9502C71.3831 25.6702 69.9931 28.2702 68.9531 31.7502V45.1302H75.3731V49.0002H58.9931ZM79.6331 28.0902V21.2202L80.1431 17.4102H84.4931L83.7731 28.0902H79.6331Z" fill="#F4672B"/>
@@ -14,8 +14,8 @@
 </svg>
 
 <p align="right"><a href="https://elliot.website/editor">Part of the <img src="logo.svg" height="34" style="vertical-align: middle;"> project.</a></p>
-<br>
-⚠️ Unstable preview release ⚠️
+<br><br>
+⚠️ Unstable preview ⚠️
 
 # Spatial Caret Navigation
 
@@ -43,28 +43,56 @@ A **`ContainerSink`** contains lines of `Sink`s. These lines are what **Caretope
 
 > ⚠️ The `calculateChildLines` method is currently too slow for realtime linearization with more than ~150 CaretSinks in a single ContainerSink. A workaround is to partition large ContainerSinks into multiple child ContainerSinks.
 
-## Playground & Talk
+## Playground & Presentation
 
-### [CaretSink Visualizer Playground](https://vezwork.github.io/polylab/dist/demo/caretope/viscaretope)
+<table>
+  <tr>
+    <th>Playground</th>
+    <th>Presentation</th>
+  </tr>
+  <tr>
+    <td><strong><a href="https://vezwork.github.io/polylab/dist/demo/caretope/viscaretope"><img height="200" src="playground.png"></a></strong>
 
-[Source Code](./viscaretope.html)
+[Source Code](./viscaretope.html)</td>
+
+<td><a href="https://www.youtube.com/watch?v=r--d5XlUyT4"><img height="200" src="https://i.ytimg.com/vi/r--d5XlUyT4/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGGUgZShlMA8=&rs=AOn4CLBN8QFsGDzetl_zrwHx1YhL3ggRyw"></a>
+
+["A Caret for Your Thoughts: Adapting Caret (Ꮖ) Navigation to Visual Editors" on YouTube.](https://www.youtube.com/watch?v=r--d5XlUyT4)</td>
+
+  </tr>
+
+</table>
 
 ### Presentation
-
-[<img height="200" src="https://i.ytimg.com/vi/r--d5XlUyT4/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGGUgZShlMA8=&rs=AOn4CLBN8QFsGDzetl_zrwHx1YhL3ggRyw">](https://www.youtube.com/watch?v=r--d5XlUyT4)<br>
-["A Caret for Your Thoughts: Adapting Caret (Ꮖ) Navigation to Visual Editors" on YouTube.](https://www.youtube.com/watch?v=r--d5XlUyT4)
 
 ## How to use
 
 This is an unstable preview release, so:
 
 - please only use this for experimentation.
-- to use this code, you currently have to copy&paste the following files into your Project:
-  - [caretope_caret.ts](./caretope_caret.ts) and [caretope_sink.ts](./caretope_sink.ts);
-  - or [caretope_caret.js](../../../dist/demo/caretope/caretope_caret.js) and [caretope_sink.js](../../../dist/demo/caretope/caretope_sink.js)
+- to use this code, you currently have to copy&paste the following ESM files into your Project:
+  - TypeScript: [caretope_caret.ts](./caretope_caret.ts) and [caretope_sink.ts](./caretope_sink.ts);
+  - or JavaScript: [caretope_caret.js](../../../dist/demo/caretope/caretope_caret.js) and [caretope_sink.js](../../../dist/demo/caretope/caretope_sink.js)
+
+Once you've copy & pasted these files, you can import their exports:
+
+```ts
+import { CaretSink, ContainerSink } from "./caretope_sink.js";
+import { Caret } from "./caretope_caret.js";
+```
+
+This will work if you're just writing JavaScript without a bundler. If you're using a bundler I'm afraid I don't have advice, but I trust that it is not too difficult to get working. Feel free to open an issue if you want to share your experience running the code!
+
+## How the code is organized
+
+There are two main source files specific to Caretope: caretope_caret.ts and caretope_sink.ts.
+
+These files depend on Vec2, Line2, LineT, Array, and Iterable functions from other parts of the Polylab. Polylab in general is lacking in documentation.
+
+## API Documentation
 
 <details>
-  <summary><strong>API Documentation</strong></summary>
+  <summary><strong>Show API Documentation</strong></summary>
 
 ### [`CaretSink`](./caretope_sink.ts)
 
@@ -134,14 +162,28 @@ const cur = caret.currentCaretSink;
 
 ## License
 
-## Contributing
+Because this is a preview, I haven't got around to choosing a license yet. If you would like to use Caretope, please reach out and I will add a license to the repo!
+
+## Contributing 🥰
+
+All contributions are welcomed! Here's some ideas:
+
+- If you try out caretope and run into problems, please share your experience in an issue or add a code fix PR!
+- If you find any part of the documentation confusing or lacking, its not just you! I would be grateful if you mention it in an issue or make an edit!
+- If you have any ideas or things you want to add, I would be so happy to hear about them or to review your PR!
+- See the issues below for more significant projects in the future of Caretope:
 
 ## Issues
 
 - functional version
-  - additional feature: non-instantiated Sinks
+  - instead of classes, just functions and types
+  - add functionality so sinks can be lazily computed and don't have to be instantiated ahead of time
 - ineffecient automatic CaretSink linearization
-- not accessible
+  - [link the code](../../../src/lib/math/LineT.ts)
+- does not provide accessibility tools
+  - how could caretope be used to make non-html-text (e.g. canvas) based interfaces more accessible?
 - poor documentation
-- how to distribute
+- how to distribute?
+  - currently this is just a subfolder in Polylab. Should I make it its own repo? How can I do that while still depending on functions in Polylab? Should I publish to npm?
 - publish interactive version of presentation
+  - the presentation ([source code](../drawPX23/drawtest2.ts)) is currently based on an old version of Caretope and is broken in this commit. It needs to be fixed and shared 🙂

@@ -1,17 +1,20 @@
 // inspired by
 // https://en.wikipedia.org/wiki/Vector_clock
-import { insert } from "../../../lib/structure/Arrays.js";
+import { insertIntoSorted } from "../../../lib/structure/Arrays.js";
 import { objectFilter, objectLift } from "../../../lib/structure/Object.js";
-const mergeClocks = (base, ap) => ({
-    ...base,
-    ...objectLift((value, key) => Math.max(base[key] ?? -1, value))(ap),
-});
-const { a, b, c } = mergeClocks({ a: 22, b: 13 }, { a: 2, b: 14, c: 2 });
-console.assert(a === 22, b === 14, c === 2);
-const clockDiff = (myClock, otherClock) => objectFilter((value) => value !== undefined)(objectLift((value, key) => {
-    if (myClock[key] === undefined || value > myClock[key])
-        return [myClock[key], value];
-})(otherClock));
+// const mergeClocks = (base, ap) => ({
+//   ...base,
+//   ...objectLift((value: number, key) => Math.max(base[key] ?? -1, value))(ap),
+// });
+// const { a, b, c } = mergeClocks({ a: 22, b: 13 }, { a: 2, b: 14, c: 2 });
+// console.assert(a === 22, b === 14, c === 2);
+const removeUndefinedValues = objectFilter((value) => value !== undefined);
+// e.g. `entrywiseOneWayDiffPair(myClock)(otherClock)`
+// per key, if otherClock[key] > myClock[key] save the pair [myClock[key], otherClock[key]] at result[key]
+const entrywiseOneWayDiffPair = (myClock) => objectLift((value, key) => myClock[key] === undefined || value > myClock[key]
+    ? [myClock[key], value]
+    : undefined);
+const clockDiff = (myClock, otherClock) => removeUndefinedValues(entrywiseOneWayDiffPair(myClock)(otherClock));
 function clockSerial(clock) {
     return Object.entries(clock)
         .map((keyValue) => keyValue.join(""))
@@ -40,10 +43,13 @@ const myEvent = (name) => (clock) => (ev) => ({
     ev,
     clock: incClock(name, clock),
 });
-const event = (name) => (clock) => (ev, evClock = {}) => ({
-    ev,
-    clock: mergeClocks(clock, evClock),
-});
+// const event =
+//   (name) =>
+//   (clock) =>
+//   (ev, evClock = {}) => ({
+//     ev,
+//     clock: mergeClocks(clock, evClock),
+//   });
 const addEvent = (id, ev, events) => {
     if (!Array.isArray(events[id]))
         events[id] = [];
@@ -57,6 +63,7 @@ const addEvent = (id, ev, events) => {
 //  - I think I want a "address things by where they were created" so that old events
 //    can be changed resulting in events not addressing things created in changed events
 const isDiffInc = (id, diff) => Object.keys(diff).length > 1 || diff[id][1] - (diff[id][0] ?? -1) !== 1;
+const compareEventClocksAlphabetical = ({ clock: clock1 }, { clock: clock2 }) => compareClocksAlphabetical(clock1, clock2);
 export function setup(myName) {
     const listeners = [];
     let clock = {};
@@ -66,7 +73,7 @@ export function setup(myName) {
         if (isDiffInc(id, clockDiff(clock, ev.clock)))
             throw "bug: bad register!"; // inneffecient for now to simplify things and catch bugs
         clock = incClock(id, clock);
-        insert(ev, linearizedEvents, ({ clock: clock1 }, { clock: clock2 }) => compareClocksAlphabetical(clock1, clock2));
+        insertIntoSorted(ev, linearizedEvents, compareEventClocksAlphabetical);
         addEvent(id, ev, events);
     };
     const requestDiff = async (diff) => objectLift(([start, end], key) => events[key].slice(start + 1 ?? 0, end))(diff);

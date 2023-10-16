@@ -235,7 +235,7 @@ class BoxDrawable implements Drawable {
 }
 
 class Drawables implements Drawable {
-  parents = [];
+  parents: Drawable[] = [];
   constructor(readonly drawables: Drawable[]) {
     for (const d of drawables) d.parents.push(this);
   }

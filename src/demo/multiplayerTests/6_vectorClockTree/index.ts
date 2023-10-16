@@ -21,7 +21,7 @@ const insertChild =
     return newNode;
   };
 
-function ok(myId) {
+function initPeer(myId) {
   const div = document.getElementById(myId);
   if (!div) throw "";
 
@@ -101,8 +101,8 @@ function ok(myId) {
   return me;
 }
 
-const me = ok("me");
-const me2 = ok("me2");
+const me = initPeer("me");
+const me2 = initPeer("me2");
 document.getElementById("activate")?.addEventListener("click", () => {
   me.addListener(me2);
   me2.addListener(me);

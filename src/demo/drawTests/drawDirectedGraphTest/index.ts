@@ -11,7 +11,7 @@ import { v } from "../../../lib/math/Vec2.js";
 const ctx = setupFullscreenCanvas("c");
 const c = ctx.canvas;
 
-const nestedBox = box(() => nestedBox);
+const nestedBox = box(() => nestedBox); // TODO: need to fix it so this works
 
 let t = 1;
 function anim() {

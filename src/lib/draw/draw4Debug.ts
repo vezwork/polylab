@@ -1,4 +1,3 @@
-import { YInterval } from "../caret/caret";
 import { withIndex } from "../structure/Iterable.js";
 import { DrawTree, getBounds } from "./draw4.js";
 

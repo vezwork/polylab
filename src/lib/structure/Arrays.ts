@@ -113,16 +113,13 @@ export function locationOf<T>(
   var c = comparer(element, array[pivot]);
   if (end - start <= 1) return c == -1 ? pivot - 1 : pivot;
 
-  switch (c) {
-    case -1:
-      return locationOf(element, array, comparer, start, pivot);
-    case 0:
-      return pivot;
-    case 1:
-      return locationOf(element, array, comparer, pivot, end);
-  }
+  return c < 0
+    ? locationOf(element, array, comparer, start, pivot)
+    : c === 0
+    ? pivot
+    : locationOf(element, array, comparer, pivot, end);
 }
-export function insert<T>(
+export function insertIntoSorted<T>(
   element: T,
   array: T[],
   comparer: (t1: T, t2: T) => number

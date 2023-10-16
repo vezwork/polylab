@@ -8,7 +8,7 @@ import {
 } from "../../lib/structure/Arrays.js";
 import { map } from "../../lib/structure/Iterable.js";
 
-export class Sink {
+export abstract class Sink {
   parent: ContainerSink | null = null;
 
   get x() {

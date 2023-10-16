@@ -79,16 +79,13 @@ export function locationOf(element, array, comparer, start = 0, end = array.leng
     var c = comparer(element, array[pivot]);
     if (end - start <= 1)
         return c == -1 ? pivot - 1 : pivot;
-    switch (c) {
-        case -1:
-            return locationOf(element, array, comparer, start, pivot);
-        case 0:
-            return pivot;
-        case 1:
-            return locationOf(element, array, comparer, pivot, end);
-    }
+    return c < 0
+        ? locationOf(element, array, comparer, start, pivot)
+        : c === 0
+            ? pivot
+            : locationOf(element, array, comparer, pivot, end);
 }
-export function insert(element, array, comparer) {
+export function insertIntoSorted(element, array, comparer) {
     array.splice(locationOf(element, array, comparer) + 1, 0, element);
     return array;
 }

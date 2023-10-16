@@ -73,6 +73,7 @@ This is an unstable preview release, so:
 - to use this code, you currently have to copy&paste the following ESM files into your Project:
   - TypeScript: [caretope_caret.ts](./caretope_caret.ts) and [caretope_sink.ts](./caretope_sink.ts);
   - or JavaScript: [caretope_caret.js](../../../dist/demo/caretope/caretope_caret.js) and [caretope_sink.js](../../../dist/demo/caretope/caretope_sink.js)
+  Unfortunately, currently you will also have to track down all their dependencies and copy paste them. I am realizing this is not reasonable, so I'm going to work on building a single minified file.
 
 Once you've copy & pasted these files, you can import their exports:
 

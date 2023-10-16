@@ -33,6 +33,7 @@ export const rotate = (v, theta) => [
     Math.cos(theta) * v[0] - Math.sin(theta) * v[1],
     Math.sin(theta) * v[0] + Math.cos(theta) * v[1],
 ];
+export const rotateAround = (around) => (v, theta) => add(around, rotate(sub(v, around), theta));
 export const rotateQuarter = (v) => [-v[1], v[0]];
 export const normalVec2FromAngle = (theta) => [
     Math.cos(theta),

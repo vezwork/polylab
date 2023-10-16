@@ -1,3 +1,11 @@
+/**
+ * e.g. ```ts
+ * Iter.map(
+ *   Iter.historyArray(nodeAndAncestors(t), 2)),
+ *   ([cur, [...prev]]) => ...
+ * )
+ * ```
+ */
 export const withHistory = function* (iterable) {
     let history = [];
     for (const item of iterable) {
@@ -5,6 +13,14 @@ export const withHistory = function* (iterable) {
         history.push(item);
     }
 };
+/**
+ * e.g. ```ts
+ * Iter.map(
+ *   Iter.historyArray(nodeAndAncestors(t), 2)),
+ *   ([cur, prev]) => ...
+ * )
+ * ```
+ */
 export const historyArray = function* (iterable, number = Infinity) {
     let history = Array(number);
     for (const result of iterable) {

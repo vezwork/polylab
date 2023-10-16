@@ -1,3 +1,11 @@
+/**
+ * e.g. ```ts
+ * Iter.map(
+ *   Iter.historyArray(nodeAndAncestors(t), 2)),
+ *   ([cur, [...prev]]) => ...
+ * )
+ * ```
+ */
 export const withHistory = function* <T>(
   iterable: Iterable<T>
 ): Generator<[T, T[]]> {
@@ -7,6 +15,14 @@ export const withHistory = function* <T>(
     history.push(item);
   }
 };
+/**
+ * e.g. ```ts
+ * Iter.map(
+ *   Iter.historyArray(nodeAndAncestors(t), 2)),
+ *   ([cur, prev]) => ...
+ * )
+ * ```
+ */
 export const historyArray = function* <T>(
   iterable: Iterable<T>,
   number = Infinity

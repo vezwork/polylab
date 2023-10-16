@@ -1,4 +1,4 @@
-// inspired by
+// using
 // https://en.wikipedia.org/wiki/Vector_clock
 
 import { insertIntoSorted } from "../../../lib/structure/Arrays.js";
@@ -78,8 +78,10 @@ const addEvent = (id, ev, events) => {
 const isDiffInc = (id, diff) =>
   Object.keys(diff).length > 1 || diff[id][1] - (diff[id][0] ?? -1) !== 1;
 
-const compareEventClocksAlphabetical = ({ clock: clock1 }, { clock: clock2 }) =>
-  compareClocksAlphabetical(clock1, clock2);
+export const compareEventClocksAlphabetical = (
+  { clock: clock1 },
+  { clock: clock2 }
+) => compareClocksAlphabetical(clock1, clock2);
 
 export function setup(myName) {
   const listeners: ReturnType<typeof setup>[] = [];
@@ -100,9 +102,12 @@ export function setup(myName) {
       events[key].slice(start + 1 ?? 0, end)
     )(diff);
 
-  let updateListener = (a) => {};
-  const callOnUpdate = () =>
-    updateListener(linearizedEvents.map(({ ev }) => ev));
+  let updateListener = (ev) => {};
+  const callOnUpdate = (ev) =>
+    updateListener(
+      ev
+      //linearizedEvents.map(({ ev }) => ev)
+    );
 
   return {
     //local
@@ -111,7 +116,7 @@ export function setup(myName) {
       registerEvent(myName, ev);
       for (const listener of listeners)
         listener.addEvent(ev, myName, requestDiff);
-      callOnUpdate();
+      callOnUpdate(ev);
     },
     onUpdate: (fn) => (updateListener = fn),
 
@@ -123,15 +128,21 @@ export function setup(myName) {
       const diff = clockDiff(clock, ev.clock);
       if (isDiffInc(id, diff)) {
         requestDiff(diff).then((evMap: Object) => {
-          for (const [id, oldEvents] of Object.entries(evMap))
-            for (const oldEv of oldEvents) registerEvent(id, oldEv);
+          for (const [oldId, oldEvents] of Object.entries(evMap)) {
+            for (const oldEv of oldEvents) {
+              registerEvent(oldId, oldEv);
+              callOnUpdate(oldEv);
+            }
+          }
           registerEvent(id, ev);
-          callOnUpdate();
+          callOnUpdate(ev);
         });
       } else {
         registerEvent(id, ev);
-        callOnUpdate();
+        callOnUpdate(ev);
       }
     },
   };
 }
+
+// TODO: make an alternative log without vector clocks, only an "after" relationship

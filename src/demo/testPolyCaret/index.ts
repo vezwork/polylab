@@ -1,39 +1,25 @@
 import { setupFullscreenCanvas } from "../../lib/draw/setupFullscreenCanvas.js";
+import * as DoubleLinkedList from "../../lib/structure/doubleLinkedList.js";
 import { Caret } from "../caretope/caretope_caret.js";
 import { CaretSink, ContainerSink } from "../caretope/caretope_sink.js";
+import { setupTree } from "../multiplayerTests/6_vectorClockTree/libtree.js";
+import { render } from "./draw.js";
 
 const ctx = setupFullscreenCanvas("c");
-const c = ctx.canvas;
 
-const container = new ContainerSink(() => ({
-  top: 0,
-  left: 0,
-  right: 100,
-  bottom: 0,
-}));
+type Sinkable = DoubleLinkedList.Node<any> | { s: any[] };
 
-type Sinkable = DoubleLinkedListNode<any> | { s: any[] };
-
-const renderedBounds = new Map<Sinkable, [number, number, number, number]>();
-const nodeFromSink = new Map<CaretSink, Sinkable>();
-const sinkFromNode = new Map<Sinkable, CaretSink>();
-
-// TODO: extract this to data folder shared
-type DoubleLinkedListNode<T> = {
-  next: DoubleLinkedListNode<T> | null;
-  prev: DoubleLinkedListNode<T> | null;
-  readonly data: T;
-};
 const insertAfter =
-  <T>(after: DoubleLinkedListNode<T>) =>
-  (data: T) => {
-    const newNode = {
-      next: after.next,
-      prev: after,
-      data,
-    };
-    if (after.next) after.next.prev = newNode;
-    if (after) after.next = newNode;
+  <T>(after: DoubleLinkedList.Node<T> | null) =>
+  (
+    data: T,
+    caret: Caret,
+    renderedBounds,
+    nodeFromSink,
+    sinkFromNode,
+    container
+  ) => {
+    const newNode = DoubleLinkedList.insertAfter(after)(data);
 
     const sink = new CaretSink(() => {
       const [left, top, width, height] = renderedBounds.get(newNode)!;
@@ -52,10 +38,15 @@ const insertAfter =
 
     return newNode;
   };
-const remove = <T>(node: DoubleLinkedListNode<T>) => {
-  const prev = node.prev!;
-  prev.next = node.next;
-  if (node.next) node.next.prev = prev;
+const remove = <T>(
+  node: DoubleLinkedList.Node<T>,
+  caret: Caret,
+  renderedBounds,
+  nodeFromSink,
+  sinkFromNode,
+  container
+) => {
+  const prev = DoubleLinkedList.remove(node);
 
   if (caret.caretSink === sinkFromNode.get(node))
     caret.caretSink = sinkFromNode.get(prev)!;
@@ -67,157 +58,134 @@ const remove = <T>(node: DoubleLinkedListNode<T>) => {
   return prev;
 };
 
-const start: DoubleLinkedListNode<any> = { data: null, prev: null, next: null };
-renderedBounds.set(start, [-10, -10, -9, -9]);
-const sink = new CaretSink(() => ({
-  top: -10,
-  left: -10,
-  right: -9,
-  bottom: -9,
-}));
-container.addChild(sink);
-const caret = new Caret(sink);
-nodeFromSink.set(sink, start);
-sinkFromNode.set(start, sink);
+const me = setupTree("testUser1", (evs) => {
+  // URGENT!
+  // TODO: make this a change map instead of a state map
+  // will need to add `remove` fn and `insertAfter` fn
+  // URGENT!
 
-function* iter<T>(node: DoubleLinkedListNode<T>) {
-  let cur: DoubleLinkedListNode<T> | null = node.next;
-  while (cur !== null) {
-    yield cur;
-    cur = cur.next;
-  }
-}
+  const container = new ContainerSink(() => ({
+    top: 0,
+    left: 0,
+    right: 100,
+    bottom: 0,
+  }));
 
-const FONT_SIZE = 54;
-const NODE_SIZE = 20;
-const PADDING = 1;
+  const renderedBounds = new Map<Sinkable, [number, number, number, number]>();
+  const nodeFromSink = new Map<CaretSink, Sinkable>();
+  const sinkFromNode = new Map<Sinkable, CaretSink>();
 
-function render() {
-  ctx.clearRect(0, 0, c.width, c.height);
-  ctx.font = `${FONT_SIZE}px monospace`;
+  const caret = new Caret();
 
-  let offsetX = 0;
-  for (const node of iter(start)) {
-    const { data } = node;
-    if (typeof data === "string") {
-      ctx.fillText(data, offsetX, FONT_SIZE);
-      const { width } = ctx.measureText(data);
-      offsetX += width + PADDING;
-      renderedBounds.set(node, [offsetX, 0, width, FONT_SIZE]);
-    }
-    if (typeof data === "object" && data !== null) {
-      const width = drawTree(data, offsetX, 0);
-      offsetX += width + PADDING;
-      renderedBounds.set(node, [offsetX, 0, width, 99]);
-    }
-  }
-
-  container.calculateChildLines();
-
-  console.log(
-    caret.currentCaretSink,
-    nodeFromSink.get(caret.currentCaretSink),
-    renderedBounds.get(nodeFromSink.get(caret.currentCaretSink)!)
+  const start: DoubleLinkedList.Node<any> = insertAfter(null)(
+    null,
+    caret,
+    renderedBounds,
+    nodeFromSink,
+    sinkFromNode,
+    container
   );
-  const [left, top, width, height] = renderedBounds.get(
-    nodeFromSink.get(caret.currentCaretSink)!
-  )!;
-  console.log(caret.currentCaretSink.line());
-  ctx.fillStyle = "red";
-  ctx.fillRect(left, top, 5, height);
-  ctx.fillStyle = "black";
-}
-render();
+  renderedBounds.set(start, [0, 0, 1, 54]);
 
-const PAD = 4;
-function drawTree(t, x, y) {
-  const width = treeWidth(t);
-  const pos = [x + width / 2 - NODE_SIZE / 2 + PAD, y] as [number, number];
-  ctx.fillRect(...pos, NODE_SIZE - PAD, NODE_SIZE - PAD);
-  let offsetX = 0;
-  for (const st of t.s) {
-    const stWidth = drawTree(st, x + offsetX, y + NODE_SIZE * 2);
-    offsetX += stWidth;
-    const mid = x + offsetX - stWidth / 2;
-    ctx.beginPath(); // Start a new path
-    ctx.moveTo(x + width / 2 + 1, y + NODE_SIZE - PAD); // Move the pen to (30, 50)
-    ctx.lineTo(mid + 1, y + NODE_SIZE * 2); // Draw a line to (150, 100)
-    ctx.stroke();
+  for (const {
+    ev: { v },
+  } of evs) {
+    console.log("V", v);
+    const { del, insNode, ins, move } = v;
+    const curNode = nodeFromSink.get(caret.currentCaretSink!)!;
+    if (del) {
+      if ("s" in curNode) 1;
+      else
+        remove(
+          curNode,
+          caret,
+          renderedBounds,
+          nodeFromSink,
+          sinkFromNode,
+          container
+        );
+    }
+    if (insNode) {
+      if ("s" in curNode) {
+        const newNode = { s: [] };
+        curNode.s.push(newNode);
+
+        const sink = new CaretSink(() => {
+          const [left, top, width, height] = renderedBounds.get(newNode)!;
+          return {
+            top,
+            left,
+            right: left + 1,
+            bottom: top + height,
+          };
+        });
+        nodeFromSink.set(sink, newNode);
+        sinkFromNode.set(newNode, sink);
+        container.addChild(sink);
+        caret.caretSink = sink;
+      } else {
+        const newNode = {
+          s: [],
+        };
+        insertAfter(curNode)(
+          newNode,
+          caret,
+          renderedBounds,
+          nodeFromSink,
+          sinkFromNode,
+          container
+        );
+
+        const sink = new CaretSink(() => {
+          const [left, top, width, height] = renderedBounds.get(newNode)!;
+          return {
+            top,
+            left,
+            right: left + 1,
+            bottom: top + height,
+          };
+        });
+        nodeFromSink.set(sink, newNode);
+        sinkFromNode.set(newNode, sink);
+        container.addChild(sink);
+        caret.caretSink = sink;
+      }
+    }
+    if (ins) {
+      if ("s" in curNode) 1;
+      else
+        insertAfter(curNode)(
+          ins,
+          caret,
+          renderedBounds,
+          nodeFromSink,
+          sinkFromNode,
+          container
+        );
+    }
+    if (move) {
+      // TODO: make this "ephemeral"!
+      container.calculateChildLines(); // TODO: don't do this every move!!
+      if (move === "ArrowLeft") caret.moveLeft();
+      if (move === "ArrowRight") caret.moveRight();
+      if (move === "ArrowUp") caret.moveUp();
+      if (move === "ArrowDown") caret.moveDown();
+    }
+    render(ctx, container, caret, start, renderedBounds, nodeFromSink);
   }
-
-  renderedBounds.set(t, [pos[0], y, NODE_SIZE, NODE_SIZE]);
-
-  return width;
-}
-function treeWidth(t) {
-  if (t.s.length === 0) return NODE_SIZE;
-  let width = 0;
-  for (const st of t.s) width += treeWidth(st);
-  return width;
-}
-
+  render(ctx, container, caret, start, renderedBounds, nodeFromSink);
+});
 document.addEventListener("keydown", (e) => {
   console.log(e.key);
-  const curNode = nodeFromSink.get(caret.currentCaretSink)!;
-  if (e.key === "Backspace") {
-    if ("s" in curNode) 1;
-    else remove(curNode);
-  }
-  if (e.key === "Shift") {
-    if ("s" in curNode) curNode.s.push({ s: [] });
-    else 1;
-  }
-  if (e.key === "Tab")
-    if ("s" in curNode) {
-      const newNode = { s: [] };
-      curNode.s.push(newNode);
+  if (e.key === "Backspace") me.do({ del: true });
 
-      const sink = new CaretSink(() => {
-        const [left, top, width, height] = renderedBounds.get(newNode)!;
-        return {
-          top,
-          left,
-          right: left + 1,
-          bottom: top + height,
-        };
-      });
-      nodeFromSink.set(sink, newNode);
-      sinkFromNode.set(newNode, sink);
-      container.addChild(sink);
-      caret.caretSink = sink;
-    } else {
-      const newNode = {
-        s: [],
-      };
-      insertAfter(curNode)(newNode);
-
-      const sink = new CaretSink(() => {
-        const [left, top, width, height] = renderedBounds.get(newNode)!;
-        return {
-          top,
-          left,
-          right: left + 1,
-          bottom: top + height,
-        };
-      });
-      nodeFromSink.set(sink, newNode);
-      sinkFromNode.set(newNode, sink);
-      container.addChild(sink);
-      caret.caretSink = sink;
-    }
-  if (e.key.length === 1) {
-    if ("s" in curNode) 1;
-    else insertAfter(curNode)(e.key);
-  }
-
-  if (e.key === "ArrowLeft") caret.moveLeft();
-  if (e.key === "ArrowRight") caret.moveRight();
-  if (e.key === "ArrowUp") caret.moveUp();
-  if (e.key === "ArrowDown") caret.moveDown();
+  if (e.key === "Tab") me.do({ insNode: true });
+  if (e.key === "z" && e.metaKey) {
+    me.undo();
+  } else if (e.key.length === 1) me.do({ ins: e.key });
+  if (e.key.startsWith("Arrow")) me.do({ move: e.key });
 
   e.preventDefault();
-  render();
-  console.log(start);
 });
 
 // TODO:

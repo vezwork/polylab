@@ -8,20 +8,23 @@ export class Caret {
     return this.caretSink;
   }
 
-  constructor(public caretSink: CaretSink) {}
+  constructor(public caretSink?: CaretSink) {}
 
   moveLeft() {
+    if (!this.caretSink) return;
     if (this.isVerticalLinear) this.carrySink = null;
     const next = recurseUpMoveLeft(this.caretSink);
     if (next !== null) this.caretSink = next;
   }
 
   moveRight() {
+    if (!this.caretSink) return;
     if (this.isVerticalLinear) this.carrySink = null;
     const next = recurseUpMoveRight(this.caretSink);
     if (next !== null) this.caretSink = next;
   }
   moveUp() {
+    if (!this.caretSink) return;
     if (this.isVerticalLinear) this.carrySink ??= this.caretSink;
     const next = recurseUpMoveUp(this.caretSink, this.carrySink ?? undefined);
     if (next !== null) return (this.caretSink = next);
@@ -29,6 +32,7 @@ export class Caret {
     if (leftmost !== null) return (this.caretSink = leftmost);
   }
   moveDown() {
+    if (!this.caretSink) return;
     if (this.isVerticalLinear) this.carrySink ??= this.caretSink;
     const next = recurseUpMoveDown(this.caretSink, this.carrySink ?? undefined);
     if (next !== null) return (this.caretSink = next);

@@ -10,6 +10,8 @@ export class Caret {
         this.caretSink = caretSink;
     }
     moveLeft() {
+        if (!this.caretSink)
+            return;
         if (this.isVerticalLinear)
             this.carrySink = null;
         const next = recurseUpMoveLeft(this.caretSink);
@@ -17,6 +19,8 @@ export class Caret {
             this.caretSink = next;
     }
     moveRight() {
+        if (!this.caretSink)
+            return;
         if (this.isVerticalLinear)
             this.carrySink = null;
         const next = recurseUpMoveRight(this.caretSink);
@@ -24,6 +28,8 @@ export class Caret {
             this.caretSink = next;
     }
     moveUp() {
+        if (!this.caretSink)
+            return;
         if (this.isVerticalLinear)
             this.carrySink ??= this.caretSink;
         const next = recurseUpMoveUp(this.caretSink, this.carrySink ?? undefined);
@@ -34,6 +40,8 @@ export class Caret {
             return (this.caretSink = leftmost);
     }
     moveDown() {
+        if (!this.caretSink)
+            return;
         if (this.isVerticalLinear)
             this.carrySink ??= this.caretSink;
         const next = recurseUpMoveDown(this.caretSink, this.carrySink ?? undefined);

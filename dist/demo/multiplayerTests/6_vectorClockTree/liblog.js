@@ -1,4 +1,4 @@
-// inspired by
+// using
 // https://en.wikipedia.org/wiki/Vector_clock
 import { insertIntoSorted } from "../../../lib/structure/Arrays.js";
 import { objectFilter, objectLift } from "../../../lib/structure/Object.js";
@@ -116,3 +116,4 @@ export function setup(myName) {
         },
     };
 }
+// TODO: make an alternative log without vector clocks, only an "after" relationship

@@ -23,6 +23,10 @@ import {
 import { isObject } from "../../lib/structure/Object.js";
 import { test } from "./testrunner.js";
 
+/*******
+ * BIDIRECTIONAL OBJECT PARSER DEF.
+ *******/
+
 const firstCharOfJsId = ior(alpha, char("$"), char("_"));
 const jsId = _headTail(
   firstCharOfJsId,
@@ -53,6 +57,10 @@ const customObj = map({
   forward: Object.fromEntries,
   backward: Object.entries,
 })(i_(ichar(OBJECT_START), star(customObjEntry), iw, ichar(OBJECT_END)));
+
+/*******
+ * TESTS
+ *******/
 
 test(tryUnwrap(istar(any)), "customObject")("doggies");
 

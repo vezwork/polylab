@@ -13,21 +13,8 @@ const getBoundingClientRect = (element: HTMLElement) => {
   return { top, right, bottom, left, width, height, x, y };
 };
 
-const parent = (e: EditorElement): EditorElement | null =>
-  (e.parentElement?.closest("[iseditor=true]") as EditorElement) ?? null;
-
-const descendents = (e: EditorElement) =>
-  e.querySelectorAll(`[iseditor=true]`) as NodeListOf<EditorElement>;
-
-const children = (e: EditorElement) =>
-  Iter.filter(descendents(e), (d) => parent(d) === e);
-
-const closestChildToPosition = (e: EditorElement) => (p: [number, number]) =>
-  closestElementToPosition(e, children(e), p);
-
-let carryX: number | null = null;
-
 const getBounds = getBoundingClientRect;
+let carryX: number | null = null;
 
 const { lines } = makeCaretFunctions<EditorElement>({
   getBounds,
@@ -46,64 +33,113 @@ const {
   getBounds,
 });
 
+const closestChildToPosition = (e: EditorElement) => (p: [number, number]) =>
+  closestElementToPosition(e, e.editorChildren(), p);
 const firstSpatialChild = (e: EditorElement) =>
-  lines(children(e))?.at(0)?.at(0) ?? null;
+  lines(e.editorChildren())?.at(0)?.at(0) ?? null;
 const lastSpatialChild = (e: EditorElement) =>
-  lines(children(e))?.at(-1)?.at(-1) ?? null;
+  lines(e.editorChildren())?.at(-1)?.at(-1) ?? null;
 
-export type EditorArgumentObject = {
-  parentEditor?: EditorElement;
-  builder?: (input: string) => { output: EditorElement };
-};
-
-let CARET: EditorElement | null;
-const focus = (el: EditorElement | null) => {
+// This will be a caret service which manages multicursors and selection and stuff
+let CARET: EditorElement | null = null;
+let FOCUS_SIDE: "left" | "right" | null = null;
+export const focus = (
+  el: EditorElement | null,
+  side: "left" | "right" = "right"
+) => {
   if (el === null) return null;
-  CARET?.setAttribute("isFocused", "false");
+  CARET?.setAttribute("isFocused" + FOCUS_SIDE, "false");
   CARET = el;
-  el.setAttribute("isFocused", "true");
+  el.setAttribute("isFocused" + side, "true");
+  FOCUS_SIDE = side;
   el.focus();
   return el;
 };
 
+const parent = (e: EditorElement) => e.editorParent();
+const children = (e: EditorElement) => e.editorChildren();
+
+const onRightFocusSelf = (e: EditorElement) => () => focus(e, "left");
+const onRightFocusFirstChild = (e: EditorElement) => () =>
+  [...children(e)].length > 0
+    ? firstSpatialChild(e)!.focusFromRight()
+    : focus(e);
+
+const onLeftFocusSelf = (e: EditorElement) => () => focus(e, "right");
+const onLeftFocusLastChild = (e: EditorElement) => () =>
+  [...children(e)].length > 0 ? lastSpatialChild(e)!.focusFromLeft() : focus(e);
+
+const leftToChild = (e: EditorElement) => () => {
+  if ([...children(e)].length > 0) {
+    return focus(lastSpatialChild(e)!);
+  } else {
+    return parent(e)?.focusLeftSibling(e) ?? null;
+  }
+};
+const leftToSibling = (e: EditorElement) => () =>
+  parent(e)?.focusLeftSibling(e) ?? null;
+
+const rightToChild = (e: EditorElement) => () => {
+  if ([...children(e)].length > 0) {
+    return focus(firstSpatialChild(e)!, "left");
+  } else {
+    return parent(e)?.focusRightSibling(e) ?? null;
+  }
+};
+const rightToSibling = (e: EditorElement) => () =>
+  parent(e)?.focusRightSibling(e) ?? null;
+
 /** EditorElement just contains data (some data is functions) */
 export class EditorElement extends HTMLElement {
+  // these properties should be overwritable data (i.e. canvas editors would have their own way of figuring this out)
+  editorParent = (): EditorElement | null =>
+    (this.parentElement?.closest("[iseditor=true]") as EditorElement) ?? null;
+  editorDescendents = () =>
+    this.querySelectorAll(`[iseditor=true]`) as NodeListOf<EditorElement>;
+  editorChildren = () =>
+    Iter.filter(this.editorDescendents(), (d) => d.editorParent() === this);
+
+  // these properties should be overwritable data
   up() {
     return parent(this)?.focusUpSibling(this) ?? null;
   }
   down() {
     return parent(this)?.focusDownSibling(this) ?? null;
   }
-  right() {
-    return parent(this)?.focusRightSibling(this) ?? null;
-  }
-  left() {
-    if ([...children(this)].length > 0) {
-      return focus(lastSpatialChild(this)!);
+  right = () => {
+    // FOCUS_SIDE seems dangerous here because `this` might not even be focused?
+    if (FOCUS_SIDE === "left") {
+      if ([...children(this)].length > 0) {
+        return rightToChild(this)();
+      } else {
+        focus(this, "right");
+      }
     } else {
-      return parent(this)?.focusLeftSibling(this) ?? null;
+      return rightToSibling(this)();
     }
-  }
+  };
+  left = leftToSibling(this);
 
+  // this is not really an interface property, its just used for the default implementation
   focusRightSibling(sibling: EditorElement): EditorElement | null {
     carryX = null;
     const af = after(sibling, lines(children(this)));
-    if (af === null) return focus(this);
+    if (af === null)
+      return focus(this, "right"); // `this.right()` to skip highlighting parent
     else return af.focusFromRight();
   }
 
-  focusFromRight(): EditorElement | null {
-    if ([...children(this)].length > 0)
-      return firstSpatialChild(this)!.focusFromRight();
-    else return focus(this);
-  }
+  // this should be a "hook" property of the interface. This editor is allowed to decide how it deals with being focused from the right (I think)
+  focusFromRight = onRightFocusSelf(this);
 
   focusLeftSibling(sibling: EditorElement): EditorElement | null {
     carryX = null;
     const af = before(sibling, lines(children(this)));
     if (af === null) return parent(this)?.focusLeftSibling(this) ?? null;
-    else return focus(af);
+    else return af.focusFromLeft();
   }
+
+  focusFromLeft = onLeftFocusSelf(this);
 
   focusUpSibling(sibling: EditorElement): EditorElement | null {
     carryX ??= getBounds(sibling).right;
@@ -195,13 +231,17 @@ export class EditorElement extends HTMLElement {
           padding: 5px;
           margin: 5px;
           border: 2px solid YellowGreen;
+          border-radius: 5px;
           /* border-right: 2px solid transparent; */
         }
         :host(:focus) {
           outline: none;
         }
-        :host([isFocused=true]) { /* browser :focus happens if children are focused too :( */
-          border-right: 2px solid black;
+        :host([isFocusedLeft=true]) { /* browser :focus happens if children are focused too :( */
+          border-left: 4px solid black;
+        }
+        :host([isFocusedRight=true]) { /* browser :focus happens if children are focused too :( */
+          border-right: 4px solid black;
         }
         :host([isSelected=true]) { /* browser :focus happens if children are focused too :( */
           box-shadow: 2px 0 0 red;
@@ -238,14 +278,8 @@ export class EditorElement extends HTMLElement {
         if (e.key === "ArrowUp") this.up();
         if (e.key === "ArrowDown") this.down();
         e.preventDefault();
+        e.stopPropagation();
       }
-      if (e.key.length === 1) {
-        this.appendChild(new EditorElement());
-      }
-      if (e.key === "Enter") {
-        this.appendChild(document.createElement("br"));
-      }
-      e.stopPropagation();
     });
   }
 }

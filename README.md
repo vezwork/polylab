@@ -3,7 +3,5 @@
 1. Clone this repo to the folder of your choice.
 2. Navigate to that folder in your terminal.
 3. Run `npm install`.
-4. Run `npm run build`. This terminal window will now use Webpack to watch for any changes to files in
-   `./src`. If you change a file, the project will automatically rebuild.
-5. Open the folder in your file explorer.
-6. Navigate to `./dist` and open index.html in your browser.
+4. Run `npm run watch`.
+5. Navigate to `localhost:8080` in your browser (or maybe 8081 or 8082 or so on if you have other servers running)

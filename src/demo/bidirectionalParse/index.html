@@ -429,15 +429,26 @@ const +(a,b) = 3
     const value = text.value;
 
     button.textContent = "🔄";
-    await fetch(
+    fetch(
       "https://api.val.town/v1/run/vez.addComment?args=" +
         JSON.stringify([value])
-    );
-    button.textContent = "✅";
-    button.disabled = true;
-    text.disabled = true;
-    text.value = "";
-    appendComment(str);
+    )
+      .then((response) => {
+        if (response.status >= 400 && response.status < 600) {
+          button.textContent =
+            "❌ error (sorry theres no details or error reporting yet)";
+        } else {
+          button.textContent = "✅";
+          button.disabled = true;
+          text.disabled = true;
+          text.value = "";
+          appendComment(value);
+        }
+      })
+      .catch(() => {
+        button.textContent =
+          "❌ error (sorry theres no details or error reporting yet)";
+      });
   });
   document
     .getElementById("reportbutton")

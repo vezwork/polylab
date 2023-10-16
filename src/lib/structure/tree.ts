@@ -13,6 +13,8 @@
 import * as Fn from "./Functions.js";
 import * as Iter from "./Iterable.js";
 
+export type TreeFunctions<T> = ReturnType<typeof makeTreeFunctions<T>>;
+
 export function makeTreeFunctions<T>({
   parent,
   children,
@@ -34,9 +36,26 @@ export function makeTreeFunctions<T>({
     return Iter.filter(children(par), Fn.neq(t));
   };
 
-  const ancestors = (t: T) => Iter.recurse(parent, t, Fn.eq(null));
+  const ancestors = (t: T) => Iter.recurseUntil(parent, t, Fn.eq(null));
   const nodeAndAncestors = (t: T) => Iter.concat([t], ancestors(t));
-  const root = (t: T) => Iter.last(Iter.concat([t], ancestors(t)));
+  const root = (t: T) => Iter.last(nodeAndAncestors(t));
+
+  // This works assuming these trees have deterministic order children Iterables, but wouldn't work for trees with children Sets.
+  // There needs to be some structure to the collection of children to help represent the path.
+  const rootIndexPath = (t: T) =>
+    Iter.map(
+      Iter.skip(1, Iter.historyArray(nodeAndAncestors(t), 2)),
+      ([cur, prev]) => Iter.indexOf(children(cur), Fn.eq(prev))
+    );
+  /**
+   * i.e. `applyRootIndexPath(root)(rootIndexPath(t2)) === t2`
+   */
+  const applyRootIndexPath = (root: T) => (path: Iterable<number | null>) =>
+    Iter.reduce(
+      [...path].reverse(),
+      (t, i) => (t && i !== null ? Iter.at<T>(i)(children(t)) : undefined),
+      root as T | undefined
+    );
 
   const hasParent = (t: T) => parent(t) !== null;
   const hasChildren = (t: T) => !Iter.isEmpty(children(t));
@@ -93,11 +112,22 @@ export function makeTreeFunctions<T>({
       yield* Iter.flatMap(children(t), superChildrenHelper(filter));
     };
 
+  const filteredTree = (filter: (t: T) => boolean) =>
+    makeTreeFunctions<T>({
+      parent: superParent(filter),
+      children: superChildren(filter),
+    });
+
   return {
+    parent,
+    children,
     descendentsDepthFirst,
     descendentsBreadthFirst,
     siblings,
     ancestors,
+    nodeAndAncestors,
+    rootIndexPath,
+    applyRootIndexPath,
     root,
     hasParent,
     hasChildren,
@@ -108,6 +138,7 @@ export function makeTreeFunctions<T>({
     compareOrder,
     superParent,
     superChildren,
+    filteredTree,
   };
 
   // future work: helpers... NO, JUST USE ITERABLE HELPERS

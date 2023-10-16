@@ -26,9 +26,16 @@ export function makeTreeFunctions({ parent, children, }) {
             return null;
         return Iter.filter(children(par), Fn.neq(t));
     };
-    const ancestors = (t) => Iter.recurse(parent, t, Fn.eq(null));
+    const ancestors = (t) => Iter.recurseUntil(parent, t, Fn.eq(null));
     const nodeAndAncestors = (t) => Iter.concat([t], ancestors(t));
-    const root = (t) => Iter.last(Iter.concat([t], ancestors(t)));
+    const root = (t) => Iter.last(nodeAndAncestors(t));
+    // This works assuming these trees have deterministic order children Iterables, but wouldn't work for trees with children Sets.
+    // There needs to be some structure to the collection of children to help represent the path.
+    const rootIndexPath = (t) => Iter.map(Iter.skip(1, Iter.historyArray(nodeAndAncestors(t), 2)), ([cur, prev]) => Iter.indexOf(children(cur), Fn.eq(prev)));
+    /**
+     * i.e. `applyRootIndexPath(root)(rootIndexPath(t2)) === t2`
+     */
+    const applyRootIndexPath = (root) => (path) => Iter.reduce([...path].reverse(), (t, i) => (t && i !== null ? Iter.at(i)(children(t)) : undefined), root);
     const hasParent = (t) => parent(t) !== null;
     const hasChildren = (t) => !Iter.isEmpty(children(t));
     const isRoot = (t) => !hasParent(t);
@@ -76,11 +83,20 @@ export function makeTreeFunctions({ parent, children, }) {
     const superChildren = (filter) => function* (t) {
         yield* Iter.flatMap(children(t), superChildrenHelper(filter));
     };
+    const filteredTree = (filter) => makeTreeFunctions({
+        parent: superParent(filter),
+        children: superChildren(filter),
+    });
     return {
+        parent,
+        children,
         descendentsDepthFirst,
         descendentsBreadthFirst,
         siblings,
         ancestors,
+        nodeAndAncestors,
+        rootIndexPath,
+        applyRootIndexPath,
         root,
         hasParent,
         hasChildren,
@@ -91,6 +107,7 @@ export function makeTreeFunctions({ parent, children, }) {
         compareOrder,
         superParent,
         superChildren,
+        filteredTree,
     };
     // future work: helpers... NO, JUST USE ITERABLE HELPERS
     //const every = 0;

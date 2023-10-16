@@ -4,6 +4,11 @@ import { clamp } from "../math/Number.js";
 export const arrLiftFn = (fn) => (ps) => ps.map(fn);
 export const arrFork = forkLift(arrLiftFn);
 
+export const at =
+  <T>(index: number) =>
+  (array: T[]) =>
+    array.at(index);
+
 export function findIndex2D<T>(
   array2D: T[][],
   predicate: (value: T, index: number, obj: T[]) => boolean

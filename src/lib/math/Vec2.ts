@@ -2,6 +2,8 @@
 
 export type Vec2 = [number, number];
 
+export const X: Vec2 = [1, 0];
+export const Y: Vec2 = [0, 1];
 export const UP: Vec2 = [0, -1];
 export const LEFT: Vec2 = [-1, 0];
 export const DOWN: Vec2 = [0, 1];
@@ -10,7 +12,8 @@ export const RIGHT: Vec2 = [1, 0];
 export const x = (v: Vec2): number => v[0];
 export const y = (v: Vec2): number => v[1];
 
-export const copy = (v: Vec2): Vec2 => [v[0], v[1]];
+export const v = (xOrBoth: number, y?: number): Vec2 =>
+  y === undefined ? [xOrBoth, xOrBoth] : [xOrBoth, y];
 
 export const add = (v1: Vec2, v2: Vec2): Vec2 => [v1[0] + v2[0], v1[1] + v2[1]];
 
@@ -43,12 +46,11 @@ export const round = (v: Vec2) => v.map(Math.round);
 // name ref: https://twitter.com/FreyaHolmer/status/1587900959891472384
 export const basisProj = (base: Vec2) => (v: Vec2) =>
   dot(v, base) / dot(base, base);
+// ==: `dot(v, base) / length(base)`
 
 export const proj = (base: Vec2) => (v: Vec2) =>
-  mul(dot(v, base) / dot(base, base), base); // equal to: `mul(dot(v, normalize(base)), normalize(base))`
-
-export const scalarProj = (base: Vec2) => (v: Vec2) =>
-  dot(v, base) / length(base);
+  mul(dot(v, base) / dot(base, base), base);
+// ==: `mul(dot(v, normalize(base)), normalize(base))` and `mul(basisProj(base)(v), base)
 
 // reference: https://en.wikipedia.org/wiki/Rotation_matrix
 export const rotate = (v: Vec2, theta: number): Vec2 => [

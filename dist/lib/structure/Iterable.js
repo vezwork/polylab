@@ -72,6 +72,12 @@ export const filter = function* (iterable, func) {
         if (func(item))
             yield item;
 };
+export const reduce = (iterable, reducer, init) => {
+    let prev = init;
+    for (const cur of iterable)
+        prev = reducer(prev, cur);
+    return prev;
+};
 export const withIndex = function* (iterable) {
     let i = 0;
     for (const item of iterable) {
@@ -79,6 +85,7 @@ export const withIndex = function* (iterable) {
         i++;
     }
 };
+export const at = (index) => (iterable) => first(skip(index, iterable));
 export const find = (iterable, predicate) => {
     for (const item of iterable)
         if (predicate(item))
@@ -102,7 +109,7 @@ export const range = function* (start, end, step = 1) {
     }
 };
 // iterable outputs:
-export function* recurse(func, initialInput, shouldStopRecursing) {
+export function* recurseUntil(func, initialInput, shouldStopRecursing) {
     let curInput = initialInput;
     while (true) {
         const nextInput = func(curInput);

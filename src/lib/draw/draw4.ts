@@ -6,11 +6,9 @@ import {
   translation,
   scale,
   zeroTranslate,
-  unitScaleAndRotation,
 } from "../math/CtxTransform.js";
-import { height, width } from "../math/Line2.js";
 import { max } from "../math/Number.js";
-import { Vec2, length, x, y } from "../math/Vec2.js";
+import { Vec2, length, x, y, sub } from "../math/Vec2.js";
 
 export type DrawTree = {
   caretable?: true;
@@ -191,7 +189,7 @@ class TransformDrawable implements BoundedDrawable {
     return drawTree;
   }
 }
-class EditorDrawable implements BoundedDrawable {
+class CaretableDrawable implements BoundedDrawable {
   readonly w: number;
   readonly h: number;
   constructor(/*readonly*/ public drawable: BoundedDrawable) {
@@ -214,7 +212,7 @@ class EditorDrawable implements BoundedDrawable {
     return drawTree;
   }
 }
-export const editor = (slot: BoundedDrawable) => new EditorDrawable(slot);
+export const caretable = (slot: BoundedDrawable) => new CaretableDrawable(slot);
 
 class DebugDrawable implements BoundedDrawable {
   readonly w: number;
@@ -356,3 +354,20 @@ export const textD = (
   w: number,
   h: number
 ): TextDrawable => new TextDrawable(w, h, text, fontSize);
+
+export const getBounds = (e: DrawTree) => {
+  const [x1, y1] = apply(e.t)([0, 0]);
+  const [width1, height1] = sub(apply(e.t)([e.d.w, e.d.h]), [x1, y1]);
+  const [x, y] = [x1 + 1, y1 + 1]; // hack: slightly offset actual bounds
+  const [width, height] = [width1 - 2, height1 - 2];
+  return {
+    top: y,
+    right: x + width,
+    bottom: y + height,
+    left: x,
+    width,
+    height,
+    x,
+    y,
+  };
+};

@@ -2,6 +2,7 @@ import { forkLift } from "./Functions.js";
 import { clamp } from "../math/Number.js";
 export const arrLiftFn = (fn) => (ps) => ps.map(fn);
 export const arrFork = forkLift(arrLiftFn);
+export const at = (index) => (array) => array.at(index);
 export function findIndex2D(array2D, predicate) {
     return array2D.reduce((acc, line, i) => {
         const foundIndex = line.findIndex(predicate);

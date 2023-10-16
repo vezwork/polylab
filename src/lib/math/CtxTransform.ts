@@ -13,6 +13,10 @@ export const inv = (t1: CtxTransform): CtxTransform => {
     d * (t1[1] * t1[4] - t1[0] * t1[5]),
   ];
 };
+
+/**
+ * read `_(t2)(t1)` as "`t2` after `t1`".
+ */
 export const _ =
   (t2: CtxTransform) =>
   (t1: CtxTransform): CtxTransform => {

@@ -1,11 +1,13 @@
 // Mini custom Vec2 library
+export const X = [1, 0];
+export const Y = [0, 1];
 export const UP = [0, -1];
 export const LEFT = [-1, 0];
 export const DOWN = [0, 1];
 export const RIGHT = [1, 0];
 export const x = (v) => v[0];
 export const y = (v) => v[1];
-export const copy = (v) => [v[0], v[1]];
+export const v = (xOrBoth, y) => y === undefined ? [xOrBoth, xOrBoth] : [xOrBoth, y];
 export const add = (v1, v2) => [v1[0] + v2[0], v1[1] + v2[1]];
 export const sub = (v1, v2) => [v1[0] - v2[0], v1[1] - v2[1]];
 export const mul = (n, v) => [n * v[0], n * v[1]];
@@ -23,8 +25,9 @@ export const distance = (v1, v2) => length(sub(v1, v2));
 export const round = (v) => v.map(Math.round);
 // name ref: https://twitter.com/FreyaHolmer/status/1587900959891472384
 export const basisProj = (base) => (v) => dot(v, base) / dot(base, base);
-export const proj = (base) => (v) => mul(dot(v, base) / dot(base, base), base); // equal to: `mul(dot(v, normalize(base)), normalize(base))`
-export const scalarProj = (base) => (v) => dot(v, base) / length(base);
+// ==: `dot(v, base) / length(base)`
+export const proj = (base) => (v) => mul(dot(v, base) / dot(base, base), base);
+// ==: `mul(dot(v, normalize(base)), normalize(base))` and `mul(basisProj(base)(v), base)
 // reference: https://en.wikipedia.org/wiki/Rotation_matrix
 export const rotate = (v, theta) => [
     Math.cos(theta) * v[0] - Math.sin(theta) * v[1],

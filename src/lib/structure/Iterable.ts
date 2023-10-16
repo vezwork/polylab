@@ -84,6 +84,17 @@ export const filter = function* <T>(
 ): Generator<T> {
   for (const item of iterable) if (func(item)) yield item;
 };
+
+export const reduce = <T, I>(
+  iterable: Iterable<T>,
+  reducer: (prev: I, cur: T) => I,
+  init: I
+): I => {
+  let prev = init;
+  for (const cur of iterable) prev = reducer(prev, cur);
+  return prev;
+};
+
 export const withIndex = function* <T>(
   iterable: Iterable<T>
 ): Generator<[T, number]> {
@@ -93,6 +104,10 @@ export const withIndex = function* <T>(
     i++;
   }
 };
+export const at =
+  <T>(index: number) =>
+  (iterable: Iterable<T>) =>
+    first(skip(index, iterable));
 
 export const find = <T>(
   iterable: Iterable<T>,
@@ -122,7 +137,7 @@ export const range = function* (start: number, end: number, step = 1) {
 
 // iterable outputs:
 
-export function* recurse<T>(
+export function* recurseUntil<T>(
   func: (t: any) => any,
   initialInput: T,
   shouldStopRecursing: (t: T) => boolean

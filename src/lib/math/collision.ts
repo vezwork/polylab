@@ -1,4 +1,4 @@
-import { rotateQuarter, scalarProj, sub, Vec2 } from "./Vec2.js";
+import { rotateQuarter, basisProj, sub, Vec2 } from "./Vec2.js";
 
 export function isConvexShapesIntersecting(
   shapeVertices1: Vec2[],
@@ -14,11 +14,11 @@ export function isConvexShapesIntersecting(
     //axis orthogonal to line between vertex 1 and 2
     const axis = rotateQuarter(sub(vertex1, vertex2));
 
-    let vertices1ProjectionsOntoAxis = shapeVertices1.map(scalarProj(axis));
+    let vertices1ProjectionsOntoAxis = shapeVertices1.map(basisProj(axis));
     let vertices1ProjectionsMin = Math.min(...vertices1ProjectionsOntoAxis);
     let vertices1ProjectionsMax = Math.max(...vertices1ProjectionsOntoAxis);
 
-    let vertices2ProjectionsOntoAxis = shapeVertices2.map(scalarProj(axis));
+    let vertices2ProjectionsOntoAxis = shapeVertices2.map(basisProj(axis));
     let vertices2ProjectionsMin = Math.min(...vertices2ProjectionsOntoAxis);
     let vertices2ProjectionsMax = Math.max(...vertices2ProjectionsOntoAxis);
 

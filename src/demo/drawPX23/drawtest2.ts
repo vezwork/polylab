@@ -1,8 +1,6 @@
-import { best, worst } from "../../lib/structure/Arrays.js";
 import { makeCaretFunctions } from "../../lib/caret/caret.js";
 import { YInterval } from "../../lib/caret/caretNav.js";
 import {
-  besideD,
   centerBesideD,
   centerOverD,
   BoundedDrawable,
@@ -17,7 +15,7 @@ import {
   transformD,
   draw,
   DrawTree,
-  editor,
+  caretable,
   drawables,
   image,
   pathD,
@@ -33,15 +31,10 @@ import {
   translation,
   _,
 } from "../../lib/math/CtxTransform.js";
-import {
-  add,
-  distance,
-  rotate,
-  setLength,
-  sub,
-  Vec2,
-} from "../../lib/math/Vec2.js";
+import { add, rotate, setLength, sub, Vec2 } from "../../lib/math/Vec2.js";
 import { makeTreeFunctions } from "../../lib/structure/tree.js";
+import * as Fn from "../../lib/structure/Functions.js";
+import * as Iter from "../../lib/structure/Iterable.js";
 
 const c = document.getElementById("c") as HTMLCanvasElement;
 const ctx = c.getContext("2d") as CanvasRenderingContext2D;
@@ -73,7 +66,7 @@ const ly = lineD([
   [0, 1],
 ]);
 const qnote = padD([10, 0])(
-  editor(
+  caretable(
     pathD(
       "M5.79325 12.3905C6.12789 13.3398 5.23798 14.5187 3.80559 15.0236C2.37319 15.5286 0.940723 15.1683 0.60608 14.2189C0.271437 13.2696 1.16134 12.0907 2.59374 11.5858C4.02614 11.0808 5.4586 11.4411 5.79325 12.3905ZM5.79325 12.3905V0.5",
       7,
@@ -111,18 +104,20 @@ const arrow = (start: Vec2, end: Vec2) =>
 const ntD = (text: string, size: number = 40) =>
   textD(...measureWidth(text, size));
 const tD = (text: string, size: number = 40) =>
-  editor(
+  caretable(
     centerBesideD(
-      editor(textD("", size, 1, size)),
+      caretable(textD("", size, 1, size)),
       ...text
         .split("")
-        .map((char) => editor(textD(...measureWidth(char, size))))
+        .map((char) => caretable(textD(...measureWidth(char, size))))
     )
   );
 const lntD = (text: string, size: number = 40) =>
   centerBesideD(
-    editor(textD("", size, 1, size)),
-    ...text.split("").map((char) => editor(textD(...measureWidth(char, size))))
+    caretable(textD("", size, 1, size)),
+    ...text
+      .split("")
+      .map((char) => caretable(textD(...measureWidth(char, size))))
   );
 // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
 // https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics
@@ -144,7 +139,7 @@ const slad = (slot: BoundedDrawable) => lad(sQuarter(slot));
 const nfrac = (slot1: BoundedDrawable, slot2: BoundedDrawable) =>
   centerOverD(smallPad(slot1), overD(lx, smallPad(slot2)));
 const frac = (slot1: BoundedDrawable, slot2: BoundedDrawable) =>
-  editor(centerOverD(smallPad(slot1), overD(lx, smallPad(slot2))));
+  caretable(centerOverD(smallPad(slot1), overD(lx, smallPad(slot2))));
 const exp = (slot1: BoundedDrawable, slot2: BoundedDrawable) =>
   centerBesideD(slot1, sQuarter(translateD([0, -15])(slot2)));
 
@@ -160,7 +155,7 @@ const neditCapTernary =
 const capTernary =
   (cap: string) =>
   (slot1: BoundedDrawable, slot2: BoundedDrawable, slot3: BoundedDrawable) =>
-    editor(neditCapTernary(cap)(slot1, slot2, slot3));
+    caretable(neditCapTernary(cap)(slot1, slot2, slot3));
 const Σ = capTernary("∑");
 const Π = capTernary("∏");
 const integral = capTernary("∫");
@@ -187,7 +182,7 @@ const placeholder = translateD([0, 0])(
 );
 const φ = centerBesideD(
   lntD("1 + "),
-  editor(centerOverD(lntD("1"), slad(placeholder)))
+  caretable(centerOverD(lntD("1"), slad(placeholder)))
 );
 placeholder.drawable = φ;
 
@@ -235,11 +230,16 @@ const { superParent, superChildren } = makeTreeFunctions<DrawTree>({
 });
 const parent = superParent((e) => e.caretable === true);
 const children = superChildren((e) => e.caretable === true);
-const { descendentsBreadthFirst: des, hasChildren } =
-  makeTreeFunctions<DrawTree>({
-    parent,
-    children,
-  });
+const {
+  descendentsBreadthFirst: des,
+  hasChildren,
+  nodeAndAncestors,
+  rootIndexPath,
+  applyRootIndexPath,
+} = makeTreeFunctions<DrawTree>({
+  parent,
+  children,
+});
 
 let carryX: number | null = null;
 const { next, lines: uncachedLines } = makeCaretFunctions<DrawTree>({
@@ -281,13 +281,16 @@ const citeImage = (
     justOverD(
       textD(...measureWidth(cite, 3)),
       textD(...measureWidth(additionalText, 3)),
-      editor(scaleD([1 / 10, 1 / 10])(newImage(url)))
+      caretable(scaleD([1 / 10, 1 / 10])(newImage(url)))
     )
   );
 
-const main = editor(
+const main = caretable(
   drawables(
     justOverD(
+      tD("Thank you", 60),
+      tD("elliot.website/editor", 30),
+      padD([0, 170])(scaleD([300, 2])(lx)),
       tD("A Caret for your thoughts", 100),
       justBesideD(
         tD("Adapting Caret (", 50),
@@ -318,9 +321,13 @@ const main = editor(
       ),
       padD([0, 170])(scaleD([300, 2])(lx)),
       centerBesideD(
-        translateD([0, 220])(editor(justOverD(tD("Text"), tD("Programming")))),
+        translateD([0, 220])(
+          caretable(justOverD(tD("Text"), tD("Programming")))
+        ),
         newImage("./img/bridge.svg", 682, 420),
-        translateD([0, -70])(editor(justOverD(tD("Visual"), tD("Programming"))))
+        translateD([0, -70])(
+          caretable(justOverD(tD("Visual"), tD("Programming")))
+        )
       ),
       padD([0, 170])(scaleD([300, 2])(lx)),
       tD(`In Polytope we`, 50),
@@ -337,12 +344,12 @@ const main = editor(
       //padD([50, 10])(ntD("diverse editor ecosystem", 30)),
 
       padD([0, 500])(
-        editor(
+        caretable(
           centerOverD(
             tD("Visuals", 50),
-            editor(textD(...measureWidth("🤝", 50))),
+            caretable(textD(...measureWidth("🤝", 50))),
             tD("Common controls", 50),
-            editor(textD(...measureWidth("🤝", 50))),
+            caretable(textD(...measureWidth("🤝", 50))),
             tD("Text", 50)
           )
         )
@@ -370,7 +377,7 @@ const main = editor(
       padD([0, 230])(scaleD([300, 2])(lx)),
       tD("What makes text editors so... text editor-y?"),
       padD([0, 80])(
-        editor(
+        caretable(
           justOverD(
             lntD("function rgbFromNum(num: number) {", 30),
             lntD("  num >>>= 0;", 30),
@@ -383,14 +390,14 @@ const main = editor(
         )
       ),
       padD([0, 170])(scaleD([300, 2])(lx)),
-      editor(
+      caretable(
         justOverD(
           centerBesideD(lntD("const mySum = "), nΣNote),
           centerBesideD(
             lntD("const gameJingle = "),
             scaleD([2, 2])(
               justBesideD(
-                editor(treble),
+                caretable(treble),
                 translateD([0, 10])(qnote),
                 translateD([0, -10])(qnote),
                 translateD([0, 14])(qnote)
@@ -416,7 +423,7 @@ const main = editor(
         )
       ),
       padD([0, 230])(scaleD([300, 2])(lx)),
-      editor(
+      caretable(
         justOverD(
           centerBesideD(
             lntD("ζ(s)﹦"),
@@ -438,7 +445,7 @@ const main = editor(
             lntD("﹦"),
             integral(lx, lntD("Ω"), lntD("dω")),
             translateD([50, 0])(
-              editor(
+              caretable(
                 drawables(
                   arrow([90, 50], [90, 150]),
                   translateD([80, 10])(lntD("n")),
@@ -454,16 +461,14 @@ const main = editor(
             )
           )
         )
-      ),
-      padD([0, 170])(scaleD([300, 2])(lx)),
-      tD("Thank you", 60),
-      tD("elliot.website/editor", 30)
+      )
     ),
-    translateD([700, 1000])(tD(""))
+    translateD([700, 1500])(tD(""))
   )
 );
 
 const rend = canvasRender(main);
+const goToPath = applyRootIndexPath(rend);
 
 let drawSinks = false;
 let drawLineOutlines = false;
@@ -475,6 +480,10 @@ document.body.addEventListener("keydown", (e) => {
   if (e.key.startsWith("Arrow")) {
     const nextFocus = next(curFocus, e.key as any);
     if (nextFocus) curFocus = nextFocus;
+    console.log(
+      "path address system works",
+      goToPath(rootIndexPath(curFocus)) === curFocus
+    );
   }
   if (e.key === "a") drawSinks = !drawSinks;
   if (e.key === "s") drawLineOutlines = !drawLineOutlines;
@@ -482,7 +491,6 @@ document.body.addEventListener("keydown", (e) => {
   if (e.key === "f") drawAboveAndBelow = !drawAboveAndBelow;
 });
 
-const zoom: Vec2 = [1 / 2, 1 / 2];
 const offset: Vec2 = [200, 400];
 
 function drawStuff(focus: DrawTree, depth = 3) {

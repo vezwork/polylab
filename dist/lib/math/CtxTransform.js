@@ -10,6 +10,9 @@ export const inv = (t1) => {
         d * (t1[1] * t1[4] - t1[0] * t1[5]),
     ];
 };
+/**
+ * read `_(t2)(t1)` as "`t2` after `t1`".
+ */
 export const _ = (t2) => (t1) => {
     const m11 = t1[0] * t2[0] + t1[2] * t2[1];
     const m12 = t1[1] * t2[0] + t1[3] * t2[1];

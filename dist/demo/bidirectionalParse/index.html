@@ -159,8 +159,10 @@ const tail = ([_,...rest]) => rest
   learning Agda during
   <a
     href="https://www.uwo.ca/math/faculty/kapulkin/seminars/hottest_summer_school_2022.html"
-    >HoTTest Summer School</a
-  >. In Agda, I learned how to define isomorphisms.
+    >HoTTEST Summer School</a
+  >
+  (which was awesome, and still has all its awesome learning resources online).
+  In Agda, I learned how to define isomorphisms.
 </p>
 <p>
   An isomorphism is a function with an opposite: you can give it an input and
@@ -173,7 +175,7 @@ const tail = ([_,...rest]) => rest
   You give a constructor an input, and you get out a data structure as output.
   With a data structure, you can get back all the inputs used to construct it.
   Here's an example of some code to get back all the inputs used to construct an
-  object in JavaScript (of course you can also destrcucture objects in JS, but
+  object in JavaScript (of course you can also destructure objects in JS, but
   I'm trying to illustrate that you can write code to do this without fancy
   destructuring syntax)
 </p>
@@ -189,15 +191,15 @@ const inputs = Object.entries(exampleObject)
   constructors!
 </p>
 <pre>
-  // constructor
+  // array constructor
   const a = [1,2,3]
-  // constructor opposite
+  // array constructor opposite
   const [x,y,z] = a
 </pre>
 <p>
-  Pattern matching using constructors is great!.. But in all but the most
-  primitive cases, things can be decomposed in multiple ways. Here's two
-  illustrations of what I mean:
+  Pattern matching using constructors is great!.. But it only gives one way to
+  break apart data into parts, and in all but the most primitive cases, things
+  can be decomposed in multiple ways. Here's two illustrations of what I mean:
 </p>
 <img src="reps.svg" />
 <p>
@@ -287,7 +289,7 @@ successor(x) + y = successor(x + y)
   "
 ></div>
 
-<h2>How its evaluated:</h2>
+<h2>How it's evaluated:</h2>
 <p>
   The language is evaluated sequentially, line by line. Evaluation of each line
   computes and stores the value of one or more variables that don't already have
@@ -401,6 +403,7 @@ const +(a,b) = 3
   placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
 ></textarea>
 <button id="commentbutton1">Submit comment</button>
+<div id="commentarea"></div>
 <button id="reportbutton">
   Report comments for containing abuse or innapropriate content
 </button>
@@ -413,7 +416,7 @@ const +(a,b) = 3
     div.style.padding = "10px";
     div.style.borderRadius = "10px";
     div.textContent = str;
-    document.body.append(div);
+    document.getElementById("commentarea").append(div);
   }
 
   fetch("https://api.val.town/v1/run/vez.getComments")

@@ -48,7 +48,7 @@ const thing = () => {
     const fillRectOn = sigFun(([[w, h], t], [[ow, oh], ot]) => {
         ctx.save();
         ctx.setTransform(...ot);
-        ctx.clearRect(0, 0, ow, oh);
+        ctx.clearRect(-1, -1, ow + 2, oh + 2); // `-1`, `+2` is a hack to avoid ghost bug
         ctx.restore();
         // bug: when the transform is not an integer translation, this leaves a ghost outline
         ctx.save();
@@ -89,14 +89,14 @@ console.log("setting t3 t");
 t3.t[SET](translation(v(150)));
 t1.t[SET](rotation(0.1));
 console.log(t1.s[VAL](), t2.s[VAL](), t3.s[VAL]());
-setInterval(() => {
-    const [val, set] = t1.dims;
-    set(add(val(), v(1)));
-    t3.t[SET](translation(v(150)));
-    // note: we can set `t3.t` after setting `t1.dims` to fix t3 and make t1 grow up instead of down.
-    // Could there be a way to more declaratively say this? Like say how we want to use the morphisms when setting?
-    // Instead of doing two instructions one after another.
-}, 100);
+// setInterval(() => {
+//   const [val, set] = t1.dims;
+//   set(add(val(), v(1)));
+//   t3.t[SET](translation(v(150)));
+//   // note: we can set `t3.t` after setting `t1.dims` to fix t3 and make t1 grow up instead of down.
+//   // Could there be a way to more declaratively say this? Like say how we want to use the morphisms when setting?
+//   // Instead of doing two instructions one after another.
+// }, 100);
 // what do I want now?
 // - want to make a binary tree where the root node depends on the existence of two other nodes
 //   and so on until some depth accumulates. Also want arrows that depend on a pair of nodes that
@@ -109,3 +109,88 @@ setInterval(() => {
 //    - DEPENDS ON BINARY TREE NODE morph(n): ending point
 //
 //   note: this "DEPENDS / SELF LOOP" concept seems to be an "existence morphism" between signals?
+const ZthingyRel = {
+    rfrom: () => Zthingy,
+    rto: () => Zthingy,
+    iso: {
+        to: {
+            morphism: (me, to) => sigMorphism(([dims, t]) => _(translation([dims[0], 0]))(t)),
+            mfrom: ({ dims, t }) => sigs([dims, t]),
+            mto: ({ t }) => t, // affect these
+        },
+        from: {
+            morphism: (from, me) => sigMorphism((t) => _(inv(translation([me.dims[VAL]()[0], 0])))(t)),
+            mfrom: ({ t }) => t,
+            mto: ({ t }) => t, // affect these (i.e. don't include dims even tho its part of the morphism calculation for affecting t)
+        },
+    },
+};
+const Zthingy = {
+    data: () => {
+        const dims = sig(v(10));
+        const t = sig(id);
+        const fillRectOn = sigFun(([[w, h], t], [[ow, oh], ot]) => {
+            ctx.save();
+            ctx.setTransform(...ot);
+            ctx.clearRect(-1, -1, ow + 2, oh + 2); // `-1`, `+2` is a hack to avoid ghost bug
+            ctx.restore();
+            // bug: when the transform is not an integer translation, this leaves a ghost outline
+            ctx.save();
+            ctx.setTransform(...t);
+            ctx.fillRect(1, 1, w - 3, h - 3);
+            ctx.restore();
+        });
+        fillRectOn(sigs([dims, t]));
+        return { dims, t };
+    },
+    inRels: [ZthingyRel],
+    outRels: [ZthingyRel],
+};
+let count = 0;
+const go = (thingy, ignoreOutRels = false, // hack to make this work, but only for traversal of path/cycle graphs
+ignoreInRels = false, // hack to make this work, but only for  traversal of path/cycle graphs
+depth = 0) => {
+    if (depth > 30)
+        return; // prevent infinite traversal
+    const me = thingy.data();
+    console.log("go", me, depth, count++);
+    if (!ignoreOutRels) {
+        for (const { rto, iso } of thingy.outRels) {
+            const { to, from } = iso;
+            const otherThingy = go(rto(), false, true, depth + 1);
+            if (!otherThingy)
+                break;
+            const imto = to.morphism(me, otherThingy)(to.mfrom(me))(to.mto(otherThingy), () => [imfrom, imto]);
+            const imfrom = from.morphism(otherThingy, me)(from.mfrom(otherThingy))(from.mfrom(me), () => [imto, imfrom]);
+        }
+    }
+    if (!ignoreInRels) {
+        for (const { rfrom, iso } of thingy.inRels) {
+            const { to, from } = iso;
+            const otherThingy = go(rfrom(), true, false, depth + 1);
+            if (!otherThingy)
+                break;
+            const imto = to.morphism(otherThingy, me)(to.mfrom(otherThingy))(to.mto(me), () => [imfrom]);
+            const imfrom = from.morphism(me, otherThingy)(from.mfrom(me))(from.mfrom(otherThingy), () => [imto]);
+        }
+    }
+    return me;
+};
+const infiniteBoxes = go(Zthingy);
+let i = 100;
+//setInterval(() => gg.dims[SET]([Math.random() * 30, 10]), 310);
+setInterval(() => infiniteBoxes.t[SET](translation(v(i++))), 100);
+// bug: ggs to the right of center have a larger gap than things to the left because
+// of the order of instantiation leading to order of drawing and clearing. ggs move to
+// overlap with others, then when the overlapping gg moves they clear part of both ggs.
+// could be fixed by grouping things into clear steps and draw steps but right now there
+// is no concept of steps, things just happen as things change. I don't think the renderer
+// really likes the lack of batched steps of drawing lol, theres a lot of flashing.
+// note: it is theoretically possible to narrow change notifications depending on the representation of your thing
+// e.g. `vec2(1,1) * 2` triggers x and y change notifications.
+// e.g. `polar(pi/4, sqrt(2)) * 2` triggers only length change notification.
+// what now?
+// - actual graph traversal not just linear traversal (e.g. binary tree)
+// - follow in the footsteps of Lu's "Screenpond"
+// - follow in the footsteps of Toby's "Recursive Drawing"
+// - start adapting for Polytope

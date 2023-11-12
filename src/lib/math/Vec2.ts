@@ -61,8 +61,13 @@ export const rotateAround =
   (around: Vec2) =>
   (v: Vec2, theta: number): Vec2 =>
     add(around, rotate(sub(v, around), theta));
-export const rotateQuarter = (v: Vec2): Vec2 => [-v[1], v[0]];
+export const rotateQuarterXY = (v: Vec2): Vec2 => [-v[1], v[0]];
+export const rotateQuarterYX = (v: Vec2): Vec2 => [v[1], -v[0]];
 export const normalVec2FromAngle = (theta: number): Vec2 => [
   Math.cos(theta),
   Math.sin(theta),
 ];
+export const setAngle = (theta: number) => (v: Vec2) =>
+  mul(length(v), normalVec2FromAngle(theta));
+export const setAngleFromVec = (angleVec: Vec2) => (v: Vec2) =>
+  mul(length(v), normalize(angleVec));

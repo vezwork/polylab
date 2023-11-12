@@ -1,4 +1,5 @@
-import { makeFieldFunctions, makeOtherFunctions, } from "../../lib/math2/num.js";
+import { _, addEntries, id, inv, scalarMul, subEntries, } from "../../lib/math/CtxTransform.js";
+import { makeOtherFunctions } from "../../lib/math2/num.js";
 import { take } from "../../lib/structure/Iterable.js";
 const cAdd = ([x1, i1]) => ([x2, i2]) => [x1 + x2, i1 + i2];
 const cMul = ([x1, i1]) => ([x2, i2]) => [x1 * x2 - i1 * i2, x1 * i2 + x2 * i1];
@@ -28,15 +29,14 @@ const booleanField = {
     inv: (a) => !a,
     neg: (a) => a,
 };
-const { convergingSqrt, div } = makeFieldFunctions(numberField);
-const { convergingExp } = makeOtherFunctions({
+const { convergingExp, ln, convergingSqrt, div } = makeOtherFunctions({
     ...numberField,
     nummul: (a) => (b) => a * b,
 });
-console.log([...take(40, convergingExp(10))]);
+console.log([...take(30, convergingExp(10))]);
+console.log("OKAY", ln(13), Math.log(13));
 function b() {
-    const { convergingSqrt, div } = makeFieldFunctions(booleanField);
-    const { convergingExp } = makeOtherFunctions({
+    const { convergingExp, convergingSqrt, div } = makeOtherFunctions({
         ...booleanField,
         nummul: (a) => (b) => a === 0 ? false : b,
     });
@@ -44,11 +44,29 @@ function b() {
 }
 b();
 function c() {
-    const { convergingSqrt, div } = makeFieldFunctions(complexNumberField);
-    const { convergingExp } = makeOtherFunctions({
+    const { convergingExp, convergingSqrt, div } = makeOtherFunctions({
         ...complexNumberField,
         nummul: (a) => ([x, i]) => [a * x, a * i],
     });
-    console.log([...take(40, convergingExp([0, Math.PI]))]);
+    console.log([...take(30, convergingExp([0, Math.PI]))]);
 }
 c();
+function d() {
+    const zero = [0, 0, 0, 0, 0, 0];
+    const CtxTransformField = {
+        one: id,
+        zero,
+        add: addEntries,
+        mul: _,
+        inv: inv,
+        neg: subEntries(zero),
+    };
+    const { convergingExp, convergingSqrt, div } = makeOtherFunctions({
+        ...CtxTransformField,
+        nummul: scalarMul,
+    });
+    console.log([
+        ...take(30, convergingExp(scalarMul(1.55)([-1, -1, 1, 0, 0, 0]))),
+    ]);
+}
+d();

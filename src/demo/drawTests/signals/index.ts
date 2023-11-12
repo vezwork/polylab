@@ -140,14 +140,14 @@ t3.t[SET](translation(v(150)));
 t1.t[SET](rotation(0.1));
 
 console.log(t1.s[VAL](), t2.s[VAL](), t3.s[VAL]());
-// setInterval(() => {
-//   const [val, set] = t1.dims;
-//   set(add(val(), v(1)));
-//   t3.t[SET](translation(v(150)));
-//   // note: we can set `t3.t` after setting `t1.dims` to fix t3 and make t1 grow up instead of down.
-//   // Could there be a way to more declaratively say this? Like say how we want to use the morphisms when setting?
-//   // Instead of doing two instructions one after another.
-// }, 100);
+setInterval(() => {
+  const [val, set] = t1.dims;
+  set(add(val(), v(1)));
+  t3.t[SET](translation(v(150)));
+  // note: we can set `t3.t` after setting `t1.dims` to fix t3 and make t1 grow up instead of down.
+  // Could there be a way to more declaratively say this? Like say how we want to use the morphisms when setting?
+  // Instead of doing two instructions one after another.
+}, 333);
 
 // what do I want now?
 // - want to make a binary tree where the root node depends on the existence of two other nodes
@@ -219,7 +219,7 @@ const go = (
   ignoreInRels = false, // hack to make this work, but only for  traversal of path/cycle graphs
   depth = 0
 ): any => {
-  if (depth > 30) return; // prevent infinite traversal
+  if (depth > 100) return; // prevent infinite traversal
   const me = thingy.data();
   console.log("go", me, depth, count++);
 
@@ -281,4 +281,33 @@ setInterval(() => infiniteBoxes.t[SET](translation(v(i++))), 100);
 // - actual graph traversal not just linear traversal (e.g. binary tree)
 // - follow in the footsteps of Lu's "Screenpond"
 // - follow in the footsteps of Toby's "Recursive Drawing"
+//   - transforms between all shapes in fractal layer must be the same. When you change
+//     the position of one shape it needs to recompute its transform relative to its sibling
+//     and update that relationship for everyone. Same for screenpond.
 // - start adapting for Polytope
+
+// I kind of want to redo this all but where I construct categories with edges equipped with data (formally
+// an edge equippred with data is a functor to a category of transformations like Vect) instead of functions that call eachother.
+// - edges between A and B would be defined as On change to A state (A state, B state) => B state
+//   - hmmm this makes it an update function
+// - this is nice because graph traversal is easier to reason about than recursive function calls.
+// - this is nice because it is (more) independent of evaluation model
+//   - edges as a function (() => [] instead of just []) as a covering space / loop space of a group?
+// - this would be a lot of work tho. What are some reasons why I should continue my current approach?
+//   - it works and is a cool signal-based model of evaluation that could work well for Polytope
+// - is all this category theory formalism useful? Am I going abstraction crazy?.. I think it will be useful,
+//   but we'll see.
+
+// now I feel like I need to take a step back and ask myself: what I am trying to achieve?
+// I started working on this because I wanted to use signals to build components for Polytope.
+// In particular, I was fixing bugs in Polytope v1 code and I felt like a lot of the code complexity
+// comes from not having proper framework for dealing with changes. At this point though, this
+// exploration has gotten into some deeper topics of interest, like:
+// - understanding my PUSH IN, PUSH OUT; PULL OUT, PULL IN; MULTIPLE table.
+// - expressing things using isomorphisms (and morphisms) instead of functions.
+// - relationship / categorical composition of components instead of hierarchy.
+// - fractal drawing using something like graph de-looping.
+
+// I posted a video on twitter and Prathyush brought up making it differentiable. That is such
+// a good thing to consider right now. It is very relevant to following in the footsteps of Lu
+// and Toby.

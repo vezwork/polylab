@@ -118,7 +118,7 @@ mo(({ value }) => {
 
 const mouseSvgEl = makeCircleSvgEl("black");
 
-const thing = (t: CtxTransform) => {
+const shape = (t: CtxTransform) => {
   const origin = apply(t)(v(0));
   const red = applyToVec(t)(v(1, 0));
   const blue = applyToVec(t)(v(0, 1));
@@ -242,8 +242,8 @@ const thing = (t: CtxTransform) => {
   return t;
 };
 
-const makeThing = (rel, t = _(id)(id)) => {
-  thing(t);
+const makeShape = (rel, t = _(id)(id)) => {
+  shape(t);
   let prevT = [...t] as CtxTransform;
 
   mo(() => {
@@ -257,16 +257,16 @@ const makeThing = (rel, t = _(id)(id)) => {
   return t;
 };
 
-const linkForward = (rel) => (prev) => {
-  const t = makeThing(rel);
+const forwardShapeRel = (rel) => (prev) => {
+  const t = makeShape(rel);
 
   mo(() => assignCtxTransform(prev)(_(inv(rel))(t)))(t)(prev);
   mo(() => assignCtxTransform(t)(_(rel)(prev)))(prev)(t);
 
   return t;
 };
-const linkBackward = (rel) => (next) => {
-  const t = makeThing(rel);
+const backwardShapeRel = (rel) => (next) => {
+  const t = makeShape(rel);
 
   mo(() => assignCtxTransform(next)(_(rel)(t)))(t)(next);
   mo(() => assignCtxTransform(t)(_(inv(rel))(next)))(next)(t);
@@ -276,12 +276,13 @@ const linkBackward = (rel) => (next) => {
 
 const rel = translation(v(2, 0));
 const rel2 = translation(v(0, 2));
-const initThing = makeThing(rel, _(scale(v(35)))(translation(v(315))));
+const initThing = makeShape(rel, _(scale(v(35)))(translation(v(315))));
 
-loopMo(linkForward(rel), linkBackward(rel))("Shape")("Shape");
-// loopMo(linkForward(rel2), linkBackward(rel2))("Shape")("Shape");
+loopMo(forwardShapeRel(rel), backwardShapeRel(rel))("Shape")("Shape");
+//loopMo(linkForward(rel2), linkBackward(rel2))("Shape")("Shape");
 
 const walk = loopWalk("Shape", initThing);
+
 walk.next();
 walk.next();
 walk.next();
@@ -326,6 +327,6 @@ document.addEventListener("wheel", (event) => {
   vTarget = 1;
 });
 document.addEventListener("keydown", () => {
-  scroll = 0;
+  //scroll = 0;
   vTarget = 0;
 });

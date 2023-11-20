@@ -9,12 +9,11 @@ export const mo = (edge) => (...froms) => (to = Symbol()) => {
         catop.add(to, [froms, edge, from]);
     }
 };
-const walkBreadthFirst = function* (inVertex, adjacentVerticesFromVertex = (v) => v.adjacentVertices) { };
 export const push = (start) => {
     const visitedNodes = new Set([start]);
     const queue = [start];
     function inner() {
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 1000; i++) {
             const currentVertex = queue.shift();
             for (const [froms, edge, to] of cat.get(currentVertex) ?? []) {
                 if (!visitedNodes.has(to)) {

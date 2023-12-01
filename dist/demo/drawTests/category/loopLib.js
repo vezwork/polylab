@@ -31,7 +31,7 @@ export const loopWalkForward = function* (inVertex, init) {
                 queue.push([nextResult, forward]);
             }
         }
-        // same as `loopWalk` but without thebackward loop here
+        // same as `loopWalk` but without the backward loop here
     }
 };
 export const loopWalk = function* (inVertex, init) {

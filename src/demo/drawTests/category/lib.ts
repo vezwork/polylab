@@ -20,7 +20,7 @@ export const push = (start) => {
   const queue = [start];
 
   function inner() {
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 40; i++) {
       const currentVertex = queue.shift();
 
       for (const [froms, edge, to] of cat.get(currentVertex) ?? []) {

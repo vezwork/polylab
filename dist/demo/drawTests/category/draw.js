@@ -200,7 +200,7 @@ const rel = translation(v(2, 0));
 const rel2 = translation(v(0, 2));
 const initThing = makeShape(rel, _(scale(v(35)))(translation(v(315))));
 loopMo(forwardShapeRel(rel), backwardShapeRel(rel))("Shape")("Shape");
-//loopMo(linkForward(rel2), linkBackward(rel2))("Shape")("Shape");
+loopMo(forwardShapeRel(rel2), backwardShapeRel(rel2))("Shape")("Shape");
 const walk = loopWalk("Shape", initThing);
 walk.next();
 walk.next();

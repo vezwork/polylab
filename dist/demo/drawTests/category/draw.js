@@ -111,6 +111,8 @@ const shape = (t) => {
     mo((o, b, ob) => assign(ob)(add(o, b)))(origin, blue)(originBlue);
     mo((o, or, r) => assign(r)(sub(or, o)))(origin, originRed)(red);
     mo((o, ob, b) => assign(b)(sub(ob, o)))(origin, originBlue)(blue);
+    mo((r, or, o) => assign(o)(sub(or, r)))(red, originRed)(origin);
+    mo((b, ob, o) => assign(o)(sub(ob, b)))(blue, originBlue)(origin);
     // option -1: comment all the lines below if you just dont care!
     // option a: uncomment these lines to disable different length basis
     // mo((r, b) => assign(b)(setLength(length(r), b)))(red)(blue);
@@ -121,8 +123,8 @@ const shape = (t) => {
     // option c: uncomment these line to make basis determine eachother
     // mo((r, b) => assign(b)(rotateQuarterXY(r)))(red)(blue);
     // mo((b, r) => assign(r)(rotateQuarterYX(b)))(blue)(red);
-    const verticalLine = makeLineSvgEl("black");
-    const horizontalLine = makeLineSvgEl("black");
+    // const verticalLine = makeLineSvgEl("black");
+    // const horizontalLine = makeLineSvgEl("black");
     const redSvgEl = makeCircleSvgEl("red");
     const redLineSvgEl = makeLineSvgEl("red");
     const blueSvgEl = makeCircleSvgEl("blue");
@@ -157,18 +159,26 @@ const shape = (t) => {
         s.setAttribute("x2", ob[0]);
         s.setAttribute("y2", ob[1]);
     })(origin, originBlue)(blueLineSvgEl);
-    mo((o, b, r, s) => {
-        s.setAttribute("x1", o[0] + r[0]);
-        s.setAttribute("y1", o[1] + r[1]);
-        s.setAttribute("x2", o[0] + b[0] + r[0]);
-        s.setAttribute("y2", o[1] + b[1] + r[1]);
-    })(origin, blue, red)(verticalLine);
-    mo((o, b, r, s) => {
-        s.setAttribute("x1", o[0] + b[0]);
-        s.setAttribute("y1", o[1] + b[1]);
-        s.setAttribute("x2", o[0] + b[0] + r[0]);
-        s.setAttribute("y2", o[1] + b[1] + r[1]);
-    })(origin, blue, red)(horizontalLine);
+    // mo((o, b, r, s) => {
+    //   s.setAttribute("x1", o[0] + r[0]);
+    //   s.setAttribute("y1", o[1] + r[1]);
+    //   s.setAttribute("x2", o[0] + b[0] + r[0]);
+    //   s.setAttribute("y2", o[1] + b[1] + r[1]);
+    // })(
+    //   origin,
+    //   blue,
+    //   red
+    // )(verticalLine);
+    // mo((o, b, r, s) => {
+    //   s.setAttribute("x1", o[0] + b[0]);
+    //   s.setAttribute("y1", o[1] + b[1]);
+    //   s.setAttribute("x2", o[0] + b[0] + r[0]);
+    //   s.setAttribute("y2", o[1] + b[1] + r[1]);
+    // })(
+    //   origin,
+    //   blue,
+    //   red
+    // )(horizontalLine);
     push(origin);
     return t;
 };
@@ -200,16 +210,16 @@ const rel = translation(v(2, 0));
 const rel2 = translation(v(0, 2));
 const initThing = makeShape(rel, _(scale(v(35)))(translation(v(315))));
 loopMo(forwardShapeRel(rel), backwardShapeRel(rel))("Shape")("Shape");
-loopMo(forwardShapeRel(rel2), backwardShapeRel(rel2))("Shape")("Shape");
+//loopMo(forwardShapeRel(rel2), backwardShapeRel(rel2))("Shape")("Shape");
 const walk = loopWalk("Shape", initThing);
-walk.next();
-walk.next();
-walk.next();
-walk.next();
-walk.next();
-walk.next();
-walk.next();
-walk.next();
+// walk.next();
+// walk.next();
+// walk.next();
+// walk.next();
+// walk.next();
+// walk.next();
+// walk.next();
+// walk.next();
 setInterval(() => {
     walk.next();
     push(initThing);

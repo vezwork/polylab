@@ -41,11 +41,15 @@ export const applyPath = (node, path) => {
         cur = applyEdge(cur, edge);
     return cur;
 };
-const mapSymbolEdges = (map, symbol, createFromEdge) => new Map((map.get(symbol) ?? []).map((edge) => [
+const mapSymbolEdgesToContainer = (map, symbol, createFromEdge) => new Map((map.get(symbol) ?? []).map((edge) => [
     edge,
     contain(() => createFromEdge(edge)),
 ]));
-const edgeToCreateFuncMap = (map, symbol, dir, visitNode) => mapSymbolEdges(map, symbol, (edge) => {
+const mapSymbolEdgesToConstContainer = (map, symbol, createFromEdge) => new Map((map.get(symbol) ?? []).map((edge) => [
+    edge,
+    constContainer(createFromEdge(edge)),
+]));
+const edgeThing = (dir, visitNode) => (edge) => {
     const edgePath = edge.path();
     if (edgePath) {
         const dirPath = dir === "from" ? invPath(edgePath) : edgePath;
@@ -69,7 +73,7 @@ const edgeToCreateFuncMap = (map, symbol, dir, visitNode) => mapSymbolEdges(map,
         toNode[dir === "to" ? "from" : "to"].set(edge, constContainer(visitNode));
         return toNode;
     }
-});
+};
 const debugCounter = new Map();
 export const create = (symbol) => {
     if (debugCounter.has(symbol))
@@ -82,7 +86,7 @@ export const create = (symbol) => {
         data: typeof symbol === "function" ? symbol() : undefined,
     };
     //console.log("CREATING!", symbol, t.get(symbol), "FROM", visit?.visitNode);
-    createNode.to = edgeToCreateFuncMap(edgeMap, symbol, "to", createNode);
-    createNode.from = edgeToCreateFuncMap(reverseEdgeMap, symbol, "from", createNode);
+    createNode.to = mapSymbolEdgesToContainer(edgeMap, symbol, edgeThing("to", createNode));
+    createNode.from = mapSymbolEdgesToContainer(reverseEdgeMap, symbol, edgeThing("from", createNode));
     return createNode;
 };

@@ -58,46 +58,52 @@ export const applyPath = (node, path: REdge[]) => {
   return cur;
 };
 
-const mapSymbolEdges = (map, symbol, createFromEdge) =>
+const mapSymbolEdgesToContainer = (map, symbol, createFromEdge) =>
   new Map(
     (map.get(symbol) ?? []).map((edge) => [
       edge,
       contain(() => createFromEdge(edge)),
     ])
   );
+const mapSymbolEdgesToConstContainer = (map, symbol, createFromEdge) =>
+  new Map(
+    (map.get(symbol) ?? []).map((edge) => [
+      edge,
+      constContainer(createFromEdge(edge)),
+    ])
+  );
 
-const edgeToCreateFuncMap = (map, symbol, dir, visitNode) =>
-  mapSymbolEdges(map, symbol, (edge) => {
-    const edgePath = edge.path();
-    if (edgePath) {
-      const dirPath = dir === "from" ? invPath(edgePath) : edgePath;
+const edgeThing = (dir, visitNode) => (edge) => {
+  const edgePath = edge.path();
+  if (edgePath) {
+    const dirPath = dir === "from" ? invPath(edgePath) : edgePath;
 
-      const pre = applyPath(visitNode, dirPath.slice(0, -1));
-      const lastEdge = dirPath.at(-1);
+    const pre = applyPath(visitNode, dirPath.slice(0, -1));
+    const lastEdge = dirPath.at(-1);
 
-      const container = checkEdge(pre, lastEdge);
-      const toNode =
-        container.value === EMPTY
-          ? container.set(create(edgeTo(lastEdge)))
-          : container.value;
+    const container = checkEdge(pre, lastEdge);
+    const toNode =
+      container.value === EMPTY
+        ? container.set(create(edgeTo(lastEdge)))
+        : container.value;
 
-      toNode[dir === "to" ? "from" : "to"].set(edge, constContainer(visitNode));
+    toNode[dir === "to" ? "from" : "to"].set(edge, constContainer(visitNode));
 
-      if ("isReverse" in lastEdge) {
-        toNode.to.set(lastEdge.data, constContainer(pre));
-      } else {
-        toNode.from.set(lastEdge, constContainer(pre));
-      }
-
-      return toNode;
+    if ("isReverse" in lastEdge) {
+      toNode.to.set(lastEdge.data, constContainer(pre));
     } else {
-      const toNode = create(edge[dir]);
-
-      toNode[dir === "to" ? "from" : "to"].set(edge, constContainer(visitNode));
-
-      return toNode;
+      toNode.from.set(lastEdge, constContainer(pre));
     }
-  });
+
+    return toNode;
+  } else {
+    const toNode = create(edge[dir]);
+
+    toNode[dir === "to" ? "from" : "to"].set(edge, constContainer(visitNode));
+
+    return toNode;
+  }
+};
 
 const debugCounter = new Map<any, number>();
 
@@ -113,12 +119,15 @@ export const create = (symbol) => {
   };
   //console.log("CREATING!", symbol, t.get(symbol), "FROM", visit?.visitNode);
 
-  createNode.to = edgeToCreateFuncMap(edgeMap, symbol, "to", createNode);
-  createNode.from = edgeToCreateFuncMap(
+  createNode.to = mapSymbolEdgesToContainer(
+    edgeMap,
+    symbol,
+    edgeThing("to", createNode)
+  );
+  createNode.from = mapSymbolEdgesToContainer(
     reverseEdgeMap,
     symbol,
-    "from",
-    createNode
+    edgeThing("from", createNode)
   );
 
   return createNode;

@@ -63,6 +63,8 @@ export function makeOtherFunctions({ mul, neg, zero, nummul, one, add, inv, }) {
         return cur;
     };
     const pow = (x) => (n) => {
+        if (n === 0)
+            return one;
         let m;
         if (n < 0)
             m = -n;

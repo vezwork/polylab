@@ -98,6 +98,7 @@ export function makeOtherFunctions<T>({
     return cur;
   };
   const pow = (x: T) => (n: number) => {
+    if (n === 0) return one;
     let m;
     if (n < 0) m = -n;
     else m = n;

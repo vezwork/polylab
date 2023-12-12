@@ -17,7 +17,7 @@ function makeCircleSvgEl(color: string) {
   circle.setAttribute("r", "4");
   circle.setAttribute("fill", color);
 
-  svg.appendChild(circle);
+  svg.append(circle);
   return circle;
 }
 function makeLineSvgEl(color: string) {
@@ -26,7 +26,7 @@ function makeLineSvgEl(color: string) {
   line.setAttribute("stroke", color);
   line.setAttribute("stroke-linecap", "round");
 
-  svg.appendChild(line);
+  svg.prepend(line);
   return line;
 }
 
@@ -82,7 +82,6 @@ const arrow = (ob1, ob2) => {
 };
 
 const N = Symbol("N");
-let prevTime = 0;
 symbolConstructor.set(N, () => _(id)(id));
 
 const ar1 = arrow(N, N);
@@ -278,3 +277,6 @@ function draw() {
   propGen.next().value;
 }
 draw();
+
+// - should I add built-in change detection to propagate?
+//   - or should I research graph analysis methods to avoid backtracking?

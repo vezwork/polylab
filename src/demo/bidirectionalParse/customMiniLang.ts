@@ -230,10 +230,20 @@ export const run = (str, backward = false) => {
         fill(node)([ARG0, PARENT], [ARG1, (a, b) => b - a]);
         fill(node)([ARG1, PARENT], [ARG0, (a, b) => b - a]);
       }
+      if (node.fnId === "-") {
+        fill(node)([ARG0, ARG1], [PARENT, (a, b) => a - b]);
+        fill(node)([ARG0, PARENT], [ARG1, (a, b) => a - b]);
+        fill(node)([ARG1, PARENT], [ARG0, (a, b) => b + a]);
+      }
       if (node.fnId === "*") {
         fill(node)([ARG0, ARG1], [PARENT, (a, b) => a * b]);
         fill(node)([ARG0, PARENT], [ARG1, (a, b) => b / a]);
         fill(node)([ARG1, PARENT], [ARG0, (a, b) => b / a]);
+      }
+      if (node.fnId === "/") {
+        fill(node)([ARG0, ARG1], [PARENT, (a, b) => a / b]);
+        fill(node)([ARG0, PARENT], [ARG1, (a, b) => a / b]);
+        fill(node)([ARG1, PARENT], [ARG0, (a, b) => b * a]);
       }
       if (node.fnId === "**") {
         fill(node)([ARG0, ARG1], [PARENT, (a, b) => a ** b]);

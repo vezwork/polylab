@@ -1,6 +1,6 @@
 //import { setupFullscreenCanvas } from "../../../lib/draw/setupFullscreenCanvas.js";
-import { _, apply, applyToVec, erp, id, inv, pow, scale, translation, } from "../../../lib/math/CtxTransform.js";
-import { add, distance, rotateQuarterXY, rotateQuarterYX, setAngleFromVec, sub, v, } from "../../../lib/math/Vec2.js";
+import { _, apply, applyToVec, erp, id, inv, pow, scale, translation, assign as assignCtxTransform, } from "../../../lib/math/CtxTransform.js";
+import { add, distance, rotateQuarterXY, rotateQuarterYX, setAngleFromVec, sub, v, assign, } from "../../../lib/math/Vec2.js";
 import { mo, push } from "./lib.js";
 import { loopMo, loopWalk } from "./loopLib.js";
 const svg = document.getElementById("s");
@@ -9,18 +9,6 @@ const svg = document.getElementById("s");
 //   ctx.fillRect(...v, 20, 20);
 //   console.log("fill", color);
 // };
-const assign = (v1) => (v2) => {
-    v1[0] = v2[0];
-    v1[1] = v2[1];
-};
-const assignCtxTransform = (t1) => (t2) => {
-    t1[0] = t2[0];
-    t1[1] = t2[1];
-    t1[2] = t2[2];
-    t1[3] = t2[3];
-    t1[4] = t2[4];
-    t1[5] = t2[5];
-};
 function makeCircleSvgEl(color) {
     const circle = document.createElementNS(svg.namespaceURI, "circle");
     circle.setAttribute("r", "4");

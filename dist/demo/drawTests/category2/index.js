@@ -1,6 +1,7 @@
-import { apply, translation, inv as tInv, } from "../../../lib/math/CtxTransform.js";
-import { applyPath, create, edge, inv } from "./lib.js";
-import { EMPTY } from "./libContain.js";
+import { randomNiceCssOklab } from "../../../lib/math/Color.js";
+import { translation, inv as tInv, id, _, approxEq, assign, } from "../../../lib/math/CtxTransform.js";
+import { v } from "../../../lib/math/Vec2.js";
+import { create, edge, inv } from "./lib.js";
 const svg = document.getElementById("s");
 function makeCircleSvgEl(color) {
     const circle = document.createElementNS(svg.namespaceURI, "circle");
@@ -17,102 +18,220 @@ function makeLineSvgEl(color) {
     svg.appendChild(line);
     return line;
 }
-const assign = (v1) => (v2) => (tFunc) => {
-    const vec = [Number(v2.getAttribute("cx")), Number(v2.getAttribute("cy"))];
-    const tVec = tFunc(vec);
-    v1.setAttribute("cx", tVec[0]);
-    v1.setAttribute("cy", tVec[1]);
-};
 const linkFn = new Map();
 const linkFnInv = new Map();
-const arrow = (ob1, ob2, toLink, fromLink) => {
-    const arrowOb = () => {
-        const line = makeLineSvgEl("black");
-        return line;
-    };
-    const e = edge(ob1, ob2);
-    linkFn.set(e, toLink);
-    linkFnInv.set(e, fromLink);
-    const e1 = edge(ob1, arrowOb);
-    linkFn.set(e1, (o1, a) => {
-        console.log("o1 to a", o1.getAttribute("cx"), o1.getAttribute("cy"));
-        a.setAttribute("x1", o1.getAttribute("cx"));
-        a.setAttribute("y1", o1.getAttribute("cy"));
+const symbolConstructor = new Map();
+const arrow = (ob1, ob2) => {
+    const prod = Symbol("prod");
+    symbolConstructor.set(prod, () => ({
+        cur: [undefined, undefined],
+        prev: [undefined, undefined],
+    }));
+    const pe1 = edge(ob1, prod);
+    linkFn.set(pe1, (o1, { cur, prev }) => {
+        if (prev[0] === undefined)
+            prev[0] = _(id)(id);
+        if (cur[0] !== undefined)
+            assign(prev[0])(cur[0]);
+        if (cur[0] === undefined)
+            cur[0] = _(id)(id);
+        if (approxEq(o1)(cur[0]))
+            return false;
+        assign(cur[0])(o1);
     });
-    linkFnInv.set(e1, (a, o1) => {
-        // if (aOld.getAttribute("x1") === a.getAttribute("x1") && aOld.getAttribute("y1") === a.getAttribute("y1")) return false;
-        console.log("a to o1", a.getAttribute("x1"), a.getAttribute("y1"));
-        o1.setAttribute("cx", a.getAttribute("x1"));
-        o1.setAttribute("cy", a.getAttribute("y1"));
+    linkFnInv.set(pe1, ({ cur, prev }, o1) => {
+        if (cur[0] === undefined ||
+            (prev[0] !== undefined && approxEq(cur[0])(prev[0])))
+            return false;
+        if (approxEq(o1)(cur[0]))
+            return false;
+        assign(o1)(cur[0]);
     });
-    const e2 = edge(ob2, arrowOb, () => [inv(e), e1]);
-    linkFn.set(e2, (o2, a) => {
-        console.log("o2 to a", o2.getAttribute("cx"), o2.getAttribute("cy"));
-        a.setAttribute("x2", o2.getAttribute("cx"));
-        a.setAttribute("y2", o2.getAttribute("cy"));
+    const pe2 = edge(ob2, prod);
+    linkFn.set(pe2, (o2, { cur, prev }) => {
+        if (prev[1] === undefined)
+            prev[1] = _(id)(id);
+        if (cur[1] !== undefined)
+            assign(prev[1])(cur[1]);
+        if (cur[1] === undefined)
+            cur[1] = _(id)(id);
+        if (approxEq(o2)(cur[1]))
+            return false;
+        assign(cur[1])(o2);
     });
-    linkFnInv.set(e2, (a, o2) => {
-        console.log("a to o2", a.getAttribute("x2"), a.getAttribute("y2"));
-        o2.setAttribute("cx", a.getAttribute("x2"));
-        o2.setAttribute("cy", a.getAttribute("y2"));
+    linkFnInv.set(pe2, ({ cur, prev }, o2) => {
+        if (cur[1] === undefined ||
+            (prev[1] !== undefined && approxEq(cur[1])(prev[1])))
+            return false;
+        if (approxEq(o2)(cur[1]))
+            return false;
+        assign(o2)(cur[1]);
     });
-    return [e, e1, e2];
+    return [prod, pe1, pe2];
 };
-const N = () => {
-    const dot = makeCircleSvgEl("red");
-    return dot;
-};
+const N = Symbol("N");
+let prevTime = 0;
+symbolConstructor.set(N, () => _(id)(id));
+const ar1 = arrow(N, N);
+const ar2 = arrow(N, N);
 const botLeftT = translation([-10, 10]);
-const [e11, a11, a12] = arrow(N, N, (n1, n2) => assign(n2)(n1)((v) => apply(botLeftT)(v)), (n2, n1) => assign(n2)(n1)((v) => apply(tInv(botLeftT))(v)));
+const e1 = edge(N, N, () => [ar1[1], inv(ar1[2])]);
+linkFn.set(e1, (t1, t2) => {
+    const newT = _(botLeftT)(t1);
+    if (approxEq(t2)(newT))
+        return false;
+    assign(t2)(newT);
+});
+linkFnInv.set(e1, (t2, t1) => {
+    const newT = _(t2)(tInv(botLeftT));
+    if (approxEq(t1)(newT))
+        return false;
+    assign(t1)(newT);
+});
 const botRightT = translation([10, 10]);
-const [e21, a21, a22] = arrow(N, N, (n1, n2) => assign(n2)(n1)((v) => apply(botRightT)(v)), (n2, n1) => assign(n2)(n1)((v) => apply(tInv(botRightT))(v)));
-const n = create(N);
-console.log(applyPath(n, [e11]) === applyPath(n, [a11, inv(a12)]));
-console.log(applyPath(n, [e21]) === applyPath(n, [a21, inv(a22)]));
-applyPath(n, [inv(e11), a11, inv(a12)]);
-applyPath(n, [e11, a21, inv(a22)]);
-applyPath(n, [e21, a21, inv(a22)]);
-applyPath(n, [e21, e21, a21, inv(a22)]);
-applyPath(n, [e21, e21, a11, inv(a12)]);
-// note: removing the first line does not change what has been instantiated, but it does
-//   change the order of instatiation, resulting in a differently layered drawing
-const push = (start) => {
-    const visitedNodes = new Set([start]);
+const e2 = edge(N, N, () => [ar2[1], inv(ar2[2])]);
+linkFn.set(e2, (t1, t2) => {
+    const newT = _(botRightT)(t1);
+    if (approxEq(newT)(t2))
+        return false;
+    assign(t2)(newT);
+});
+linkFnInv.set(e2, (t2, t1) => {
+    const newT = _(t2)(tInv(botRightT));
+    if (approxEq(newT)(t1))
+        return false;
+    assign(t1)(newT);
+});
+const Nsvg = Symbol("Nsvg");
+symbolConstructor.set(Nsvg, () => makeCircleSvgEl(randomNiceCssOklab()));
+const nsvgE = edge(N, Nsvg);
+linkFn.set(nsvgE, (t, svg) => {
+    svg.setAttribute("cx", t[4]);
+    svg.setAttribute("cy", t[5]);
+    return false;
+});
+linkFnInv.set(nsvgE, (svg, t) => {
+    t[4] = Number(svg.getAttribute("cx"));
+    t[5] = Number(svg.getAttribute("cy"));
+});
+const ar1svg = Symbol("ar1svg");
+symbolConstructor.set(ar1svg, () => makeLineSvgEl("black"));
+const ar1svgE = edge(ar1[0], ar1svg);
+linkFn.set(ar1svgE, ({ cur }, svg) => {
+    if (cur[0] === undefined || cur[1] === undefined)
+        return false;
+    svg.setAttribute("x1", cur[0][4]);
+    svg.setAttribute("y1", cur[0][5]);
+    svg.setAttribute("x2", cur[1][4]);
+    svg.setAttribute("y2", cur[1][5]);
+    return false;
+});
+linkFnInv.set(ar1svgE, (svg, { cur, prev }) => {
+    assign(prev[0])(cur[0]);
+    assign(cur[0])([
+        cur[0][0],
+        cur[0][1],
+        cur[0][2],
+        cur[0][3],
+        Number(svg.getAttribute("x1")),
+        Number(svg.getAttribute("y1")),
+    ]);
+    assign(prev[1])(cur[1]);
+    assign(cur[1])([
+        cur[1][0],
+        cur[1][1],
+        cur[1][2],
+        cur[1][3],
+        Number(svg.getAttribute("x2")),
+        Number(svg.getAttribute("y2")),
+    ]);
+});
+const ar2svg = Symbol("ar2svg");
+symbolConstructor.set(ar2svg, () => makeLineSvgEl("black"));
+const ar2svgE = edge(ar2[0], ar2svg);
+linkFn.set(ar2svgE, ({ cur }, svg) => {
+    if (cur[0] === undefined || cur[1] === undefined)
+        return false;
+    svg.setAttribute("x1", cur[0][4]);
+    svg.setAttribute("y1", cur[0][5]);
+    svg.setAttribute("x2", cur[1][4]);
+    svg.setAttribute("y2", cur[1][5]);
+    return false;
+});
+linkFnInv.set(ar2svgE, (svg, { cur, prev }) => {
+    assign(prev[0])(cur[0]);
+    assign(cur[0])([
+        cur[0][0],
+        cur[0][1],
+        cur[0][2],
+        cur[0][3],
+        Number(svg.getAttribute("x1")),
+        Number(svg.getAttribute("y1")),
+    ]);
+    assign(prev[1])(cur[1]);
+    assign(cur[1])([
+        cur[1][0],
+        cur[1][1],
+        cur[1][2],
+        cur[1][3],
+        Number(svg.getAttribute("x2")),
+        Number(svg.getAttribute("y2")),
+    ]);
+});
+function* propagateForward(start, startData = symbolConstructor.get(start.symbol)()) {
+    const nodeData = new Map([[start, startData]]);
     const queue = [start];
-    function inner() {
-        for (let i = 0; i < 40; i++) {
-            const currentVertex = queue.shift();
-            for (const [edge, toContainer] of currentVertex.to.entries()) {
-                const to = toContainer.value;
-                if (to === EMPTY)
-                    continue;
-                linkFn.get(edge)(currentVertex.data, to.data);
-                if (!visitedNodes.has(to)) {
-                    visitedNodes.add(to);
-                    queue.push(to);
-                }
-            }
-            for (const [edge, toContainer] of currentVertex.from.entries()) {
-                const to = toContainer.value;
-                if (to === EMPTY)
-                    continue;
-                linkFnInv.get(edge)(to.data, currentVertex.data);
-                if (!visitedNodes.has(to)) {
-                    visitedNodes.add(to);
-                    queue.push(to);
-                }
-            }
-            if (queue.length === 0)
-                break;
+    while (queue.length !== 0) {
+        const currentNode = queue.shift();
+        //outgoing edges only for now
+        for (const [edge, toContainer] of currentNode.to.entries()) {
+            const fn = linkFn.get(edge);
+            const fromData = nodeData.get(currentNode);
+            const to = toContainer.get();
+            const toData = nodeData.get(to) ??
+                nodeData.set(to, symbolConstructor.get(to.symbol)()).get(to);
+            const optionalPropagate = fn(fromData, toData);
+            if (optionalPropagate !== false)
+                queue.push(to);
         }
-        if (queue.length !== 0)
-            requestAnimationFrame(inner);
+        yield currentNode;
     }
-    inner();
-};
-n.data.setAttribute("cx", 20);
-n.data.setAttribute("cy", 20);
-push(n);
-applyPath(n, [e11]).data.setAttribute("cx", 30);
-applyPath(n, [e11]).data.setAttribute("cy", 20);
-push(applyPath(n, [e11]));
+}
+function* propagate(start, startData = symbolConstructor.get(start.symbol)()) {
+    const nodeData = new Map([[start, startData]]);
+    const queue = [start];
+    while (queue.length !== 0) {
+        const currentNode = queue.shift();
+        for (const [edge, toContainer] of currentNode.to.entries()) {
+            const fn = linkFn.get(edge);
+            const from = currentNode;
+            const fromData = nodeData.get(from);
+            const to = toContainer.get();
+            const toData = nodeData.get(to) ??
+                nodeData.set(to, symbolConstructor.get(to.symbol)()).get(to);
+            const optionalPropagate = fn(fromData, toData);
+            if (optionalPropagate !== false)
+                queue.push(to);
+        }
+        for (const [edge, fromContainer] of currentNode.from.entries()) {
+            const fn = linkFnInv.get(edge);
+            const to = currentNode;
+            const toData = nodeData.get(to);
+            const from = fromContainer.get();
+            const fromData = nodeData.get(from) ??
+                nodeData.set(from, symbolConstructor.get(from.symbol)()).get(from);
+            const optionalPropagate = fn(toData, fromData);
+            if (optionalPropagate !== false)
+                queue.push(from);
+        }
+        yield currentNode;
+    }
+}
+// test
+const n = create(N);
+const propGen = propagate(n, translation(v(100)));
+function draw() {
+    requestAnimationFrame(draw);
+    propGen.next().value;
+}
+draw();

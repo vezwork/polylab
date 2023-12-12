@@ -10,6 +10,14 @@ export function randomCssRgb() {
 export function cssRgbFromGradientSample(c1, c2, percent) {
     return cssRgbFromRgb(rgbFromGradientSample(c1, c2, percent));
 }
+export function randomNiceCssOklab() {
+    return `oklab(${0.7} ${(Math.random() * 0.8 - 0.4).toFixed(2)} ${(Math.random() * 0.8 -
+        0.4).toFixed(2)})`;
+}
+export function randomCssOklab() {
+    return `oklab(${0.7} ${(Math.random() * 0.8 - 0.4).toFixed(2)} ${(Math.random() * 0.8 -
+        0.4).toFixed(2)})`;
+}
 export function rgbFromGradientSample(c1, c2, percent) {
     const [r1, g1, b1] = rgbFromNum(c1);
     const [r2, g2, b2] = rgbFromNum(c2);

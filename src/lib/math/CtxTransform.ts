@@ -121,3 +121,20 @@ export const { exp, pow, sqrt, div, divTo } = makeOtherFunctions({
 export const erp =
   (start: CtxTransform) => (end: CtxTransform) => (n: number) =>
     _(start)(pow(divTo(start)(end))(n));
+
+export const approxEq = (t1: CtxTransform) => (t2: CtxTransform) =>
+  Math.abs(t1[0] - t2[0]) <= Number.EPSILON &&
+  Math.abs(t1[1] - t2[1]) <= Number.EPSILON &&
+  Math.abs(t1[2] - t2[2]) <= Number.EPSILON &&
+  Math.abs(t1[3] - t2[3]) <= Number.EPSILON &&
+  Math.abs(t1[4] - t2[4]) <= Number.EPSILON &&
+  Math.abs(t1[5] - t2[5]) <= Number.EPSILON;
+
+export const assign = (t1: CtxTransform) => (t2: CtxTransform) => {
+  t1[0] = t2[0];
+  t1[1] = t2[1];
+  t1[2] = t2[2];
+  t1[3] = t2[3];
+  t1[4] = t2[4];
+  t1[5] = t2[5];
+};

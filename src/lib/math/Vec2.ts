@@ -71,3 +71,8 @@ export const setAngle = (theta: number) => (v: Vec2) =>
   mul(length(v), normalVec2FromAngle(theta));
 export const setAngleFromVec = (angleVec: Vec2) => (v: Vec2) =>
   mul(length(v), normalize(angleVec));
+
+export const assign = (v1: Vec2) => (v2: Vec2) => {
+  v1[0] = v2[0];
+  v1[1] = v2[1];
+};

@@ -79,7 +79,6 @@ export const create = (symbol) => {
     const createNode = {
         t: debugCounter.get(symbol),
         symbol,
-        data: typeof symbol === "function" ? symbol() : undefined,
     };
     //console.log("CREATING!", symbol, t.get(symbol), "FROM", visit?.visitNode);
     createNode.to = edgeToCreateFuncMap(edgeMap, symbol, "to", createNode);

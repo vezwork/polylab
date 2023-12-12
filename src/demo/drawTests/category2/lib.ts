@@ -1,6 +1,10 @@
 import { EMPTY, constContainer, contain } from "./libContain.js";
 
-type Edge = { from: unknown; to: unknown; path: () => REdge[] | undefined };
+export type Edge = {
+  from: unknown;
+  to: unknown;
+  path: () => REdge[] | undefined;
+};
 type REdge = Edge | { isReverse: boolean; data: Edge };
 
 export const edgeMap = new Map<unknown, Edge[]>();
@@ -109,7 +113,6 @@ export const create = (symbol) => {
   const createNode: any = {
     t: debugCounter.get(symbol),
     symbol,
-    data: typeof symbol === "function" ? symbol() : undefined,
   };
   //console.log("CREATING!", symbol, t.get(symbol), "FROM", visit?.visitNode);
 

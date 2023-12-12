@@ -13,6 +13,7 @@ import {
   scale,
   subEntries,
   translation,
+  assign as assignCtxTransform,
 } from "../../../lib/math/CtxTransform.js";
 import {
   Vec2,
@@ -25,6 +26,7 @@ import {
   setLength,
   sub,
   v,
+  assign,
 } from "../../../lib/math/Vec2.js";
 import { Field, makeOtherFunctions } from "../../../lib/math2/num.js";
 import { at, take } from "../../../lib/structure/Iterable.js";
@@ -38,18 +40,6 @@ const svg = document.getElementById("s")! as unknown as SVGElement;
 //   ctx.fillRect(...v, 20, 20);
 //   console.log("fill", color);
 // };
-const assign = (v1: Vec2) => (v2: Vec2) => {
-  v1[0] = v2[0];
-  v1[1] = v2[1];
-};
-const assignCtxTransform = (t1: CtxTransform) => (t2: CtxTransform) => {
-  t1[0] = t2[0];
-  t1[1] = t2[1];
-  t1[2] = t2[2];
-  t1[3] = t2[3];
-  t1[4] = t2[4];
-  t1[5] = t2[5];
-};
 
 function makeCircleSvgEl(color: string) {
   const circle = document.createElementNS(svg.namespaceURI, "circle");

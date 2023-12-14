@@ -280,3 +280,4 @@ draw();
 
 // - should I add built-in change detection to propagate?
 //   - or should I research graph analysis methods to avoid backtracking?
+//     - the issue is from products

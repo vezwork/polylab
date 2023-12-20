@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "tsc & cpx \"./src/**/*.{html,png,jpg,svg,js}\" ./dist/",
-    "watch": "tsc --watch & cpx --watch \"./src/**/*.{html,png,jpg,svg,js}\" ./dist/ & http-server --no-cache"
+    "build": "tsc & cpx \"./src/**/*.{html,png,jpg,svg,js,mp4}\" ./dist/",
+    "watch": "tsc --watch & cpx --watch \"./src/**/*.{html,png,jpg,svg,js,mp4}\" ./dist/ & http-server --no-cache"
   },
   "devDependencies": {
     "cpx": "^1.5.0",

@@ -7,7 +7,7 @@ export const edge = (from, to, path = () => undefined) => {
     reverseEdgeMap.set(to, [...(reverseEdgeMap.get(to) ?? []), data]);
     return data;
 };
-const edgeData = (edge) => ("isReverse" in edge ? edge.data : edge);
+export const edgeData = (edge) => "isReverse" in edge ? edge.data : edge;
 const edgeTo = (edge) => "isReverse" in edge ? edge.data.from : edge.to;
 export const inv = (edge) => {
     if ("isReverse" in edge)

@@ -1,17 +1,17 @@
 import { EMPTY, constContainer, contain } from "./libContain.js";
 
 export type Edge = {
-  from: unknown;
-  to: unknown;
+  from: symbol;
+  to: symbol;
   path: () => REdge[] | undefined;
 };
 type REdge = Edge | { isReverse: boolean; data: Edge };
 
-export const edgeMap = new Map<unknown, Edge[]>();
-export const reverseEdgeMap = new Map<unknown, Edge[]>();
+export const edgeMap = new Map<symbol, Edge[]>();
+export const reverseEdgeMap = new Map<symbol, Edge[]>();
 export const edge = (
-  from: unknown,
-  to: unknown,
+  from: symbol,
+  to: symbol,
   path: () => REdge[] | undefined = () => undefined
 ) => {
   const data: Edge = { from, to, path };
@@ -20,7 +20,8 @@ export const edge = (
   return data;
 };
 
-const edgeData = (edge: REdge) => ("isReverse" in edge ? edge.data : edge);
+export const edgeData = (edge: REdge) =>
+  "isReverse" in edge ? edge.data : edge;
 const edgeTo = (edge: REdge) =>
   "isReverse" in edge ? edge.data.from : edge.to;
 

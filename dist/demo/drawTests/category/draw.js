@@ -219,6 +219,9 @@ function camera() {
     const ato = _(pow(rel)(scroll))(initThing);
     const scrollTarget = inv(_(_(scale(v(0.01)))(translation(v(-3, -3))))(ato));
     camV += (vTarget - camV) * 0.1;
+    // bug: erp is unstable, I think because there may be multiple solutions to `matrix ^ (1/n)`.
+    // - it is especially bad when the matrices are quite different scales?
+    // - could possibly be fixed by using gradient descent to find nearest solution.
     assignCtxTransform(camT)(erp(id)(scrollTarget)(camV));
     push(camT);
     svg.setAttribute("transform", `matrix(${camT[0].toFixed(6)},${camT[1].toFixed(6)},${camT[2].toFixed(6)},${camT[3].toFixed(6)},${camT[4].toFixed(6)},${camT[5].toFixed(6)})`);

@@ -299,6 +299,9 @@ function camera() {
   const scrollTarget = inv(_(_(scale(v(0.01)))(translation(v(-3, -3))))(ato));
 
   camV += (vTarget - camV) * 0.1;
+  // bug: erp is unstable, I think because there may be multiple solutions to `matrix ^ (1/n)`.
+  // - it is especially bad when the matrices are quite different scales?
+  // - could possibly be fixed by using gradient descent to find nearest solution.
   assignCtxTransform(camT)(erp(id)(scrollTarget)(camV));
   push(camT);
 

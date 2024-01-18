@@ -9,6 +9,7 @@ import {
 } from "../../../lib/math/CtxTransform.js";
 import { v } from "../../../lib/math/Vec2.js";
 import { Edge, create, edge, edgeMap, inv, reverseEdgeMap } from "./lib.js";
+import { splits } from "./splits.js";
 
 const svg = document.getElementById("s")! as unknown as SVGElement;
 
@@ -202,19 +203,24 @@ function* propagateForward(
 
     //outgoing edges only for now
     for (const [edge, toContainer] of currentNode.to.entries()) {
-      const fn = linkFn.get(edge);
+      const split = splits.get(edge);
 
-      const fromData = nodeData.get(currentNode);
+      if (split) {
+      } else {
+        const fn = linkFn.get(edge);
 
-      const to = toContainer.get();
+        const fromData = nodeData.get(currentNode);
 
-      const toData =
-        nodeData.get(to) ??
-        nodeData.set(to, symbolConstructor.get(to.symbol)()).get(to);
+        const to = toContainer.get();
 
-      const optionalPropagate = fn(fromData, toData);
+        const toData =
+          nodeData.get(to) ??
+          nodeData.set(to, symbolConstructor.get(to.symbol)()).get(to);
 
-      if (optionalPropagate !== false) queue.push(to);
+        const optionalPropagate = fn(fromData, toData);
+
+        if (optionalPropagate !== false) queue.push(to);
+      }
     }
 
     yield currentNode;

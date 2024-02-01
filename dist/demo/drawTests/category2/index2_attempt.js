@@ -2,7 +2,7 @@ import { randomNiceCssOklab } from "../../../lib/math/Color.js";
 import { translation, inv as tInv, id, _, approxEq, assign, } from "../../../lib/math/CtxTransform.js";
 import { v } from "../../../lib/math/Vec2.js";
 import { create, edge, inv } from "./lib.js";
-import { splits } from "./splits.js";
+import { splits } from "./splits_attempts.js";
 const svg = document.getElementById("s");
 function makeCircleSvgEl(color) {
     const circle = document.createElementNS(svg.namespaceURI, "circle");

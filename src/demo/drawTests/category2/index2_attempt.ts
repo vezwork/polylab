@@ -9,7 +9,7 @@ import {
 } from "../../../lib/math/CtxTransform.js";
 import { v } from "../../../lib/math/Vec2.js";
 import { Edge, create, edge, edgeMap, inv, reverseEdgeMap } from "./lib.js";
-import { splits } from "./splits.js";
+import { splits } from "./splits_attempts.js";
 
 const svg = document.getElementById("s")! as unknown as SVGElement;
 

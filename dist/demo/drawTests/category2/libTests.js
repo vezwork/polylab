@@ -45,6 +45,12 @@ const runTests = () => {
     const XX = edge(X, X, () => [inv(XX)]);
     const x0 = create(X);
     tests("4: XX 2-cycle", ["XX = inv(XX)", applyPath(x0, [XX]) === applyPath(x0, [inv(XX)])], ["XX XX = id", x0, applyPath(x0, [XX, XX]) === x0]);
+    // NOTE: THIS DOES NOT WORK
+    const A = Symbol("A");
+    const AA1 = edge(A, A, () => [inv(AA1), AA2, AA1]);
+    const AA2 = edge(A, A);
+    const a0 = create(A); // COMMENTED OUT BECAUSE THIS DOES NOT WORK
+    // tests("5: commuting edges AA1 and AA2", ["just works", applyPath(a0, [AA2])]);
     function tests(title, ...items) {
         let failures = 0;
         for (const [name, test] of items) {

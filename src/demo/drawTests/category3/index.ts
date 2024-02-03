@@ -1,12 +1,17 @@
-import { _, id, rotation } from "../../../lib/math/CtxTransform.js";
+import {
+  CtxTransform,
+  _,
+  id,
+  rotation,
+} from "../../../lib/math/CtxTransform.js";
 import { add, v, assign as assignV } from "../../../lib/math/Vec2.js";
 import {
   constructor,
-  e,
+  e as edge,
   isConnected,
   propagate,
   propagateForward,
-  se,
+  se as splitEdge,
   words,
 } from "./api.js";
 import {
@@ -34,9 +39,9 @@ const blueLineSvgEl = constructor(() => makeLineSvgEl("blue"), "blueLineSvgEl");
 const basis = constructor(() => [v(100, 0), v(0, 100)], "basis");
 const t = constructor(() => _(id)(id), "t");
 
-e(origin, originSvgEl)(svgCircleTIso);
+edge(origin, originSvgEl)(svgCircleTIso);
 
-const [eOriginToOriginRed, eRedToOriginRed] = se(
+const [eOriginToOriginRed, eRedToOriginRed] = splitEdge(
   origin,
   red,
   originRed
@@ -44,10 +49,10 @@ const [eOriginToOriginRed, eRedToOriginRed] = se(
   forward: (o, r, or) => assignV(or)(add(o, r)),
   backward: (or, o, r) => console.warn("backward or o r"),
 });
-e(originRed, redSvgEl)(svgCircleTIso);
-se(originRed, origin, redLineSvgEl, [eOriginToOriginRed])(svgLineTIso);
+edge(originRed, redSvgEl)(svgCircleTIso);
+splitEdge(originRed, origin, redLineSvgEl, [eOriginToOriginRed])(svgLineTIso);
 
-const [eOriginToOriginBlue, eBlueToOriginBlue] = se(
+const [eOriginToOriginBlue, eBlueToOriginBlue] = splitEdge(
   origin,
   blue,
   originBlue
@@ -55,10 +60,12 @@ const [eOriginToOriginBlue, eBlueToOriginBlue] = se(
   forward: (o, b, ob) => assignV(ob)(add(o, b)),
   backward: (ob, o, b) => console.warn("backward ob o b"),
 });
-e(originBlue, blueSvgEl)(svgCircleTIso);
-se(originBlue, origin, blueLineSvgEl, [eOriginToOriginBlue])(svgLineTIso);
+edge(originBlue, blueSvgEl)(svgCircleTIso);
+splitEdge(originBlue, origin, blueLineSvgEl, [eOriginToOriginBlue])(
+  svgLineTIso
+);
 
-e(
+edge(
   red,
   blue,
   invPath([
@@ -68,7 +75,7 @@ e(
     inv(eRedToOriginRed),
   ])
 )(isoFromT(rotation(Math.PI / 2)));
-const [eRedToBasis] = se(red, blue, basis, [
+const [eRedToBasis] = splitEdge(red, blue, basis, [
   eBlueToOriginBlue,
   inv(eOriginToOriginBlue),
   eOriginToOriginRed,
@@ -83,11 +90,8 @@ const [eRedToBasis] = se(red, blue, basis, [
     assignV(b)(basis[1]);
   },
 });
-console.log(
-  "isConnected",
-  isConnected([inv(eRedToBasis), eRedToOriginRed, inv(eOriginToOriginRed)])
-);
-const [eOriginToT, eBasisToT] = se(origin, basis, t, [
+
+splitEdge(origin, basis, t, [
   inv(eRedToBasis),
   eRedToOriginRed,
   inv(eOriginToOriginRed),
@@ -110,38 +114,22 @@ const [eOriginToT, eBasisToT] = se(origin, basis, t, [
   },
 });
 
-// this is problematic:
-console.log(
-  "proof that path accross split is not connected, but there is a connected path to both sides of the split from the start of the walk",
-  isConnected([inv(eBasisToT), inv(eRedToBasis)]),
-  isConnected([eOriginToOriginRed, inv(eRedToOriginRed)]),
-  // I want a function that evaluates to true for this input? nvm I have it
-  // I just wasn't simplifying (via the group operation) before so isConnected wasn't correct
-  // also there was a bug in matchPrefix
-  isConnected([
-    inv(eBasisToT),
-    inv(eRedToBasis),
-    eRedToOriginRed,
-    inv(eOriginToOriginRed),
-  ])
-);
-// it means my assumptions about how split reachability relates to propagation are wrong
-// we should not be checking if the path between split sources is connected
-// we should instead be checking if there is a connected path from the start of the walk to the split sources
-// - this sounds more difficult.... with our current method we have a path and just have to check it
-//   with the correct method we have to find a path out of all possible paths that checks out
+const recursiveTransform = [1.1, 0.1, -0.1, 1.1, 1, 1] as CtxTransform;
+const initialTransform = [5, 0, 0, 5, 120, 120] as CtxTransform;
 
-const walk = propagate(t, [25, 0, 0, 25, 10, 20]);
+edge(t, t)(isoFromT(recursiveTransform));
+
+const walk = propagate(t, initialTransform);
 function draw() {
   const { value, done } = walk.next();
   if (!done) requestAnimationFrame(draw);
-  console.log(value);
+  // console.log(value);
 }
 draw();
 
-// notes:
-// - this is really just about exploring free groups / torsors. Commutativity is not supported for example.
-// - constructors should be optional, should be called initializers
+// working notes:
+// - this is really just about exploring free groups. Commutativity is not supported for example.
+// - constructors should be optional, should be called initializers.
 // - edge functions should be functional with optional side effects for initialized stuff?
 // - splits are an unecessary concept. "splits" should just be when a node has multiple edges
 //   pointing into it. I think.

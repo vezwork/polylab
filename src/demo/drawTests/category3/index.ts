@@ -115,14 +115,15 @@ splitEdge(origin, basis, t, [
 });
 
 const recursiveTransform = [1.1, 0.1, -0.1, 1.1, 1, 1] as CtxTransform;
-const initialTransform = [5, 0, 0, 5, 120, 120] as CtxTransform;
+const initialTransform = [30, 0, 0, 30, 120, 120] as CtxTransform;
 
-edge(t, t)(isoFromT(recursiveTransform));
+edge(t, t)(isoFromT([1, 0.1, -0.1, 1, 0, 1.5]));
+edge(t, t)(isoFromT([1, 0, 0, 1, 1.5, 0]));
 
 const walk = propagate(t, initialTransform);
 function draw() {
   const { value, done } = walk.next();
-  if (!done) requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
   // console.log(value);
 }
 draw();

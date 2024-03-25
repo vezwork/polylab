@@ -120,6 +120,8 @@ const mapSymbolEdges = (map, symbol, createFromEdge) =>
       contain(() => createFromEdge(edge)),
     ])
   );
+// provides a way to lazily create instances of related symbols.
+// necessary for infinite/looping graphs.
 const edgeToCreateFuncMap = (
   map: Map<symbol, Edge[]>,
   symbol: symbol,

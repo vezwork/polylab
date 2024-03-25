@@ -126,7 +126,7 @@ export function* propagate(start, startData = symbolConstructor.get(start)()) {
             const split = splits.get(edge);
             if (split) {
                 const fn = linkFn.get(split);
-                // check connectivity of split (should just be precomputed tho)
+                // check connectivity of split (should just be precomputed tho?)
                 const isSplitConnected = isConnected([
                     ...path,
                     split[0],
@@ -168,12 +168,8 @@ export function* propagate(start, startData = symbolConstructor.get(start)()) {
                 queue.push([to, [...path, edge]]);
             }
         }
-        const doneFromSplits = new Set();
         for (const [edge, fromContainer] of currentNode.from.entries()) {
             const split = splits.get(edge);
-            if (doneFromSplits.has(split))
-                continue;
-            doneFromSplits.add(split);
             if (split) {
                 const splitSources = split.map((e) => applyPath(currentNode, [inv(e)]));
                 if (splitSources.some((s) => visits.has(s)))

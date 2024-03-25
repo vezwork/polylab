@@ -91,6 +91,8 @@ const mapSymbolEdges = (map, symbol, createFromEdge) => new Map((map.get(symbol)
     edge,
     contain(() => createFromEdge(edge)),
 ]));
+// provides a way to lazily create instances of related symbols.
+// necessary for infinite/looping graphs.
 const edgeToCreateFuncMap = (map, symbol, dir, visitNode) => mapSymbolEdges(map, symbol, (edge) => {
     const edgePath = edge.path();
     if (edgePath) {

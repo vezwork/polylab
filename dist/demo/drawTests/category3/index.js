@@ -92,3 +92,5 @@ draw();
 //     - comes back to products just being tuples of the input data
 //     - comes back to the problem of a single node having multiple splits like polar vs cartesian decomp
 //       - but this can be achieved by having two products with an iso between them...
+//   - after making category4finite I think that splits are a necessary concept, specifically
+//     for bidirectional products to work.

@@ -32,10 +32,10 @@ const get = <A, B>(map: Map<A, Iterable<B>>, key: A): B[] => [
 ];
 
 // same as init but without the pulls after the inner while loop
-export const push = (start) => {
-  const visitedNodes = new Set();
+export const push = (...starts: any[]) => {
+  const visitedNodes = new Set(starts);
   const visitedEdges = new Set();
-  const unvisitedProducts = new Set([start]);
+  const unvisitedProducts = new Set(starts);
 
   while (unvisitedProducts.size > 0) {
     const queue = [...unvisitedProducts];
@@ -68,47 +68,47 @@ export const push = (start) => {
   }
 };
 
-export const init = (start) => {
-  const visitedNodes = new Set();
-  const visitedEdges = new Set();
-  const unvisitedProducts = new Set([start]);
+// export const init = (start) => {
+//   const visitedNodes = new Set();
+//   const visitedEdges = new Set();
+//   const unvisitedProducts = new Set([start]);
 
-  while (unvisitedProducts.size > 0) {
-    const queue = [...unvisitedProducts];
-    unvisitedProducts.clear();
+//   while (unvisitedProducts.size > 0) {
+//     const queue = [...unvisitedProducts];
+//     unvisitedProducts.clear();
 
-    while (queue.length > 0) {
-      const from = queue.shift();
-      unvisitedProducts.delete(from);
-      console.group("push visiting!");
-      console.log("visiting: ", from);
+//     while (queue.length > 0) {
+//       const from = queue.shift();
+//       unvisitedProducts.delete(from);
+//       console.group("push visiting!");
+//       console.log("visiting: ", from);
 
-      for (const forward of get(cat, from)) {
-        const [edge, to] = forward;
-        if (visitedNodes.has(to)) continue;
-        visitedEdges.add(forward);
+//       for (const forward of get(cat, from)) {
+//         const [edge, to] = forward;
+//         if (visitedNodes.has(to)) continue;
+//         visitedEdges.add(forward);
 
-        console.log("push edge 1", edge, from, to);
-        edge(from, to);
-        console.log("push edge 2", edge, from, to);
+//         console.log("push edge 1", edge, from, to);
+//         edge(from, to);
+//         console.log("push edge 2", edge, from, to);
 
-        // only propagate once all ands are visited, to ensure
-        // products are fully valuated before propagation
-        const andsAreVisited = get(ands, forward).every((andEdge) =>
-          visitedEdges.has(andEdge)
-        );
+//         // only propagate once all ands are visited, to ensure
+//         // products are fully valuated before propagation
+//         const andsAreVisited = get(ands, forward).every((andEdge) =>
+//           visitedEdges.has(andEdge)
+//         );
 
-        if (andsAreVisited) {
-          queue.push(to);
-          visitedNodes.add(to);
-        } else unvisitedProducts.add(to);
-      }
-      console.groupEnd();
-    }
+//         if (andsAreVisited) {
+//           queue.push(to);
+//           visitedNodes.add(to);
+//         } else unvisitedProducts.add(to);
+//       }
+//       console.groupEnd();
+//     }
 
-    for (const a of unvisitedProducts) pull(a, visitedNodes, visitedEdges);
-  }
-};
+//     for (const a of unvisitedProducts) pull(a, visitedNodes, visitedEdges);
+//   }
+// };
 
 // unecessarily pulls multiple `and`s (necessary for init though prob)
 export const pull = (
@@ -149,3 +149,5 @@ export const pull = (
 // IMPORTANT NOTE: it is not possible to have an "init" based entirely upon connectivity.
 // init would need to check the values at each node to see if they are defined and propagate
 // defined values into undefined values. e.g. `undefined <-> a <-> undefined`.
+// - you could if you could flag values as "inited" and then push from all "inited" nodes.
+//   would add complexity.

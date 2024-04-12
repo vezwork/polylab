@@ -44,16 +44,16 @@ const defaultDrawableDims = ([[x, y], [w, h]]) => [
     w ?? 0,
     h ?? 0,
 ];
-const d0defaulted = mof(defaultDrawableDims)(redDrawable);
-const d1defaulted = mof(defaultDrawableDims)(blueDrawable);
-mof(([x, y, w, h]) => {
-    ctx.fillStyle = "blue";
-    ctx.fillRect(x, y, w, h);
-})(d0defaulted);
+const redDefaulted = mof(defaultDrawableDims)(redDrawable);
+const blueDefaulted = mof(defaultDrawableDims)(blueDrawable);
 mof(([x, y, w, h]) => {
     ctx.fillStyle = "red";
     ctx.fillRect(x, y, w, h);
-})(d1defaulted);
+})(redDefaulted);
+mof(([x, y, w, h]) => {
+    ctx.fillStyle = "blue";
+    ctx.fillRect(x, y, w, h);
+})(blueDefaulted);
 //beside(d0, d1);
 //centerHorizontal(d0, d1);
 const combinedBoundingBox = centerVertical(blueDrawable, redDrawable);

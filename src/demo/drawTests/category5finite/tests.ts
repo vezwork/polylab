@@ -180,12 +180,12 @@ const TEST7 = () => {
   const canvas = document.getElementById("c") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
 
-  const ax = d(10);
-  const ay = d(10);
+  const ax = d(400);
+  const ay = d(400);
   const bx = d();
   const by = d();
-  const cx = d(50);
-  const cy = d(50);
+  const cx = d(320);
+  const cy = d(320);
 
   // for crosscut study I would need these components:
   // - POINT x y
@@ -217,6 +217,10 @@ const TEST7 = () => {
   mof(drawCircle)(p(ax, ay));
   mof(drawCircle)(p(bx, by));
   mof(drawCircle)(p(cx, cy));
+
+  const miny = mof(([ay, cy]) => Math.min(ay, cy))(p(ay, cy));
+  const minx = mof(([ax, cx]) => Math.min(ax, cx))(p(ax, cx));
+  mof(([x, y]) => ctx.fillText("CROSSCUT STUDY", x, y - 10))(p(minx, miny));
 
   const mouse = d([0, 0]);
 
@@ -261,6 +265,9 @@ const TEST7 = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     THING[0] = (Math.sin(t) + 1.1) / 2.2;
     push(THING);
+    // crosscut doesn't update from mouse like the following line:
+    // it only updates when the mouse moves
+    //push(mouse); // why we have to push THING and mouse separately? It somehow makes sense but idk
     requestAnimationFrame(draw);
 
     t += 0.01;
@@ -296,7 +303,8 @@ const TEST7 = () => {
         if (distance(mouse[0], [bx[0], by[0]]) < 10) eqSide = p(bx, by);
         if (distance(mouse[0], [cx[0], cy[0]]) < 10) eqSide = p(cx, cy);
 
-        if (eqSide !== null) eqTo = to(mouse, eqSide); // v.s. eq(mouse, eqSide)
+        if (eqSide !== null)
+          eqTo = mo(([[x, y]], b) => (b[0] = [x, y]))(mouse)(eqSide); // v.s. eq(mouse, eqSide)
       }
     } else {
       if (eqTo !== null) {
@@ -321,12 +329,12 @@ const TEST8 = () => {
   const canvas = document.getElementById("c") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
 
-  const ax = d(10);
-  const ay = d(10);
+  const ax = d(400);
+  const ay = d(400);
   const bx = d();
   const by = d();
-  const cx = d(50);
-  const cy = d(50);
+  const cx = d(320);
+  const cy = d(320);
 
   // for crosscut study I would need these components:
   // - POINT x y
@@ -358,6 +366,12 @@ const TEST8 = () => {
   mof(drawCircle)(p(ax, ay));
   mof(drawCircle)(p(bx, by));
   mof(drawCircle)(p(cx, cy));
+
+  const miny = mof(([ay, cy]) => Math.min(ay, cy))(p(ay, cy));
+  const minx = mof(([ax, cx]) => Math.min(ax, cx))(p(ax, cx));
+  mof(([x, y]) =>
+    ctx.fillText("CROSSCUT STUDY INTERACTION VARIATION", x, y - 10)
+  )(p(minx, miny));
 
   const mouse = d([0, 0]);
 
@@ -402,6 +416,7 @@ const TEST8 = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     THING[0] = (Math.sin(t) + 1.1) / 2.2;
     push(THING);
+    push(mouse); // why we have to push THING and mouse separately? It somehow makes sense but idk
     requestAnimationFrame(draw);
 
     t += 0.01;
@@ -419,9 +434,9 @@ const TEST8 = () => {
   //   }
   //   requestAnimationFrame(draw);
 
-  log("Δmouse!!!")(mouse);
-  const Δmouse = Δ(mouse, (a, b) => sub(b, a), add);
-  const Δbxy = p(Δ(bx), Δ(by));
+  log("mouse!!!")(mouse);
+  //const Δmouse = Δ(mouse, (a, b) => sub(b, a), add);
+  //const Δbxy = p(Δ(bx), Δ(by));
   let eqSide: any = null;
   let eqTo: any = null;
   // PREV VERSION:
@@ -437,20 +452,22 @@ const TEST8 = () => {
         if (distance(mouse[0], [bx[0], by[0]]) < 10) eqSide = p(bx, by);
         if (distance(mouse[0], [cx[0], cy[0]]) < 10) eqSide = p(cx, cy);
 
-        if (eqSide !== null) eqTo = to(mouse, eqSide); // v.s. eq(mouse, eqSide)
-      }
-    } else {
-      if (eqTo !== null) {
-        // v.s.
-        //cat.remove(mouse, eqIso[0]);
-        //cat.remove(bxy, eqIso[1]);
-        cat.remove(mouse, eqTo);
-        eqTo = null;
-        eqSide = null;
+        if (eqSide !== null)
+          eqTo = mo(([[x, y]], b) => (b[0] = [x, y]))(mouse)(eqSide); // v.s. eq(mouse, eqSide)
       }
     }
 
-    push(mouse);
+    //push(mouse);
+  });
+  canvas.addEventListener("mouseup", (e) => {
+    if (eqTo !== null) {
+      // v.s.
+      //cat.remove(mouse, eqIso[0]);
+      //cat.remove(bxy, eqIso[1]);
+      cat.remove(mouse, eqTo);
+      eqTo = null;
+      eqSide = null;
+    }
   });
 };
 TEST8();

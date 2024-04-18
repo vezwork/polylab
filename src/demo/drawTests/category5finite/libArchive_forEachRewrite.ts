@@ -1,7 +1,7 @@
 import { SetMap } from "../../../lib/structure/data.js";
 
 type Edge = [Function, Object];
-export const cat = new SetMap<Object, Edge>();
+const cat = new SetMap<Object, Edge>();
 const ands = new Map<Edge, Edge[]>();
 
 export const mo =
@@ -20,45 +20,70 @@ export const and = (...edges: Edge[]) => {
   }
   return edges;
 };
+const andNodesSet = new SetMap<Edge[], any>();
+export const andNodes =
+  (edges: Edge[]) =>
+  (...nodes: any) => {
+    for (const node of nodes) andNodesSet.add(edges, node);
+  };
 
 const get = <A, B>(map: Map<A, Iterable<B>>, key: A): B[] => [
   ...(map.get(key) ?? []),
 ];
+
+function* traverseBreadthFirst(...starts: any[]) {
+  const visitedNodes = new Set(starts);
+  const queue = [...starts];
+  while (queue.length > 0) {
+    const from = queue.shift();
+    for (const forward of get(cat, from)) {
+      const [edge, to] = forward;
+      if (visitedNodes.has(to)) continue;
+      const shoulPropagate = (yield { from, forward }) !== false;
+      if (shoulPropagate) {
+        queue.push(to);
+        visitedNodes.add(to);
+      }
+    }
+  }
+}
+
+const forEach = (iter: Generator, f: (...args: any) => any) => {
+  let cur = iter.next();
+  while (!cur.done) cur = iter.next(f(cur.value));
+};
 
 const isAndVisited = (forward: Edge, visitedEdges: Set<Edge>) =>
   get(ands, forward).every((andEdge) => visitedEdges.has(andEdge));
 
 // same as init but without the pulls after the inner while loop
 export const push = (...starts: any[]) => {
-  const visitedNodes = new Set(starts);
   const visitedEdges = new Set<Edge>();
   const unvisitedAnds = new Set(starts);
 
+  //console.groupCollapsed();
+
+  // traverse graph, record unvisitedAnds, repeat with unvisitedAnds as input
   while (unvisitedAnds.size > 0) {
-    const queue = [...unvisitedAnds];
+    const traversalGenerator = traverseBreadthFirst(...unvisitedAnds);
     unvisitedAnds.clear();
 
-    while (queue.length > 0) {
-      const from = queue.shift();
-      unvisitedAnds.delete(from);
+    // iterate over all edges in the graph
+    forEach(traversalGenerator, ({ from, forward }) => {
+      const [edgeFunction, to] = forward;
 
-      for (const forward of get(cat, from)) {
-        const [edge, to] = forward;
-        if (visitedNodes.has(to)) continue;
-        visitedEdges.add(forward);
+      visitedEdges.add(forward);
 
-        //console.debug("push edge", edge, from, to);
-        edge(from, to);
+      //console.debug(from, forward);
 
-        // only propagate once all ands are visited, to ensure
-        // products are fully valuated before propagation
-        if (isAndVisited(forward, visitedEdges)) {
-          queue.push(to);
-          visitedNodes.add(to);
-        } else unvisitedAnds.add(to);
-      }
-    }
+      edgeFunction(from, to);
+
+      const shouldTraverseEdge = isAndVisited(forward, visitedEdges);
+      if (!shouldTraverseEdge) unvisitedAnds.add(to);
+      return shouldTraverseEdge;
+    });
   }
+  //console.groupEnd();
 };
 
 // This is in a good spot. It works well and I understand it more than category3!

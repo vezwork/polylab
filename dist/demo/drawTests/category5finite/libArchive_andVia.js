@@ -1,5 +1,5 @@
 import { SetMap } from "../../../lib/structure/data.js";
-export const cat = new SetMap();
+const cat = new SetMap();
 const ands = new Map();
 export const mo = (edge) => (from) => (to = Symbol()) => {
     const forward = [edge, to];
@@ -14,15 +14,36 @@ export const and = (...edges) => {
     }
     return edges;
 };
+const ops = new Map();
+export const op = (edges, opEdges) => {
+    for (const edge of edges) {
+        ops.set(edge, opEdges);
+    }
+};
 const get = (map, key) => [
     ...(map.get(key) ?? []),
 ];
-const isAndVisited = (forward, visitedEdges) => get(ands, forward).every((andEdge) => visitedEdges.has(andEdge));
+function* traverseBreadthFirst(...starts) {
+    const visitedNodes = new Set(starts);
+    const queue = [...starts];
+    while (queue.length > 0) {
+        const from = queue.shift();
+        for (const forward of get(cat, from)) {
+            const [edge, to] = forward;
+            const shoulPropagate = (yield [from, edge, to]) !== false;
+            if (shoulPropagate) {
+                queue.push(to);
+                visitedNodes.add(to);
+            }
+        }
+    }
+}
 // same as init but without the pulls after the inner while loop
 export const push = (...starts) => {
     const visitedNodes = new Set(starts);
     const visitedEdges = new Set();
     const unvisitedAnds = new Set(starts);
+    const nodesVia = new Map();
     while (unvisitedAnds.size > 0) {
         const queue = [...unvisitedAnds];
         unvisitedAnds.clear();
@@ -33,17 +54,24 @@ export const push = (...starts) => {
                 const [edge, to] = forward;
                 if (visitedNodes.has(to))
                     continue;
+                const viaEdge = nodesVia.get(to);
+                if (viaEdge && get(ops, viaEdge).includes(forward))
+                    continue;
                 visitedEdges.add(forward);
                 //console.debug("push edge", edge, from, to);
                 edge(from, to);
+                nodesVia.set(to, forward);
                 // only propagate once all ands are visited, to ensure
                 // products are fully valuated before propagation
-                if (isAndVisited(forward, visitedEdges)) {
+                const myAnd = get(ands, forward);
+                const andsAreVisited = myAnd.every((andEdge) => visitedEdges.has(andEdge));
+                if (andsAreVisited) {
                     queue.push(to);
                     visitedNodes.add(to);
                 }
-                else
+                else {
                     unvisitedAnds.add(to);
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 import { SetMap } from "../../../lib/structure/data.js";
-export const cat = new SetMap();
+const cat = new SetMap();
 const ands = new Map();
 export const mo = (edge) => (from) => (to = Symbol()) => {
     const forward = [edge, to];
@@ -14,39 +14,59 @@ export const and = (...edges) => {
     }
     return edges;
 };
+const andNodesSet = new SetMap();
+export const andNodes = (edges) => (...nodes) => {
+    for (const node of nodes)
+        andNodesSet.add(edges, node);
+};
 const get = (map, key) => [
     ...(map.get(key) ?? []),
 ];
-const isAndVisited = (forward, visitedEdges) => get(ands, forward).every((andEdge) => visitedEdges.has(andEdge));
-// same as init but without the pulls after the inner while loop
-export const push = (...starts) => {
+function* traverseBreadthFirst(...starts) {
     const visitedNodes = new Set(starts);
-    const visitedEdges = new Set();
-    const unvisitedAnds = new Set(starts);
-    while (unvisitedAnds.size > 0) {
-        const queue = [...unvisitedAnds];
-        unvisitedAnds.clear();
-        while (queue.length > 0) {
-            const from = queue.shift();
-            unvisitedAnds.delete(from);
-            for (const forward of get(cat, from)) {
-                const [edge, to] = forward;
-                if (visitedNodes.has(to))
-                    continue;
-                visitedEdges.add(forward);
-                //console.debug("push edge", edge, from, to);
-                edge(from, to);
-                // only propagate once all ands are visited, to ensure
-                // products are fully valuated before propagation
-                if (isAndVisited(forward, visitedEdges)) {
-                    queue.push(to);
-                    visitedNodes.add(to);
-                }
-                else
-                    unvisitedAnds.add(to);
+    const queue = [...starts];
+    while (queue.length > 0) {
+        const from = queue.shift();
+        for (const forward of get(cat, from)) {
+            const [edge, to] = forward;
+            if (visitedNodes.has(to))
+                continue;
+            const shoulPropagate = (yield { from, forward }) !== false;
+            if (shoulPropagate) {
+                queue.push(to);
+                visitedNodes.add(to);
             }
         }
     }
+}
+const forEach = (iter, f) => {
+    let cur = iter.next();
+    while (!cur.done)
+        cur = iter.next(f(cur.value));
+};
+const isAndVisited = (forward, visitedEdges) => get(ands, forward).every((andEdge) => visitedEdges.has(andEdge));
+// same as init but without the pulls after the inner while loop
+export const push = (...starts) => {
+    const visitedEdges = new Set();
+    const unvisitedAnds = new Set(starts);
+    //console.groupCollapsed();
+    // traverse graph, record unvisitedAnds, repeat with unvisitedAnds as input
+    while (unvisitedAnds.size > 0) {
+        const traversalGenerator = traverseBreadthFirst(...unvisitedAnds);
+        unvisitedAnds.clear();
+        // iterate over all edges in the graph
+        forEach(traversalGenerator, ({ from, forward }) => {
+            const [edgeFunction, to] = forward;
+            visitedEdges.add(forward);
+            //console.debug(from, forward);
+            edgeFunction(from, to);
+            const shouldTraverseEdge = isAndVisited(forward, visitedEdges);
+            if (!shouldTraverseEdge)
+                unvisitedAnds.add(to);
+            return shouldTraverseEdge;
+        });
+    }
+    //console.groupEnd();
 };
 // This is in a good spot. It works well and I understand it more than category3!
 // core limitations (maybe can live with them though):

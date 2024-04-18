@@ -1,3 +1,8 @@
+// note: I somehow broke this, mouse was not propagating to p(cx, y(redDrawable)) properly.
+// it only propagated to either cx or y(redDrawable) but not both. I tried to comment out all
+// unecessary code to see if theres a weird stray relationship but it did not help.
+// By starting from scratch in TEST5 in tests.ts, this functionality is working again.
+// This file still contains a lot of userful drawing library code like above, beside, etc.
 import { changed, d, div, eq, left, mof, p, plus, right, } from "./helpers.js";
 import { push } from "./lib.js";
 const c = document.getElementById("c");

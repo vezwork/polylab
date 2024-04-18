@@ -34,9 +34,32 @@ export const plus = (a, b) => {
   // thats an OPTIMIZATION tho
   return c;
 };
+export const sub = (a, b) => {
+  const c = [undefined];
+  mo(([[a, b]], c) => (c[0] = a - b))(p(a, b))(c);
+  mo(([[b, c]], a) => (a[0] = c + b))(p(b, c))(a); // IMPORTANT: the order of these last two lines matters
+  mo(([[a, c]], b) => (b[0] = a - c))(p(a, c))(b);
+  return c;
+};
+export const mul = (a, b) => {
+  const c = [undefined];
+  mo(([[a, b]], c) => (c[0] = a * b))(p(a, b))(c);
+  mo(([[b, c]], a) => (a[0] = c / b))(p(b, c))(a); // IMPORTANT: the order of these last two lines matters
+  mo(([[a, c]], b) => (b[0] = c / a))(p(a, c))(b);
+  return c;
+};
+export const div = (a, b) => {
+  const c = [undefined];
+  mo(([[a, b]], c) => (c[0] = a / b))(p(a, b))(c);
+  mo(([[b, c]], a) => (a[0] = c * b))(p(b, c))(a); // IMPORTANT: the order of these last two lines matters
+  mo(([[a, c]], b) => (b[0] = a / c))(p(a, c))(b);
+  return c;
+};
 export const eq = (a, b) => {
-  mo(([a], b) => (b[0] = a))(a)(b);
-  mo(([b], a) => (a[0] = b))(b)(a);
+  return [mo(([a], b) => (b[0] = a))(a)(b), mo(([b], a) => (a[0] = b))(b)(a)];
+};
+export const to = (a, b) => {
+  return mo(([a], b) => (b[0] = a))(a)(b);
 };
 export const mof = (f: Function) => (a) => {
   const result = [f(a[0])];

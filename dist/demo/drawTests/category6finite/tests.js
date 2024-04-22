@@ -1,5 +1,5 @@
 import { add, distance, sub } from "../../../lib/math/Vec2.js";
-import { changed, d, div, eq, left, log, mof, mul, p, plus, right, sub as obsub, to, } from "./helpers.js";
+import { changed, d, div, eq, left, log, mof, mul, p, plus, right, sub as obsub, } from "./helpers.js";
 import { cat, mo, push } from "./lib.js";
 const TEST1 = () => {
     const a1 = [9];
@@ -304,7 +304,7 @@ const TEST8 = () => {
         // mo(([[a, c]], b) => (b[0] = c - a))(p(a, c))(b);
         return c;
     };
-    const THING = d(1 / 2);
+    const THING = d(1 / 3);
     const mTHING = obsub(d(1), THING);
     eq(Δplus(mul(ax, THING), mul(cx, mTHING)), bx);
     eq(Δplus(mul(ay, THING), mul(cy, mTHING)), by);
@@ -312,7 +312,7 @@ const TEST8 = () => {
     let t = 0;
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        //THING[0] = (Math.sin(t) + 1.1) / 2.2;
+        THING[0] = (Math.sin(t) + 1.1) / 2.2;
         push(THING);
         push(mouse); // why we have to push THING and mouse separately? It somehow makes sense but idk
         requestAnimationFrame(draw);
@@ -365,13 +365,3 @@ const TEST8 = () => {
     });
 };
 TEST8();
-const TESTFUUU = () => {
-    const aa = [5];
-    const a = [];
-    to(aa, a);
-    const b = plus(a, [2]);
-    const bb = plus(b, [2]);
-    const c = plus(a, b);
-    push(aa);
-    console.log(a, b, bb, c); // crap. The lib.ts `unvisitedAnds` logic is incorrect.
-};

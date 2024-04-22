@@ -403,7 +403,7 @@ const TEST8 = () => {
     return c;
   };
 
-  const THING = d(1 / 3);
+  const THING = d(1 / 2);
   const mTHING = obsub(d(1), THING);
 
   eq(Δplus(mul(ax, THING), mul(cx, mTHING)), bx);
@@ -414,7 +414,7 @@ const TEST8 = () => {
   let t = 0;
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    THING[0] = (Math.sin(t) + 1.1) / 2.2;
+    //THING[0] = (Math.sin(t) + 1.1) / 2.2;
     push(THING);
     push(mouse); // why we have to push THING and mouse separately? It somehow makes sense but idk
     requestAnimationFrame(draw);
@@ -471,3 +471,15 @@ const TEST8 = () => {
   });
 };
 TEST8();
+
+const TESTFUUU = () => {
+  const aa = [5];
+  const a = [];
+  to(aa, a);
+  const b = plus(a, [2]);
+  const bb = plus(b, [2]);
+
+  const c = plus(a, b);
+  push(aa);
+  console.log(a, b, bb, c); // crap. The lib.ts `unvisitedAnds` logic is incorrect.
+};

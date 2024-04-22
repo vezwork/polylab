@@ -1,0 +1,432 @@
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1>Exploring Spaces 1: Torus</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+Apr 22 2023<br />
+
+<section style="float: left; width: 100%">
+  <h2>Asteroids</h2>
+  <canvas
+    id="asteroids_c"
+    height="100"
+    width="200"
+    style="float: left"
+  ></canvas>
+  <script type="module">
+    const mod = (a, n, nL = 0) =>
+      ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
+
+    const ctx = asteroids_c.getContext("2d");
+
+    let position = [100, 100];
+    let rotation = 0;
+    let speed = 1;
+
+    let mousedown = false;
+    document.addEventListener("mousedown", (e) => {
+      mousedown = true;
+    });
+    document.addEventListener("mouseup", (e) => {
+      mousedown = false;
+    });
+    document.addEventListener("touchstart", (e) => {
+      mousedown = true;
+    });
+    document.addEventListener("touchend", (e) => {
+      mousedown = false;
+    });
+
+    function draw() {
+      requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, asteroids_c.width, asteroids_c.height);
+
+      position[0] = position[0] + Math.sin(rotation) * speed;
+      position[1] = position[1] - Math.cos(rotation) * speed;
+      position[0] = mod(position[0], -10, asteroids_c.width + 10);
+      position[1] = mod(position[1], -10, asteroids_c.height + 10);
+
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(...position);
+      ctx.rotate(rotation);
+      ctx.beginPath();
+      ctx.moveTo(0, -10);
+      ctx.lineTo(10, 10);
+      ctx.lineTo(0, 5);
+      ctx.lineTo(-10, 10);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+      rotation += mousedown ? -0.005 : 0.005;
+    }
+    draw();
+  </script>
+  Have you ever heard that the game
+  <a
+    href="https://www.echalk.co.uk/amusements/Games/asteroidsClassic/ateroids.html"
+    >asteroids</a
+  >
+  is played on a torus?<br /><br />
+  Objects wrap around the vertical edges and the horizontal of space in the
+  game.
+</section>
+<section style="float: left; width: 100%">
+  <h2>Torus</h2>
+
+  <img
+    alt="sketch of a donut beside a yellow donut shape"
+    src="./donut.png"
+    width="300"
+    style="float: right; margin: 0 0 20px 20px"
+  />
+  You may have seen a torus drawn or described as a (hollow) donut.
+  <br /><br />A hollow donut shape is an example of a torus. <br /><br />
+  More generally though (from topology), any space that wraps around like a
+  torus, is a torus.<br /><br />Let's investigate the relationship between the
+  space in asteroids and a donut.
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Taping a Rectangle into a Torus</h2>
+
+  <a
+    title="Ruleroll, CC BY-SA 4.0 &lt;https://creativecommons.org/licenses/by-sa/4.0&gt;, via Wikimedia Commons"
+    href="https://commons.wikimedia.org/wiki/File:Cube_nets.svg"
+    style="float: right"
+    ><img
+      width="200"
+      alt="Cube nets"
+      src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Cube_nets.svg/512px-Cube_nets.svg.png"
+  /></a>
+  In school I learned how to take a flat "net", fold it up, and tape it into a
+  cube. You can do a similar, although a bit more complex, process to turn a
+  flat rectangle into a torus.
+  <div style="clear: both"></div>
+  <div style="float: left; width: 200px; margin: 0 20px 0 0">
+    <img
+      alt="sketch of a donut beside a yellow donut shape"
+      src="./fold1.png"
+      style="width: 100%; margin: 10px 0"
+    />
+    <img
+      alt="sketch of a donut beside a yellow donut shape"
+      src="./fold2.png"
+      style="width: 100%; margin: 10px 0"
+    />
+    <img
+      alt="sketch of a donut beside a yellow donut shape"
+      src="./fold3.png"
+      style="width: 100%; margin: 10px 0"
+    />
+  </div>
+  <img
+    alt="sketch of a donut beside a yellow donut shape"
+    src="./fold4.png"
+    style="float: left; width: 300px; margin: 0px 20px 10px 0px"
+  />
+  I looked up how to convert a paper rectangle into a paper torus. I found this
+  <a href="https://www.youtube.com/watch?v=qcEo1rUfek0"
+    >nice simple video tutorial</a
+  >
+  and followed it.<br /><br />If you use this method, you have to cut the paper
+  a bit because paper is not very flexible. So you don't technically get a
+  torus, but if you imagine that the gaps are not there then its a torus.<br /><br />
+  Here's how mathematicians usually give instructions on how to tape (they
+  sometimes say glue) a rectangle to itself to get a torus.
+  <a
+    href="https://en.wikipedia.org/wiki/Fundamental_polygon#Examples_of_Fundamental_Polygons_Generated_by_Parallelograms"
+    ><img
+      src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/TorusAsSquare.svg/1920px-TorusAsSquare.svg.png"
+      width="200"
+      style="float: right"
+  /></a>
+  <br /><br />The diagram says to tape the top edge to the bottom edge without
+  twisting the paper, and also to tape the left edge to the right edge without
+  twisting the paper.
+  <div style="clear: both"></div>
+  In this section I tried to show that if you physically attach the parts of the
+  rectangle that wrap around to eachother in asteroids, you get a hollow donut
+  shape.
+  <br /><br />
+  <small
+    >Thank you to <a href="https://sharons.site/">Sharon</a> for lending me
+    these scissors lol</small
+  >
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Input Spaces</h2>
+
+  <div style="float: right; margin-left: 20px">
+    <svg viewBox="-12 0 24 200" width="24" style="vertical-align: middle">
+      <circle class="draggable y" r="10"></circle>
+    </svg>
+    <span style="font-size: 30px">✕</span>
+    <svg viewBox="0 -12 200 24" width="200" style="vertical-align: middle">
+      <circle class="draggable x" r="10"></circle>
+    </svg>
+    <span style="font-size: 30px">=</span>
+    <svg viewBox="0 0 200 200" width="200" style="vertical-align: middle">
+      <circle class="draggable x y" r="10"></circle>
+    </svg>
+    <script type="module">
+      const mod = (a, n, nL = 0) =>
+        ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
+      function makeDraggable(state, el) {
+        // from https://www.redblobgames.com/making-of/draggable/
+        function start(event) {
+          if (event.button !== 0) return; // left button only
+          let { x, y } = state.eventToCoordinates(event);
+          state.dragging = { dx: state.pos.x - x, dy: state.pos.y - y };
+          el.classList.add("dragging");
+          el.setPointerCapture(event.pointerId);
+        }
+
+        function end(_event) {
+          state.dragging = null;
+          el.classList.remove("dragging");
+        }
+
+        function move(event) {
+          if (!state.dragging) return;
+          let { x, y } = state.eventToCoordinates(event);
+          state.pos = { x: x + state.dragging.dx, y: y + state.dragging.dy };
+        }
+
+        el.addEventListener("pointerdown", start);
+        el.addEventListener("pointerup", end);
+        el.addEventListener("pointercancel", end);
+        el.addEventListener("pointermove", move);
+        el.addEventListener("touchstart", (e) => e.preventDefault());
+      }
+
+      function eventToSvgCoordinates(event, el = event.currentTarget) {
+        const svg = el.ownerSVGElement;
+        let p = svg.createSVGPoint();
+        p.x = event.clientX;
+        p.y = event.clientY;
+        p = p.matrixTransform(svg.getScreenCTM().inverse());
+        return p;
+      }
+
+      const els = Array.from(document.querySelectorAll(".draggable"));
+      let state = {
+        eventToCoordinates: eventToSvgCoordinates,
+        dragging: null,
+        _pos: undefined,
+        get pos() {
+          return this._pos;
+        },
+        set pos(p) {
+          this._pos = { x: p.x, y: p.y };
+          for (const el of els) {
+            if (el.classList.contains("x"))
+              el.setAttribute("cx", mod(this._pos.x, -10, 220));
+            if (el.classList.contains("y"))
+              el.setAttribute("cy", mod(this._pos.y, -10, 210));
+          }
+        },
+      };
+      state.pos = { x: 20, y: 20 };
+      for (const el of els) makeDraggable(state, el);
+    </script>
+    <style>
+      svg {
+        background: #eee;
+        border-radius: 10px;
+      }
+      circle {
+        stroke: black;
+        stroke-width: 2px;
+      }
+      .draggable {
+        cursor: grab;
+        fill: white;
+      }
+      .dragging {
+        cursor: grabbing;
+        fill: hsl(200, 54%, 76%);
+      }
+    </style>
+  </div>
+
+  Please try playing around with these inputs.<br /><br />This torus input is
+  connected in the same way as two circular inputs put beside eachother!<br /><br />We
+  can learn this from topology: a torus is the cartesian product of two
+  circles.<br /><br />
+  A torus is 2D and circles are 1D. Two 1D circles make for a 2D torus.<br /><br />
+  Thank you to
+  <a href="https://www.redblobgames.com/">Red Blob Games (Amit Patel)</a> for
+  sharing your
+  <a href="https://www.redblobgames.com/making-of/draggable/examples.html"
+    >draggable input recipes</a
+  >! I used them to make these inputs.
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Drawing on a Torus</h2>
+
+  <img
+    src="circleInTorus.png"
+    width="260"
+    style="float: left; margin: 0 20px 20px 0"
+  />
+
+  Drawing on a torus represented as a rectangle that wraps around can give us a
+  new perspective. Here are some ways to draw a circle on a torus.<br /><br />
+  Oh snap, a new way to draw a circle just dropped! Draw a circle as a line that
+  wraps around a torus.<br /><br />This isn't necessarily circle in the usual
+  geometric sense, but it does have constant curvature (like a usual cicle) and
+  is connected in the same way as a normal circle.
+
+  <div style="clear: both"></div>
+  <img
+    src="twoCirclesInTorus.png"
+    width="360"
+    style="float: right; margin: 0px 0 20px 20px"
+  />
+
+  You can draw two circles that only intersect once on a torus! I don't think
+  you can do that on a normal piece of paper.<br /><br />
+  I wanted to write this article because I want to write and draw about some
+  other mathematical objects, and sometimes it is easier to draw things wrapping
+  around the edge.
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Further Notes</h2>
+  <ul>
+    <li>
+      There are other cool spaces you can get by gluing a rectangle in different
+      ways! Click on the gluing diagram (with the red and blue arrows labelled A
+      and B) to check them out.
+    </li>
+    <li>
+      If you have three circular inputs beside eachother, that's equivalent to a
+      3D-torus! Imagine a 3D space that wraps around vertically, horizontally,
+      and forward to backward!
+    </li>
+    <li>
+      A hollow donut torus is the boundary (∂) of solid 3D object called a solid
+      torus.
+    </li>
+  </ul>
+  Let me know if you want to see illustrations or interactives of any of these
+  notes!<br /><br />
+</section>
+
+<h2 id="comments">Comments</h2>
+<textarea
+  id="commenttext1"
+  style="width: 100%; height: 80px"
+  placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
+></textarea>
+<button id="commentbutton1">Submit comment</button>
+<div id="commentarea"></div>
+<script type="module">
+  const MY_FORKED_VAL_URL = "https://vez-tomatoSalmon.web.val.run/";
+
+  const getComments = async () => {
+    const response = await fetch(MY_FORKED_VAL_URL);
+    const json = await response.json();
+    return json;
+  };
+
+  const addComment = async (str) => {
+    try {
+      const response = await fetch(MY_FORKED_VAL_URL, {
+        method: "POST",
+        body: JSON.stringify(str),
+      });
+
+      if (response.status >= 400 && response.status < 600) {
+        /* error */
+        return false;
+      } else {
+        /* success */
+        return true;
+      }
+    } catch (e) {
+      /* error */
+      return false;
+    }
+  };
+
+  function appendComment(str) {
+    const div = document.createElement("div");
+    div.style.display = "block";
+    div.style.margin = "10px 0";
+    div.style.background = "#eee";
+    div.style.padding = "10px";
+    div.style.borderRadius = "10px";
+    div.textContent = str;
+    document.getElementById("commentarea").append(div);
+  }
+
+  (await getComments()).forEach(appendComment);
+
+  const text = document.getElementById("commenttext1");
+  const button = document.getElementById("commentbutton1");
+  button.addEventListener("click", async () => {
+    const value = text.value;
+
+    button.textContent = "🔄";
+    const success = await addComment(value);
+    if (success === false) {
+      button.textContent =
+        "❌ error (sorry theres no details or error reporting yet)";
+    } else {
+      button.textContent = "✅";
+      button.disabled = true;
+      text.disabled = true;
+      text.value = "";
+      appendComment(value);
+    }
+  });
+  document
+    .getElementById("reportbutton")
+    .addEventListener("click", async () => {
+      await fetch("https://api.val.town/v1/run/vez.reportComments");
+      document.getElementById("reportbutton").disabled = true;
+      document.getElementById("reportbutton").textContent =
+        "reported to elliot";
+    });
+</script>

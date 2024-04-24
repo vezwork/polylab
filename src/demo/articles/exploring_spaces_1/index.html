@@ -129,7 +129,7 @@ Apr 22 2023<br />
 </section>
 
 <section style="float: left; width: 100%">
-  <h2>Taping a Rectangle into a Torus</h2>
+  <h2>Taping a Rectangle into a Donut</h2>
 
   <a
     title="Ruleroll, CC BY-SA 4.0 &lt;https://creativecommons.org/licenses/by-sa/4.0&gt;, via Wikimedia Commons"
@@ -219,7 +219,11 @@ Apr 22 2023<br />
         function start(event) {
           if (event.button !== 0) return; // left button only
           let { x, y } = state.eventToCoordinates(event);
-          state.dragging = { dx: state.pos.x - x, dy: state.pos.y - y };
+          console.log("el", el);
+          state.dragging = {
+            dx: 0,
+            dy: 0,
+          };
           el.classList.add("dragging");
           el.setPointerCapture(event.pointerId);
         }
@@ -232,7 +236,8 @@ Apr 22 2023<br />
         function move(event) {
           if (!state.dragging) return;
           let { x, y } = state.eventToCoordinates(event);
-          state.pos = { x: x + state.dragging.dx, y: y + state.dragging.dy };
+          if (el.classList.contains("x")) state.x = x + state.dragging.dx;
+          if (el.classList.contains("y")) state.y = y + state.dragging.dy;
         }
 
         el.addEventListener("pointerdown", start);
@@ -255,21 +260,32 @@ Apr 22 2023<br />
       let state = {
         eventToCoordinates: eventToSvgCoordinates,
         dragging: null,
+        _x: undefined,
+        _y: undefined,
         _pos: undefined,
-        get pos() {
-          return this._pos;
+        get x() {
+          return this._x;
         },
-        set pos(p) {
-          this._pos = { x: p.x, y: p.y };
+        set x(n) {
+          this._x = n;
           for (const el of els) {
             if (el.classList.contains("x"))
-              el.setAttribute("cx", mod(this._pos.x, -10, 220));
+              el.setAttribute("cx", mod(this._x, -10, 220));
+          }
+        },
+        get y() {
+          return this._y;
+        },
+        set y(n) {
+          this._y = n;
+          for (const el of els) {
             if (el.classList.contains("y"))
-              el.setAttribute("cy", mod(this._pos.y, -10, 210));
+              el.setAttribute("cy", mod(this._y, -10, 220));
           }
         },
       };
-      state.pos = { x: 20, y: 20 };
+      state.x = 20;
+      state.y = 20;
       for (const el of els) makeDraggable(state, el);
     </script>
     <style>

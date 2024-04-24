@@ -1,0 +1,428 @@
+<!-- #region -->
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1>Exploring Spaces 2: Twisted Taping</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+April 24 2024<br /><br />
+
+<audio controls>
+  <source src="./recording.mp3" type="audio/mpeg" />
+  Your browser does not support the audio element.
+</audio>
+<!-- #endregion -->
+
+<section style="float: left; width: 100%">
+  <h2>Twisted Strip</h2>
+
+  <img src="./paper1.png" height="300" style="float: left" />
+  <img
+    src="./paper2.png"
+    height="300"
+    style="float: left; margin: 0 20px 20px 20px"
+  />
+
+  In the <a href="../exploring_spaces_1/"> previous "Exploring Spaces"</a>, I
+  made a torus out of paper.<br /><br />
+  This time I taped the edges of a long band of paper into a twisted strip.<br /><br />
+  I draw a blue line on one side and a red line on the other side. After I
+  twisted and taped, the lines connected into one long line!
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Möbius Strip</h2>
+
+  This twisted strip is usually called a
+  <a href="https://en.wikipedia.org/wiki/M%C3%B6bius_strip">Möbius Strip</a>.
+  Its named after a person. I want to avoid using names of mathematical objects
+  based on the names of people in this series.
+  <ul>
+    <li>
+      I'll include them if I think its necessary for looking up related material
+    </li>
+    <li>I often find these sort of names confusing when learning math</li>
+    <li>
+      I don't always like how this sort of naming honors some people but not
+      others
+    </li>
+  </ul>
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Interactive Taping Diagram</h2>
+
+  <svg
+    viewBox="-60 -10 820 170 "
+    width="700"
+    id="dragging3twist"
+    style="float: left; max-width: 100%"
+  >
+    <rect width="700" height="150" rx="10" fill="#eee" />
+    <mask id="twistmask">
+      <rect width="700" height="150" rx="10" fill="white" />
+    </mask>
+
+    <path
+      marker-end="url(#head_blue)"
+      stroke-width="4"
+      fill="none"
+      stroke="blue"
+      d="M0,0, 0,137"
+    />
+    <path
+      marker-end="url(#head_blue)"
+      stroke-width="4"
+      fill="none"
+      stroke="blue"
+      d="M700,150 700,13"
+    />
+
+    <circle class="draggable x y" r="15" mask="url(#twistmask)"></circle>
+  </svg>
+  <script type="module" src="./dragging3twist.js"></script>
+
+  Here's a diagram showing how to tape the paper strip to itself. Tape the two
+  horizontal edges so that the arrow heads are aligned with eachother to get a
+  twist!<br /><br />
+  The diagram is interactive, so please try exploring this twisted space by
+  moving the circle around and through the blue arrows.
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Twisted in Two Directions</h2>
+
+  Now I want to show you a space where <strong>both</strong> the horizontal and
+  vertical edges are taped in a twisted way.
+
+  <br />
+  <br />
+
+  <div style="float: right">
+    <svg
+      viewBox="-10 -10 220 220"
+      width="200"
+      id="dragging4"
+      style="vertical-align: middle"
+    >
+      <rect width="200" height="200" rx="10" fill="#eee" />
+
+      <path
+        marker-end="url(#head)"
+        stroke-width="4"
+        fill="none"
+        stroke="red"
+        d="M0,0, 187,0"
+      />
+      <path
+        marker-end="url(#head)"
+        stroke-width="4"
+        fill="none"
+        stroke="red"
+        d="M0,200, 187,200"
+      />
+      <path
+        marker-end="url(#head_blue)"
+        stroke-width="4"
+        fill="none"
+        stroke="blue"
+        d="M0,0, 0,187"
+      />
+      <path
+        marker-end="url(#head_blue)"
+        stroke-width="4"
+        fill="none"
+        stroke="blue"
+        d="M200,0, 200,187"
+      />
+
+      <circle class="draggable x y" r="10" mask="url(#rectmask)"></circle></svg
+    ><br />
+    Torus taping diagram
+  </div>
+  <script type="module" src="./dragging4.js"></script>
+
+  First though, for comparison, here's a torus:
+
+  <div style="clear: both"></div>
+
+  <div style="float: right">
+    <svg
+      viewBox="-10 -10 220 220"
+      width="200"
+      id="dragging3"
+      style="float: right"
+    >
+      <defs>
+        <marker
+          id="head"
+          orient="auto"
+          markerWidth="3"
+          markerHeight="4"
+          refX="0.1"
+          refY="2"
+        >
+          <path d="M0,0 V4 L3,2 Z" fill="red" />
+        </marker>
+        <marker
+          id="head_blue"
+          orient="auto"
+          markerWidth="3"
+          markerHeight="4"
+          refX="0.1"
+          refY="2"
+        >
+          <path d="M0,0 V4 L3,2 Z" fill="blue" />
+        </marker>
+      </defs>
+      <!--  -->
+      <!-- </mask> -->
+      <rect width="200" height="200" rx="10" fill="#eee" />
+      <mask id="rectmask">
+        <rect width="200" height="200" rx="10" fill="white" />
+      </mask>
+      <path
+        marker-end="url(#head)"
+        stroke-width="4"
+        fill="none"
+        stroke="red"
+        d="M0,0, 187,0"
+      />
+      <path
+        marker-end="url(#head)"
+        stroke-width="4"
+        fill="none"
+        stroke="red"
+        d="M200,200, 13,200"
+      />
+      <path
+        marker-end="url(#head_blue)"
+        stroke-width="4"
+        fill="none"
+        stroke="blue"
+        d="M0,0, 0,187"
+      />
+      <path
+        marker-end="url(#head_blue)"
+        stroke-width="4"
+        fill="none"
+        stroke="blue"
+        d="M200,200, 200,13"
+      />
+
+      <circle class="draggable x y" r="10" mask="url(#rectmask)"></circle>
+    </svg>
+    <br />
+    Real Projective Plane<br />
+    taping diagram
+  </div>
+  <style>
+    #dragging3 circle,
+    #dragging3twist circle,
+    #dragging4 circle {
+      stroke: black;
+      stroke-width: 2px;
+    }
+    #dragging3 .draggable,
+    #dragging3twist .draggable,
+    #dragging4 .draggable {
+      cursor: grab;
+      fill: white;
+    }
+    #dragging3 .dragging,
+    #dragging3twist .dragging,
+    #dragging4 .dragging {
+      cursor: grabbing;
+      fill: hsl(200, 54%, 76%);
+    }
+  </style>
+  <script type="module" src="./dragging3.js"></script>
+
+  Now here's the doubly twisted space. It is called the
+  <a href="https://en.wikipedia.org/wiki/Real_projective_plane"
+    >"Real Projective Plane"</a
+  >.<br /><br />
+  Unlike the torus, the arrows on opposite edges are pointed in different
+  directions.<br /><br />
+  When I started playing around with this, I was surprised by how different the
+  space feels; I actually thought I taped it incorrectly.
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>The Same Space, But Round</h2>
+
+  <svg
+    viewBox="-50 -50 100 100"
+    width="200"
+    id="dragging1"
+    style="float: left; margin-right: 20px"
+  >
+    <circle cx="0" cy="0" r="50" fill="#eee" stroke="transparent"></circle>
+    <mask id="myMask">
+      <circle cx="0" cy="0" r="50" fill="white" stroke="transparent"></circle>
+    </mask>
+    <circle class="draggable" r="4" mask="url(#myMask)"></circle>
+    <circle class="clone draggable" r="4" cx="100" mask="url(#myMask)"></circle>
+  </svg>
+
+  This space is also a Real Projective Plane. It is connected in the same way as
+  the rectangle.<br /><br />
+
+  Unfortunately, you cannot really make a paper model of the Real Projective
+  Plane. It doesn't embed in 3D space. If you cut slits in the paper so that the
+  paper can pass through itself you can though. Check out the link above to see
+  what a 3D model of that looks like.
+
+  <style>
+    svg {
+      background: transparent;
+    }
+    circle.draggable {
+      stroke: black;
+      stroke-width: 0.8px;
+    }
+    .draggable {
+      cursor: grab;
+      fill: white;
+    }
+    .dragging {
+      fill: skyblue;
+    }
+  </style>
+  <script type="module" src="./dragging1.js"></script>
+</section>
+
+<!-- <section style="float: left; width: 100%">
+  <h2>A Sphere</h2>
+
+  <svg viewBox="-50 -50 100 100" width="200" id="dragging2a">
+    <circle cx="0" cy="0" r="50" fill="#eee" stroke="transparent"></circle>
+    <mask id="myMask">
+      <circle cx="0" cy="0" r="50" fill="white" stroke="transparent"></circle>
+    </mask>
+    <circle class="draggable" r="4" mask="url(#myMask)"></circle>
+    <circle class="clone draggable" r="4" cx="100" mask="url(#myMask)"></circle>
+  </svg>
+  <svg viewBox="-50 -50 100 100" width="200" id="dragging2b">
+    <circle cx="0" cy="0" r="50" fill="#eee" stroke="transparent"></circle>
+    <mask id="myMask">
+      <circle cx="0" cy="0" r="50" fill="white" stroke="transparent"></circle>
+    </mask>
+    <circle
+      class="draggable"
+      r="4"
+      mask="url(#myMask)"
+      style="visibility: hidden"
+    ></circle>
+    <circle class="clone draggable" r="4" cx="100" mask="url(#myMask)"></circle>
+  </svg>
+  <script type="module" src="./dragging2.js"></script>
+</section> -->
+
+<!-- #region -->
+<h2 id="comments">Exploring Spaces Comments</h2>
+<textarea
+  id="commenttext1"
+  style="width: 100%; height: 80px"
+  placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
+></textarea>
+<button id="commentbutton1">Submit comment</button>
+<div id="commentarea"></div>
+<script type="module">
+  const MY_FORKED_VAL_URL = "https://vez-tomatoSalmon.web.val.run/";
+
+  const getComments = async () => {
+    const response = await fetch(MY_FORKED_VAL_URL);
+    const json = await response.json();
+    return json;
+  };
+
+  const addComment = async (str) => {
+    try {
+      const response = await fetch(MY_FORKED_VAL_URL, {
+        method: "POST",
+        body: JSON.stringify(str),
+      });
+
+      if (response.status >= 400 && response.status < 600) {
+        /* error */
+        return false;
+      } else {
+        /* success */
+        return true;
+      }
+    } catch (e) {
+      /* error */
+      return false;
+    }
+  };
+
+  function appendComment(str) {
+    const div = document.createElement("div");
+    div.style.display = "block";
+    div.style.margin = "10px 0";
+    div.style.background = "#eee";
+    div.style.padding = "10px";
+    div.style.borderRadius = "10px";
+    div.textContent = str;
+    document.getElementById("commentarea").append(div);
+  }
+
+  (await getComments()).forEach(appendComment);
+
+  const text = document.getElementById("commenttext1");
+  const button = document.getElementById("commentbutton1");
+  button.addEventListener("click", async () => {
+    const value = text.value;
+
+    button.textContent = "🔄";
+    const success = await addComment(value);
+    if (success === false) {
+      button.textContent =
+        "❌ error (sorry theres no details or error reporting yet)";
+    } else {
+      button.textContent = "✅";
+      button.disabled = true;
+      text.disabled = true;
+      text.value = "";
+      appendComment(value);
+    }
+  });
+</script>
+<!-- #endregion -->

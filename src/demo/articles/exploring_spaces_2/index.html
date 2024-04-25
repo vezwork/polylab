@@ -36,6 +36,12 @@
     canvas {
       margin: 0 400px 20px 0;
     }
+    .paper1 {
+      margin-right: 20px;
+    }
+    .paper2 {
+      margin: 20px 20px 20px 0 !important;
+    }
   }
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -52,11 +58,12 @@ April 24 2024<br /><br />
 <section style="float: left; width: 100%">
   <h2>Twisted Strip</h2>
 
-  <img src="./paper1.png" height="300" style="float: left" />
+  <img src="./paper1.png" height="300" style="float: left" class="paper1" />
   <img
     src="./paper2.png"
     height="300"
     style="float: left; margin: 0 20px 20px 20px"
+    class="paper2"
   />
 
   In the <a href="../exploring_spaces_1/"> previous "Exploring Spaces"</a>, I
@@ -114,7 +121,7 @@ April 24 2024<br /><br />
       d="M700,150 700,13"
     />
 
-    <circle class="draggable x y" r="15" mask="url(#twistmask)"></circle>
+    <circle class="draggable x y" r="20" mask="url(#twistmask)"></circle>
   </svg>
   <script type="module" src="./dragging3twist.js"></script>
 
@@ -172,7 +179,7 @@ April 24 2024<br /><br />
         d="M200,0, 200,187"
       />
 
-      <circle class="draggable x y" r="10" mask="url(#rectmask)"></circle></svg
+      <circle class="draggable x y" r="14" mask="url(#rectmask)"></circle></svg
     ><br />
     Torus taping diagram
   </div>
@@ -180,7 +187,7 @@ April 24 2024<br /><br />
 
   First though, for comparison, here's a torus:
 
-  <div style="clear: both"></div>
+  <div style="clear: both; height: 40px"></div>
 
   <div style="float: right">
     <svg
@@ -246,18 +253,21 @@ April 24 2024<br /><br />
         d="M200,200, 200,13"
       />
 
-      <circle class="draggable x y" r="10" mask="url(#rectmask)"></circle>
+      <circle class="draggable x y" r="14" mask="url(#rectmask)"></circle>
     </svg>
     <br />
     Real Projective Plane<br />
     taping diagram
   </div>
   <style>
+    #dragging3twist circle {
+      stroke-width: 4px;
+      stroke: black;
+    }
     #dragging3 circle,
-    #dragging3twist circle,
     #dragging4 circle {
       stroke: black;
-      stroke-width: 2px;
+      stroke-width: 3px;
     }
     #dragging3 .draggable,
     #dragging3twist .draggable,
@@ -291,14 +301,14 @@ April 24 2024<br /><br />
     viewBox="-50 -50 100 100"
     width="200"
     id="dragging1"
-    style="float: left; margin-right: 20px"
+    style="float: left; margin-right: 20px; shape-outside: circle(50%)"
   >
     <circle cx="0" cy="0" r="50" fill="#eee" stroke="transparent"></circle>
     <mask id="myMask">
       <circle cx="0" cy="0" r="50" fill="white" stroke="transparent"></circle>
     </mask>
-    <circle class="draggable" r="4" mask="url(#myMask)"></circle>
-    <circle class="clone draggable" r="4" cx="100" mask="url(#myMask)"></circle>
+    <circle class="draggable" r="6" mask="url(#myMask)"></circle>
+    <circle class="clone draggable" r="6" cx="100" mask="url(#myMask)"></circle>
   </svg>
 
   This space is also a Real Projective Plane. It is connected in the same way as
@@ -315,7 +325,7 @@ April 24 2024<br /><br />
     }
     circle.draggable {
       stroke: black;
-      stroke-width: 0.8px;
+      stroke-width: 1.5px;
     }
     .draggable {
       cursor: grab;

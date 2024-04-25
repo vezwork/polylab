@@ -270,7 +270,7 @@ Apr 22 2024<br />
           this._x = n;
           for (const el of els) {
             if (el.classList.contains("x"))
-              el.setAttribute("cx", mod(this._x, -10, 220));
+              el.setAttribute("cx", mod(this._x, 0, 200));
           }
         },
         get y() {
@@ -280,7 +280,7 @@ Apr 22 2024<br />
           this._y = n;
           for (const el of els) {
             if (el.classList.contains("y"))
-              el.setAttribute("cy", mod(this._y, -10, 220));
+              el.setAttribute("cy", mod(this._y, 0, 200));
           }
         },
       };

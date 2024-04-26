@@ -5,8 +5,7 @@ function makeDraggable(state, el) {
     function start(event) {
         if (event.button !== 0)
             return; // left button only
-        if (event.target instanceof SVGTextElement)
-            return;
+        //if (event.target instanceof SVGTextElement) return;
         let { x, y } = state.eventToCoordinates(event);
         state.dragging = { dx: 0, dy: 0 };
         state._pos = { x, y };

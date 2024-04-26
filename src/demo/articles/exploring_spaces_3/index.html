@@ -1,0 +1,2246 @@
+<!-- #region -->
+<style>
+  html,
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    margin: 0;
+    width: 100%;
+  }
+  .container {
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  @media (max-width: 700px) {
+    .container {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+    .paper1 {
+      margin-right: 20px;
+    }
+    .paper2 {
+      margin: 20px 20px 20px 0 !important;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<div class="container">
+  <h1>Exploring Spaces 3: Taping Infinity</h1>
+  <a href="https://elliot.website">elliot evans<br /></a>
+  April 25 2024<br /><br />
+
+  <audio controls>
+    <source src="./recording.mp3" type="audio/mpeg" />
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- #endregion -->
+
+  <section style="float: left; width: 100%">
+    <h2>No End in Sight</h2>
+    Last time in
+    <a href="../exploring_spaces_2/"
+      >Exploring Spaces, we looked at two twisted spaces</a
+    >. This time, I wanted to take a look at an infinite space:
+  </section>
+</div>
+
+<svg viewBox="-650 -30 1300 80" id="dragging0">
+  <line
+    x1="-1180"
+    y1="0"
+    x2="1180"
+    y2="0"
+    style="stroke: black; stroke-width: 0.5"
+  />
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+  <g transform="translate(0,0)" class="line">
+    <line
+      x1="0"
+      y1="-10"
+      x2="0"
+      y2="10"
+      style="stroke: black; stroke-width: 1"
+    />
+    <text x="0" y="25" text-anchor="middle">0</text>
+  </g>
+
+  <circle r="5" fill="white" stroke="black" stroke-width="2"></circle>
+</svg>
+<style>
+  #dragging0 {
+    width: 100%;
+    background: #eee;
+    cursor: grab;
+    margin-top: 20px;
+  }
+  #dragging0 text {
+    font: 16px serif;
+    cursor: default;
+  }
+  .dragging {
+    cursor: grabbing;
+  }
+</style>
+<script type="module" src="./dragging0.js"></script>
+
+<div class="container">
+  Try dragging the number line left and right to change the position of the
+  point
+  <svg viewbox="-12 -12 24 24" width="16" style="vertical-align: baseline">
+    <circle r="9" fill="white" stroke="black" stroke-width="4"></circle></svg
+  >.<br /><br />
+
+  The number line doesn't have an end, you can keep dragging forever in either
+  direction.
+
+  <section style="float: left; width: 100%">
+    <h2>Squeezing All Numbers Into a Single Paragraph</h2>
+
+    By making each number take up less space than the last, we can fit them all
+    into a box!
+
+    <svg viewBox="-300 -40 600 105" id="dragging1">
+      <text x="280" y="20" text-anchor="middle" class="infinity">+∞</text>
+      <line
+        x1="280"
+        y1="-4"
+        x2="280"
+        y2="5"
+        style="stroke: blue; stroke-width: 1.5"
+      />
+      <text x="-280" y="20" text-anchor="middle" class="infinity">-∞</text>
+      <line
+        x1="-280"
+        y1="-4"
+        x2="-280"
+        y2="5"
+        style="stroke: blue; stroke-width: 1.5"
+      />
+      <line
+        x1="-280"
+        y1="0"
+        x2="280"
+        y2="0"
+        style="stroke: black; stroke-width: 0.5"
+      />
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+
+      <circle r="8" fill="white" stroke="black" stroke-width="2"></circle>
+    </svg>
+    <style>
+      #dragging1 {
+        background: #eee;
+        border-radius: 10px;
+        cursor: grab;
+        margin: 20px 0;
+      }
+      #dragging1 text {
+        font: 16px serif;
+        cursor: default;
+      }
+      .dragging {
+        cursor: grabbing;
+      }
+    </style>
+    <script type="module" src="./dragging1.js"></script>
+
+    It's the same number line, but now its like you can see both sides going off
+    into the distance and out to infinity.<br /><br />
+    I added two points connected to either end labelled -∞ and +∞. When you add
+    these two points to the number line, the space is called the
+    <a href="https://en.wikipedia.org/wiki/Extended_real_number_line"
+      >extended real number line</a
+    >. You can still never reach these points by dragging left or right, but
+    nevertheless, they are attached to the line.
+  </section>
+  <section style="float: left; width: 100%">
+    <h2>Taping -∞ and +∞ together</h2>
+    <svg viewBox="-300 -260 600 570" width="400" id="dragging2">
+      <circle r="200" stroke="black" fill="none"></circle>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+      <g transform="translate(0,0)" class="line">
+        <line
+          x1="0"
+          y1="-10"
+          x2="0"
+          y2="10"
+          style="stroke: black; stroke-width: 1"
+        />
+        <text x="0" y="25" text-anchor="middle">0</text>
+      </g>
+
+      <line
+        x1="0"
+        y1="-210"
+        x2="0"
+        y2="-190"
+        style="stroke: blue; stroke-width: 2"
+      />
+      <text x="0" y="-160" text-anchor="middle" class="infinity">∞</text>
+      <circle
+        cy="200"
+        r="10"
+        fill="white"
+        stroke="black"
+        stroke-width="2"
+      ></circle>
+    </svg>
+    <style>
+      #dragging2 {
+        background: #eee;
+        border-radius: 10px;
+        cursor: grab;
+        float: left;
+        margin-right: 20px;
+        margin-bottom: 20px;
+        max-width: 100%;
+      }
+      #dragging2 text {
+        font: 16px serif;
+        cursor: default;
+      }
+      .dragging {
+        cursor: grabbing;
+      }
+      #dragging2 .infinity {
+        font: 40px serif;
+      }
+    </style>
+    <script type="module" src="./dragging2.js"></script>
+
+    If you've read the other two posts in this series or read the title of this
+    one, you may have seen this coming... I've bent the number line into a
+    circle and
+    <strong>taped</strong> together -∞ and +∞!<br /><br />
+    Now you can move along the number circle by dragging clockwise and
+    counterclockwise around the circle.<br /><br />
+    This is called the
+    <a href="https://en.wikipedia.org/wiki/Projectively_extended_real_line"
+      >projectively extended real line</a
+    >.<br /><br />
+    If you want to see how to add, subtract, multiply, and divide in these two
+    spaces, check out the links! (You can even divide by 0 in the projectively
+    extended real line)
+    <div style="clear: both"></div>
+    The infinite number line is similar to a finite line; lines can be bent or
+    taped into a circle whether they are finite or infinite.<br /><br />I made
+    this post to try to illustrate that infinite spaces are not intangible or
+    impossible to play around with.<br /><br />
+  </section>
+
+  <!-- #region -->
+  <h2 id="comments">Exploring Spaces Comments</h2>
+  <textarea
+    id="commenttext1"
+    style="width: 100%; height: 80px"
+    placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
+  ></textarea>
+  <button id="commentbutton1">Submit comment</button>
+  <div id="commentarea"></div>
+  <script type="module">
+    const MY_FORKED_VAL_URL = "https://vez-tomatoSalmon.web.val.run/";
+
+    const getComments = async () => {
+      const response = await fetch(MY_FORKED_VAL_URL);
+      const json = await response.json();
+      return json;
+    };
+
+    const addComment = async (str) => {
+      try {
+        const response = await fetch(MY_FORKED_VAL_URL, {
+          method: "POST",
+          body: JSON.stringify(str),
+        });
+
+        if (response.status >= 400 && response.status < 600) {
+          /* error */
+          return false;
+        } else {
+          /* success */
+          return true;
+        }
+      } catch (e) {
+        /* error */
+        return false;
+      }
+    };
+
+    function appendComment(str) {
+      const div = document.createElement("div");
+      div.style.display = "block";
+      div.style.margin = "10px 0";
+      div.style.background = "#eee";
+      div.style.padding = "10px";
+      div.style.borderRadius = "10px";
+      div.textContent = str;
+      document.getElementById("commentarea").append(div);
+    }
+
+    (await getComments()).forEach(appendComment);
+
+    const text = document.getElementById("commenttext1");
+    const button = document.getElementById("commentbutton1");
+    button.addEventListener("click", async () => {
+      const value = text.value;
+
+      button.textContent = "🔄";
+      const success = await addComment(value);
+      if (success === false) {
+        button.textContent =
+          "❌ error (sorry theres no details or error reporting yet)";
+      } else {
+        button.textContent = "✅";
+        button.disabled = true;
+        text.disabled = true;
+        text.value = "";
+        appendComment(value);
+      }
+    });
+  </script>
+  <!-- #endregion -->
+</div>

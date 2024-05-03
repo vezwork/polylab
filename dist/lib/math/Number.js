@@ -14,6 +14,7 @@ export const smoothStep = (currentValue, targetValue, slowness) => currentValue 
  * @returns `a` modulo'd to be >= `nL` and < `n`. e.g. `mod(0, 10, 1) //=== 9`
  */
 export const mod = (a, n, nL = 0) => ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
+export const log = (num, base = 2) => Math.log(num) / Math.log(base);
 export const round = (n, step = 1) => Math.round(n / step) * step;
 /**
  * clamps n between min and max inclusive.

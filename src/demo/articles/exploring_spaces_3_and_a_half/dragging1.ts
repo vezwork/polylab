@@ -57,7 +57,7 @@ const getLine = (i): SVGGElement => {
   else return createLine();
 };
 
-let zoom = 1.3;
+let zoom = 10;
 
 const RATE = 50;
 const WIDTH = 280;
@@ -105,13 +105,17 @@ let state = {
       const pos = px(n);
       const prevpos = px(prevn);
       const nextpos = px(nextn);
-      if (Math.abs(nextpos - pos) > 25) {
+      if (Math.abs(nextpos - pos) > 10) {
         insertp((n + nextn) / 2, n, nextn);
       }
-      if (Math.abs(prevpos - pos) > 25) {
+      if (Math.abs(prevpos - pos) > 10) {
         insertp((n + prevn) / 2, prevn, n);
       }
       const size = Math.min(Math.abs(prevpos - nextpos) / 300, 2);
+      // const depth = Math.abs(prevn - nextn) / 2;
+      // const o = Math.abs(zoom - 1 / depth);
+      // const oo = Math.max(1 - (o / 2) ** 2, 0);
+      // const size = depth * bump(pos);
       const line = getLine(linei);
       line?.setAttribute(
         "transform",
@@ -143,6 +147,6 @@ function draw() {
   console.log(zoom);
   state.render();
 }
-draw();
+//draw();
 state.pos = { x: 0, y: 0 };
 makeDraggable(state, document.querySelector("#dragging1"));

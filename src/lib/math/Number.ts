@@ -26,6 +26,8 @@ export const smoothStep = (
 export const mod = (a: number, n: number, nL = 0): number =>
   ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
 
+export const log = (num, base = 2) => Math.log(num) / Math.log(base);
+
 export const round = (n: number, step = 1): number =>
   Math.round(n / step) * step;
 

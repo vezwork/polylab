@@ -51,7 +51,7 @@
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <div class="container">
-  <h1>Exploring Spaces 3: Taping Infinity</h1>
+  <h1>Exploring Spaces 3.5: Zoomable Number Line</h1>
   <a href="https://elliot.website">elliot evans<br /></a>
   April 26 2024<br /><br />
 
@@ -63,15 +63,37 @@
   <!-- #endregion -->
 
   <section style="float: left; width: 100%">
-    <h2>No End in Sight</h2>
-    Last time in
-    <a href="../exploring_spaces_2/"
-      >Exploring Spaces, we looked at two twisted spaces</a
-    >. This time, I wanted to take a look at an infinite space:
+    <h2>???</h2>
   </section>
 </div>
 
 <div class="container">
+  <svg viewBox="-650 -30 1300 80" id="dragging0">
+    <line
+      x1="-1180"
+      y1="0"
+      x2="1180"
+      y2="0"
+      style="stroke: black; stroke-width: 0.5"
+    />
+    <circle r="5" fill="white" stroke="black" stroke-width="2"></circle>
+  </svg>
+  <style>
+    #dragging0 {
+      width: 100%;
+      background: #eee;
+      cursor: grab;
+      margin-top: 20px;
+      border-radius: 10px;
+    }
+    #dragging0 text {
+      font: 16px serif;
+    }
+    .dragging {
+      cursor: grabbing;
+    }
+  </style>
+  <script type="module" src="./dragging0.js"></script>
   Try dragging the number line left and right to change the position of the
   point
   <svg viewbox="-12 -12 24 24" width="16" style="vertical-align: baseline">
@@ -82,10 +104,7 @@
   direction.
 
   <section style="float: left; width: 100%">
-    <h2>Squeezing All Numbers Into a Single Paragraph</h2>
-
-    By making each number take up less space than the last, we can fit them all
-    into a box!
+    <h2>???</h2>
 
     <svg viewBox="-300 -40 600 105" id="dragging1">
       <text x="280" y="20" text-anchor="middle" class="infinity">+∞</text>
@@ -132,38 +151,6 @@
       }
     </style>
     <script type="module" src="./dragging1.js"></script>
-
-    It's the same number line, but now its like you can see both sides going off
-    into the distance and out to infinity.<br /><br />
-    I added two points connected to either end labelled -∞ and +∞. When you add
-    these two points to the number line, the space is called the
-    <a href="https://en.wikipedia.org/wiki/Extended_real_number_line"
-      >extended real number line</a
-    >. You can still never reach these points by dragging left or right, but
-    nevertheless, they are attached to the line.
-  </section>
-  <section style="float: left; width: 100%">
-    <h2>Taping -∞ and +∞ together</h2>
-
-    If you've read the other two posts in this series or read the title of this
-    one, you may have seen this coming... I've bent the number line into a
-    circle and
-    <strong>taped</strong> together -∞ and +∞!<br /><br />
-    Now you can move along the number circle by dragging clockwise and
-    counterclockwise around the circle.<br /><br />
-    This is called the
-    <a href="https://en.wikipedia.org/wiki/Projectively_extended_real_line"
-      >projectively extended real line</a
-    >.<br /><br />
-    If you want to see how to add, subtract, multiply, and divide in these two
-    spaces, check out the links! (You can even divide by 0 in the projectively
-    extended real line)
-    <div style="clear: both"></div>
-    The infinite number line is similar to a finite line; lines can be bent or
-    taped into a circle whether they are finite or infinite.<br /><br />I made
-    this post to try to illustrate that infinite spaces are not intangible or
-    impossible to play around with.<br /><br />
-    <small><a href="./notes">misc notes</a></small>
   </section>
 
   <!-- #region -->

@@ -126,7 +126,7 @@ function makeDraggable(state, el) {
     const index = evCache.findIndex(
       (cachedEv) => cachedEv.pointerId === ev.pointerId
     );
-    evCache[index] = event;
+    evCache[index] = ev;
     // If two pointers are down, check for pinch gestures
     if (evCache.length === 2) {
       // Calculate the distance between the two pointers

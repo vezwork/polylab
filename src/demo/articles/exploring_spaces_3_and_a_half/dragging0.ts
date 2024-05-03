@@ -116,11 +116,6 @@ function makeDraggable(state, el) {
   }
 
   function move(ev) {
-    if (!state.dragging) return;
-    ev.preventDefault();
-    let { x, y } = state.eventToCoordinates(ev);
-    state.pos = x + state.dragging.dx;
-
     //multitouch
     // Find this event in the cache and update its record with this event
     const index = evCache.findIndex(
@@ -133,7 +128,7 @@ function makeDraggable(state, el) {
       const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
 
       if (prevDiff > 0) {
-        zoom += curDiff - prevDiff;
+        zoom *= 1.001 ** (curDiff - prevDiff);
         // if (curDiff > prevDiff) {
         //   // The distance between the two pointers has increased
         //   log("Pinch moving OUT -> Zoom in", ev);
@@ -148,7 +143,14 @@ function makeDraggable(state, el) {
 
       // Cache the distance for the next move event
       prevDiff = curDiff;
+      return;
     }
+
+    //single touch
+    if (!state.dragging) return;
+    ev.preventDefault();
+    let { x, y } = state.eventToCoordinates(ev);
+    state.pos = x + state.dragging.dx;
   }
 
   el.addEventListener("pointerdown", start);

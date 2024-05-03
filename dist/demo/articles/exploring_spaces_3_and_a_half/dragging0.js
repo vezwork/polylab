@@ -101,7 +101,7 @@ function makeDraggable(state, el) {
             // Calculate the distance between the two pointers
             const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
             if (prevDiff > 0) {
-                zoom *= 1.001 ** (curDiff - prevDiff);
+                zoom *= 1.01 ** (curDiff - prevDiff);
                 // if (curDiff > prevDiff) {
                 //   // The distance between the two pointers has increased
                 //   log("Pinch moving OUT -> Zoom in", ev);

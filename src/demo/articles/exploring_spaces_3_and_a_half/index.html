@@ -53,22 +53,14 @@
 <div class="container">
   <h1>Exploring Spaces 3.5: Zoomable Number Line</h1>
   <a href="https://elliot.website">elliot evans<br /></a>
-  April 26 2024<br /><br />
-
-  <audio controls>
-    <source src="./recording.mp3" type="audio/mpeg" />
-    Your browser does not support the audio element.
-  </audio>
+  May 3 2024<br /><br />
 
   <!-- #endregion -->
-
-  <section style="float: left; width: 100%">
-    <h2>???</h2>
-  </section>
-</div>
-
-<div class="container">
-  <svg viewBox="-650 -30 1300 80" id="dragging0">
+  position of
+  <svg viewbox="-12 -12 24 24" width="16" style="vertical-align: middle">
+    <circle r="9" fill="white" stroke="black" stroke-width="4"></circle></svg
+  >: <span id="position_num" style="font-family: serif">0</span>
+  <svg viewBox="-650 -30 1300 80" id="dragging0" tabindex="0">
     <line
       x1="-1180"
       y1="0"
@@ -76,6 +68,7 @@
       y2="0"
       style="stroke: black; stroke-width: 0.5"
     />
+
     <circle r="5" fill="white" stroke="black" stroke-width="2"></circle>
   </svg>
   <style>
@@ -89,21 +82,56 @@
     #dragging0 text {
       font: 16px serif;
     }
-    .dragging {
+    #dragging0.dragging {
       cursor: grabbing;
     }
   </style>
   <script type="module" src="./dragging0.js"></script>
+  <br /><br />
+
   Try dragging the number line left and right to change the position of the
   point
   <svg viewbox="-12 -12 24 24" width="16" style="vertical-align: baseline">
     <circle r="9" fill="white" stroke="black" stroke-width="4"></circle></svg
   >.<br /><br />
+  Try scrolling or pinching to zoom in and out.<br /><br />
+  Try clicking on the number line then using your arrow keys to navigate.
+</div>
 
-  The number line doesn't have an end, you can keep dragging forever in either
-  direction.
-
+<div class="container">
   <section style="float: left; width: 100%">
+    <h2>Notes</h2>
+    <ul>
+      <li>
+        type `setBase(3)` in your browser console with some number >= 2 to
+        change the number line's base!
+      </li>
+      <li>
+        type `setSpacing(100)` in your browser console with some number >= 1 to
+        change the spacing! Careful with spacings less than 30, they can make
+        your browser lag.
+      </li>
+      <li>
+        This project contains a bit of arbitrary precision number code, but the
+        number line still suffers from floating point number issues. I think I
+        am going to have to implement rational number operations to avoid all
+        issues.
+      </li>
+      <li>
+        When you zoom out or in really far, numbers get long and start
+        overlapping. How should I deal with this?
+      </li>
+      <li>
+        Would you prefer to see fractions rather than decimal / radix numbers?
+      </li>
+      <li>I want to make it so you can drag the point.</li>
+      <li>
+        Designing and coding this was trickier than I expected! It took a week!
+      </li>
+      <li>What number does the number line start on?</li>
+    </ul>
+  </section>
+  <!-- <section style="float: left; width: 100%">
     <h2>???</h2>
 
     <svg viewBox="-300 -40 600 105" id="dragging1">
@@ -151,7 +179,7 @@
       }
     </style>
     <script type="module" src="./dragging1.js"></script>
-  </section>
+  </section> -->
 
   <!-- #region -->
   <h2 id="comments">Exploring Spaces Comments</h2>

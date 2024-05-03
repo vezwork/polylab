@@ -1,63 +1,10 @@
 import { clamp, log } from "../../../lib/math/Number.js";
-const sign = (n) => (n === 0n ? 0n : n < 0n ? -1n : 1n);
-const abs = (n) => (n < 0n ? -n : n);
-// https://cs.stackexchange.com/a/10321
-//  """Convert a positive number n to its digit representation in base b."""
-const toNumerals = (n, base) => {
-    let num = abs(n);
-    const numerals = [];
-    while (num > 0) {
-        numerals.unshift(num % base);
-        num = num / base;
-    }
-    return { numerals, sign: sign(n), base };
-};
-// """Compute the number given by digits in base b."""
-const fromNumerals = ({ numerals, sign, base }) => {
-    let n = 0n;
-    for (const d of numerals)
-        n = base * n + d;
-    return n * sign;
-};
-//"""Convert the digits representation of a number from base b to base c."""
-const convertBase = (numerals, toBase) => toNumerals(fromNumerals(numerals), toBase);
-const changeTrailingZeroesIntoBaseExponent = ({ numerals, sign, base, baseExponent, }) => {
-    // address repeated 0n entries e.g. `numerals: [0n, 0n]`:
-    if (sign === 0n)
-        return { numerals: [], sign: 0n, base, baseExponent: 0n };
-    const rev = numerals.toReversed();
-    let numberOfZeroes = 0n;
-    for (const num of rev) {
-        if (num === 0n)
-            numberOfZeroes++;
-        else
-            break;
-    }
-    return {
-        numerals: numerals.slice(0, numerals.length - Number(numberOfZeroes)),
-        sign,
-        base,
-        baseExponent: baseExponent + numberOfZeroes,
-    };
-};
-// produces a radix number without any trailing zeroes after the radix
-const bigNumberToRadixNumber = (big) => {
-    const { numerals, sign, base, baseExponent } = changeTrailingZeroesIntoBaseExponent(big);
-    return {
-        numerals: baseExponent >= 0n
-            ? numerals.concat(Array(Number(baseExponent)).fill(0n))
-            : Array(Math.max(0, -Number(numerals.length) - Number(baseExponent)))
-                .fill(0n)
-                .concat(numerals)
-                .toSpliced(Number(baseExponent), 0, "."),
-        sign,
-        base,
-    };
-};
-console.log(bigNumberToRadixNumber({
-    ...toNumerals(0n, 10n),
-    baseExponent: 3n,
-}));
+import { BaseExpNumerals, bigNumberToRadixNumber, changeTrailingZeroesIntoBaseExponent, displayRadixNumeralsBase10OrLess, } from "./numerals.js";
+let BASE = 10;
+window.setBase = (b) => (BASE = b);
+let SPACING = 40;
+window.setSpacing = (n) => (SPACING = n);
+const SVG_WIDTH_SCALE = 0.8;
 function makeDraggable(state, el) {
     const evCache = [];
     let prevDiff = -1;
@@ -84,8 +31,6 @@ function makeDraggable(state, el) {
         el.classList.remove("dragging");
         //multitouch
         removeEvent(ev);
-        ev.target.style.background = "white";
-        ev.target.style.border = "1px solid black";
         // If the number of pointers down is less than two then reset diff tracker
         if (evCache.length < 2) {
             prevDiff = -1;
@@ -101,17 +46,8 @@ function makeDraggable(state, el) {
             // Calculate the distance between the two pointers
             const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
             if (prevDiff > 0) {
-                zoom *= 1.01 ** (curDiff - prevDiff);
-                // if (curDiff > prevDiff) {
-                //   // The distance between the two pointers has increased
-                //   log("Pinch moving OUT -> Zoom in", ev);
-                //   ev.target.style.background = "pink";
-                // }
-                // if (curDiff < prevDiff) {
-                //   // The distance between the two pointers has decreased
-                //   log("Pinch moving IN -> Zoom out", ev);
-                //   ev.target.style.background = "lightblue";
-                // }
+                const diff = curDiff - prevDiff;
+                zoom *= 1.01 ** diff;
             }
             // Cache the distance for the next move event
             prevDiff = curDiff;
@@ -147,9 +83,13 @@ const createLine = () => {
     t.setAttribute("y", "0");
     t.setAttribute("text-anchor", "middle");
     g.append(l, t);
-    svg.append(g);
+    svg.prepend(g);
     return g;
 };
+// caches lines into a pool. If there is an existing line that is unused,
+// reuse it to render something new, otherwise create a new line.
+// Usage of this results in there being a fixed number of line elements being created
+// in the beginning moments of zooming
 const getLine = (i) => {
     const lines = document.querySelectorAll("#dragging0 .line");
     const line = lines[i];
@@ -159,8 +99,6 @@ const getLine = (i) => {
         return createLine();
 };
 let zoom = 1;
-const RATE = 40;
-const SPACING = 40;
 svg.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (e.ctrlKey) {
@@ -171,7 +109,29 @@ svg.addEventListener("wheel", (e) => {
         zoom *= Math.exp(-e.deltaY / 600);
     }
 });
+const keysDown = {};
+svg.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown") {
+        e.preventDefault();
+    }
+    keysDown[e.key] = true;
+});
+svg.addEventListener("keyup", (e) => {
+    keysDown[e.key] = false;
+});
 function draw() {
+    //console.log(keysDown);
+    if (keysDown["ArrowLeft"])
+        state._pos += 1.5 / zoom;
+    if (keysDown["ArrowRight"])
+        state._pos -= 1.5 / zoom;
+    if (keysDown["ArrowUp"])
+        zoom *= Math.exp(1 / 100);
+    if (keysDown["ArrowDown"])
+        zoom *= Math.exp(-1 / 100);
     // seems to result in better performance than rendering in the input handlers
     requestAnimationFrame(draw);
     state.render();
@@ -182,7 +142,9 @@ let state = {
         return { x: event.clientX / zoom, y: event.clientY };
     },
     dragging: null,
-    _pos: undefined,
+    // my coordinates are messed up, so this is the pos value for pi.
+    // see the first line of `render()` to see why.
+    _pos: -Math.PI * SPACING,
     get pos() {
         return this._pos;
     },
@@ -191,24 +153,53 @@ let state = {
         //this.render();
     },
     render() {
-        const x = -this._pos / RATE;
+        // scale and negate pos so dragging is in the right direction and not too fast.
+        const x = -this._pos / SPACING;
         // NUM, ZOOM, LAYOUT CALC
-        const halfWidth = (document.querySelector("#dragging0")?.clientWidth ?? 1) / 2.4;
+        const halfWidth = (svg.clientWidth * SVG_WIDTH_SCALE) / 2;
         const halfWidthPerNum = halfWidth / (SPACING * zoom);
-        const BASE = 10;
         const zoomBaseExponent = log(zoom, BASE);
         const baseExponent = -Math.ceil(zoomBaseExponent);
-        const gap = BASE ** baseExponent;
-        const startInGapBase = BigInt(Math.round(x / gap));
-        const start = Math.round(x / gap) * gap;
+        const numTickGap = BASE ** baseExponent;
+        const startInGapBase = BigInt(Math.round(x / numTickGap));
+        const startX = Math.round(x / numTickGap) * numTickGap;
         // SVG INSERTION
         let linei = 0;
-        const px = (n) => (n - x) * SPACING * zoom;
-        const insertp = (n, big) => {
+        svg.style.border = "none";
+        document.getElementById("position_num").textContent = x.toFixed(Math.max(0, -baseExponent));
+        // Start in the middle and render out to the right:
+        let numInGapBase = startInGapBase;
+        let num = startX; // num = numInGapBase * BigInt(gap);
+        while (num < x + halfWidthPerNum) {
+            renderNumberTick(num, BaseExpNumerals(numInGapBase, BASE, baseExponent));
+            numInGapBase++;
+            let prevNum = num;
+            num += numTickGap;
+            if (num === prevNum) {
+                svg.style.border = "1px solid red";
+                throw "Floating Point Error!";
+            }
+        }
+        // Start one unit left from the middle and render out to the left:
+        numInGapBase = startInGapBase - 1n;
+        num = startX - numTickGap; // num = numInGapBase * BigInt(gap);
+        while (num > x - halfWidthPerNum) {
+            renderNumberTick(num, BaseExpNumerals(numInGapBase, BASE, baseExponent));
+            numInGapBase--;
+            let prevNum = num;
+            num -= numTickGap;
+            if (num === prevNum) {
+                svg.style.border = "1px solid red";
+                throw "Floating Point Error!";
+            }
+        }
+        function numberTickX(n) {
+            return (n - x) * SPACING * zoom;
+        }
+        function renderNumberTick(n, big) {
             const radixNum = bigNumberToRadixNumber(big);
-            const display = (radixNum.sign === 0n ? "0" : radixNum.sign === -1n ? "-" : "") +
-                radixNum.numerals.join("");
-            const pos = px(n);
+            const display = displayRadixNumeralsBase10OrLess(radixNum);
+            const pos = numberTickX(n);
             const scale = big.sign === 0n
                 ? 1.5
                 : clamp(0, 1 +
@@ -217,60 +208,32 @@ let state = {
             const line = getLine(linei);
             line?.setAttribute("transform", `translate(${pos.toFixed(3)} 0) scale(${scale})`);
             line.querySelector("text").textContent = display;
-            let textScale = (1 / display.length) ** (1 / 4);
-            const TEXT_HEIGHT = 23;
+            const TEXT_HEIGHT = 23; // manually checked this for 16px font
+            // make numbers with longer representations smaller, but not too small
+            const NOT_TOO_SMALL = 1 / 3;
+            const textScale = (1 / display.length) ** NOT_TOO_SMALL;
             let textSize = TEXT_HEIGHT * textScale;
+            const textY = 16 + textSize / 2;
             line
                 .querySelector("text")
-                .setAttribute("transform", `translate(0 ${16 + textSize / 2}) scale(${textScale})`);
+                .setAttribute("transform", `translate(0 ${textY}) scale(${textScale})`);
             linei++;
-        };
-        let numInGapBase = startInGapBase;
-        let num = start; // num = numInGapBase * BigInt(gap);
-        svg.style.border = "none";
-        while (num < x + halfWidthPerNum) {
-            insertp(num, {
-                ...toNumerals(numInGapBase, BigInt(BASE)),
-                baseExponent: BigInt(baseExponent),
-            });
-            numInGapBase++;
-            let prevNum = num;
-            num += gap;
-            if (num === prevNum) {
-                svg.style.border = "1px solid red";
-                throw "Floating Point Error!";
-            }
-        }
-        numInGapBase = startInGapBase - 1n;
-        num = start - gap; // num = numInGapBase * BigInt(gap);
-        while (num > x - halfWidthPerNum) {
-            insertp(num, {
-                ...toNumerals(numInGapBase, BigInt(BASE)),
-                baseExponent: BigInt(baseExponent),
-            });
-            numInGapBase--;
-            let prevNum = num;
-            num -= gap;
-            if (num === prevNum) {
-                svg.style.border = "1px solid red";
-                throw "Floating Point Error!";
-            }
         }
         // HIDE UNUSED SVG ELEMENTS
         const lines = document.querySelectorAll("#dragging0 .line");
         for (linei; linei < lines.length; linei++) {
             const line = lines[linei];
+            // translating out of view should be performant than actually hiding them?
             line?.setAttribute("transform", `translate(60000)`);
         }
     },
 };
-state.pos = 0;
 makeDraggable(state, document.querySelector("#dragging0"));
 // make number line viewbox based on window width
 // so the number line doesn't get too small on mobile
 const el = document.querySelector("#dragging0");
 const onSize = () => {
-    el?.setAttribute("viewBox", `${(-el.clientWidth * 0.8) / 2} -30 ${el.clientWidth * 0.8} 80`);
+    el?.setAttribute("viewBox", `${(-el.clientWidth * SVG_WIDTH_SCALE) / 2} -27 ${el.clientWidth * SVG_WIDTH_SCALE} 80`);
 };
 window.addEventListener("resize", onSize);
 onSize();

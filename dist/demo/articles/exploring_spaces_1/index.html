@@ -200,9 +200,18 @@ Apr 22 2024<br />
   <h2>Input Spaces</h2>
 
   <div style="float: right; margin-left: 20px">
-    <svg viewBox="0 0 200 200" width="200" style="vertical-align: middle"></svg>
+    <svg viewBox="-12 0 24 200" width="24" style="vertical-align: middle">
+      <circle class="draggable y" r="10"></circle>
+    </svg>
+    <span style="font-size: 30px">✕</span>
+    <svg viewBox="0 -12 200 24" width="200" style="vertical-align: middle">
+      <circle class="draggable x" r="10"></circle>
+    </svg>
+    <span style="font-size: 30px">=</span>
+    <svg viewBox="0 0 200 200" width="200" style="vertical-align: middle">
+      <circle class="draggable x y" r="10"></circle>
+    </svg>
     <script type="module">
-      import { rotate, rotateAround, add } from "../../../lib/math/Vec2.js";
       const mod = (a, n, nL = 0) =>
         ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
       function makeDraggable(state, el) {
@@ -247,50 +256,37 @@ Apr 22 2024<br />
         return p;
       }
 
-      const svg = document.querySelector("svg");
-
-      const addPoint = (x, y) => {
-        const circle = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "circle"
-        );
-        svg.append(circle);
-        circle.classList.add("draggable", "x", "y");
-        circle.setAttribute("r", 3);
-        let state = {
-          eventToCoordinates: eventToSvgCoordinates,
-          dragging: null,
-          _x: undefined,
-          _y: undefined,
-          _pos: undefined,
-          get x() {
-            return this._x;
-          },
-          set x(n) {
-            this._x = n;
-            circle.setAttribute("cx", mod(this._x, 0, 200));
-          },
-          get y() {
-            return this._y;
-          },
-          set y(n) {
-            this._y = n;
-            circle.setAttribute("cy", mod(this._y, 0, 200));
-          },
-        };
-        function draw() {
-          requestAnimationFrame(draw);
-          const [x, y] = add([state.x, state.y], [0.1, 0.1]);
-          state.x = x;
-          state.y = y;
-        }
-        draw();
-        state.x = x;
-        state.y = y;
-        makeDraggable(state, circle);
+      const els = Array.from(document.querySelectorAll(".draggable"));
+      let state = {
+        eventToCoordinates: eventToSvgCoordinates,
+        dragging: null,
+        _x: undefined,
+        _y: undefined,
+        _pos: undefined,
+        get x() {
+          return this._x;
+        },
+        set x(n) {
+          this._x = n;
+          for (const el of els) {
+            if (el.classList.contains("x"))
+              el.setAttribute("cx", mod(this._x, 0, 200));
+          }
+        },
+        get y() {
+          return this._y;
+        },
+        set y(n) {
+          this._y = n;
+          for (const el of els) {
+            if (el.classList.contains("y"))
+              el.setAttribute("cy", mod(this._y, 0, 200));
+          }
+        },
       };
-      for (let x = 0; x < 200; x += 20)
-        for (let y = 0; y < 200; y += 20) addPoint(x, y);
+      state.x = 20;
+      state.y = 20;
+      for (const el of els) makeDraggable(state, el);
     </script>
     <style>
       svg {

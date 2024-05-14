@@ -60,3 +60,5 @@ export const push = (...starts) => {
 //   filled out. This is not always the case, sometimes things are out of view or don't need to be computed
 //   for current calculations (e.g. really small things on the screen don't necessarily have to be calculated and rendered).
 //   Will come back to this when I have a more concrete need for it.
+// edit: this has a major issue as can be seen when running index.ts. Order of propagation does not
+// work when products depend on eachother.

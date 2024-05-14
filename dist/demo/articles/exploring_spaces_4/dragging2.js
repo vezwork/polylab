@@ -1,7 +1,7 @@
 import { add, angleOf, length, setAngle, setLength, sub, } from "../../../lib/math/Vec2.js";
 import { setPos } from "./dragging4.js";
 import { setSphereCanvasPoint } from "./sphereCanvas.js";
-import { v3normalize, v3rot } from "./v3.js";
+import { v3normalize } from "./v3.js";
 const RADIUS = 100;
 const circleRevert = (v) => length(v) === 0 // hack so 0 vector doesn't get mapped to [NaN, NaN]
     ? [1e10, 1e10]
@@ -78,10 +78,6 @@ function eventToSvgCoordinates(event, el = event.currentTarget) {
     return p;
 }
 const makeCircleAndClone = (svg, show = true, draggable = true, r = "6", fill = "white") => {
-    /*
-    <circle class="draggable" r="6" mask="url(#myMask)"></circle>
-      <circle class="clone draggable" r="6" cx="100" mask="url(#myMask)"></circle>
-    */
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     svg.append(circle);
     if (draggable)
@@ -101,20 +97,20 @@ const makeCircleAndClone = (svg, show = true, draggable = true, r = "6", fill = 
     //clone.setAttribute("mask", "url(#myMask)");
     return { circle, clone };
 };
+const makeJustCircle = (svg, r = "6", fill = "white") => {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    svg.append(circle);
+    circle.setAttribute("r", r);
+    circle.style.fill = fill;
+    return circle;
+};
 const createDot = (color = "red", r = "3") => {
-    const { circle: ela, clone: clonea } = makeCircleAndClone(document.querySelector("#dragging2a"), true, false, r, color);
-    const { circle: elb, clone: cloneb } = makeCircleAndClone(document.querySelector("#dragging2b"), false, false, r, color);
+    const circle = makeJustCircle(document.querySelector("#dragging2a"), r, color);
     let state = {
-        el: ela,
-        clone: cloneb,
         eventToCoordinates: eventToSvgCoordinates,
         dragging: null,
         pos: [0, 0],
         disk: 0,
-        color(c) {
-            ela.style.fill = c;
-            elb.style.fill = c;
-        },
         movePos(delta) {
             this.pos = add(this.pos, delta);
             if (length(this.pos) > 50) {
@@ -125,27 +121,14 @@ const createDot = (color = "red", r = "3") => {
         },
         render() {
             if (this.disk === 0) {
-                ela.style.visibility = "visible";
-                elb.style.visibility = "hidden";
-                this.el = ela;
-                cloneb.style.visibility = "visible";
-                clonea.style.visibility = "hidden";
-                this.clone = cloneb;
+                document.querySelector("#dragging2a")?.append(circle);
             }
             else {
-                elb.style.visibility = "visible";
-                ela.style.visibility = "hidden";
-                this.el = elb;
-                clonea.style.visibility = "visible";
-                cloneb.style.visibility = "hidden";
-                this.clone = clonea;
+                document.querySelector("#dragging2b")?.append(circle);
             }
-            const cpos = circleRevert(this.pos);
-            if (!Number.isNaN(cpos[0])) {
-                this.clone?.setAttribute("cx", cpos[0] + "");
-                this.clone?.setAttribute("cy", cpos[1] + "");
-                this.el?.setAttribute("cx", this.pos[0] + "");
-                this.el?.setAttribute("cy", this.pos[1] + "");
+            if (!Number.isNaN(this.pos[0])) {
+                circle?.setAttribute("cx", this.pos[0] + "");
+                circle?.setAttribute("cy", this.pos[1] + "");
             }
         },
     };
@@ -336,26 +319,29 @@ saxis.pos = unitDiskToUIDisk(tt.v);
 saxis.disk = tt.disk;
 // saxis.color("red");
 saxis.render();
-const points = []; //[s1, s2, s3, s4, s5, s6];
-function draw() {
-    requestAnimationFrame(draw);
-    let i = 0;
-    for (const s of [...points, ...dots]) {
-        const h = twoUnitDisksToSphere({
-            disk: s.disk,
-            v: uiDiskToUnitDisk(s.pos),
-        });
-        const rh = v3rot(twoUnitDisksToSphere({
-            disk: saxis.disk,
-            v: uiDiskToUnitDisk(saxis.pos),
-        }), 0.05)(h);
-        const go = sphereToTwoUnitDisks(rh);
-        s.pos = unitDiskToUIDisk(go.v);
-        s.disk = go.disk;
-        s.render();
-        i++;
-    }
-}
+// const points = []; //[s1, s2, s3, s4, s5, s6];
+// function draw() {
+//   requestAnimationFrame(draw);
+//   let i = 0;
+//   for (const s of [...points, ...dots]) {
+//     const h = twoUnitDisksToSphere({
+//       disk: s.disk,
+//       v: uiDiskToUnitDisk(s.pos),
+//     });
+//     const rh = v3rot(
+//       twoUnitDisksToSphere({
+//         disk: saxis.disk,
+//         v: uiDiskToUnitDisk(saxis.pos),
+//       }) as V3,
+//       0.05
+//     )(h as V3);
+//     const go = sphereToTwoUnitDisks(rh);
+//     s.pos = unitDiskToUIDisk(go.v);
+//     s.disk = go.disk;
+//     s.render();
+//     i++;
+//   }
+// }
 //requestAnimationFrame(draw);
 // make the background draw on-top
 document

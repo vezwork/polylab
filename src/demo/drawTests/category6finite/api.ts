@@ -1,16 +1,16 @@
-import { to, Edge, edgeAnds } from "./core.js";
+import { to, Edge, edgeAnds, op } from "./core.js";
 
 export class Datum {
-  constructor(public value?: any) {}
+  constructor(public value?: any, public debug?: any) {}
 }
 
-export const datum = (value?: any) => new Datum(value);
+export const datum = (value?: any, debug?: any) => new Datum(value, debug);
 export const getValue = (d: Datum) => d.value;
 export const setValue = (d: Datum) => (value?: any) => (d.value = value);
 
-const setInnerValue = (d: Datum) => (key: any) => (value?: any) =>
+export const setInnerValue = (d: Datum) => (key: any) => (value?: any) =>
   (d.value[key] = value);
-const getInnerValue = (d: Datum) => (key: any) => d.value[key];
+export const getInnerValue = (d: Datum) => (key: any) => d.value[key];
 
 const getAnds = new Map<any, Edge[]>();
 // a lens for things you can set and get via the `ob[key]` syntax in JS.
@@ -23,6 +23,7 @@ export const accessorLens = (container) => (d, key) => {
   const fromEdge = to(() => setValue(d)(getInnerValue(container)(key)))(
     container
   )(d);
+  op(toEdge, fromEdge);
   and.push(toEdge);
   edgeAnds.set(toEdge, and);
   return [toEdge, fromEdge];
@@ -30,7 +31,7 @@ export const accessorLens = (container) => (d, key) => {
 
 // want to make multiple datums unique
 // thats an OPTIMIZATION tho
-export const multiple = (...obs: any[]) => {
+export const tuple = (...obs: any[]) => {
   const d = datum(obs.map(getValue));
   obs.forEach(accessorLens(d));
   return d;
@@ -46,7 +47,7 @@ const oneWayAccessorLens = (container) => (d, key) => {
   edgeAnds.set(toEdge, and);
   return toEdge;
 };
-const oneWayMultiple = (...obs: any[]) => {
+const oneWayTuple = (...obs: any[]) => {
   const d = datum(obs.map(getValue));
   obs.forEach(oneWayAccessorLens(d));
   return d;
@@ -69,7 +70,7 @@ export const func =
   (...rawArgs: any[]) => {
     const args = rawArgs.map(wrap); // make sure we can depend on all args
 
-    const from = args.length === 1 ? args[0] : oneWayMultiple(...args);
+    const from = args.length === 1 ? args[0] : oneWayTuple(...args);
     to(() => setValue(target)(f(...args.map(getValue))))(from)(target);
     //setResult();
 

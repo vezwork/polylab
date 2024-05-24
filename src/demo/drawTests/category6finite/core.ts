@@ -1,18 +1,23 @@
-import { SetMap } from "../../../lib/structure/data.js";
+import { SetMap, EndoSetMapWithReverse } from "../../../lib/structure/data.js";
 
-export type Edge = [Function, Object];
+export type Edge = [Function, Object, Object];
 export const graph = new SetMap<Object, Edge>();
+export const edgeOp = new Map<Edge, Edge>();
 export const edgeAnds = new Map<Edge, Edge[]>();
 
 export const to =
-  (edge: Function) =>
+  (f: Function) =>
   (from: any) =>
   (to: any = Symbol()) => {
-    const forward = [edge, to] as Edge;
+    const forward = [f, from, to] as Edge;
 
     graph.add(from, forward);
     return forward;
   };
+export const op = (e1, e2) => {
+  edgeOp.set(e1, e2);
+  edgeOp.set(e2, e1);
+};
 export const and = (edges: Edge[]) => {
   for (const edge of edges) {
     if (edgeAnds.has(edge)) throw "ands already has edge!";
@@ -28,41 +33,93 @@ const get = <A, B>(map: Map<A, Iterable<B>>, key: A): B[] => [
 const isAndVisited = (forward: Edge, visitedEdges: Set<Edge>) =>
   get(edgeAnds, forward).every((andEdge) => visitedEdges.has(andEdge));
 
+const andSorter = (andTrack: EndoSetMapWithReverse<Edge[]>) => (and1, and2) =>
+  andTrack.hasPathBetween(and1, and2) ? -1 : 1;
+
 // same as init but without the pulls after the inner while loop
-export const push = (...starts: any[]) => {
+export const push = (...starts: Object[]) => {
+  const sorter = andSorter(andTracker(...starts));
+
   const visitedNodes = new Set(starts);
   const visitedEdges = new Set<Edge>();
-  const unvisitedAnds = new Set(starts);
+  const unvisitedAnds = new Set<Edge[]>();
 
-  while (unvisitedAnds.size > 0) {
-    const queue = [...unvisitedAnds];
-    unvisitedAnds.clear();
-
-    console.warn("loop");
-
+  let queue = starts.map((node) => [null, node]) as [Edge | null, Object][];
+  do {
     while (queue.length > 0) {
-      const from = queue.shift();
-      unvisitedAnds.delete(from);
+      const [fromEdge, fromNode] = queue.shift()!;
 
-      for (const forward of get(graph, from)) {
-        const [edge, to] = forward;
+      for (const forward of get(graph, fromNode)) {
+        const [f, from, to] = forward;
+        // don't revisit nodes
         if (visitedNodes.has(to)) continue;
         visitedEdges.add(forward);
 
-        console.debug("push edge", edge, from, to);
-        edge(from, to);
+        // don't propagate to other `and` edges when coming from an anded edge
+        const backwardAnd = get(edgeAnds, edgeOp.get(forward));
+        if (backwardAnd.includes(fromEdge!)) continue;
+
+        f(from, to);
+        //console.log("f", from, to);
 
         // only propagate once all ands are visited, to ensure
         // products are fully valuated before propagation
         if (isAndVisited(forward, visitedEdges)) {
-          queue.push(to);
+          queue.push([forward, to]);
           visitedNodes.add(to);
-        } else unvisitedAnds.add(to);
+          unvisitedAnds.delete(edgeAnds.get(forward)!);
+        } else unvisitedAnds.add(edgeAnds.get(forward)!);
       }
     }
-  }
+
+    // visit unvisited and in a pretty good dependency order
+    queue = [...unvisitedAnds]
+      .sort(sorter)
+      .map((and) => [and[0], and[0][2]] as [Edge, Object])
+      .filter(([_, node]) => !visitedNodes.has(node));
+    for (const [fromEdge, fromNode] of queue) visitedNodes.add(fromNode);
+    unvisitedAnds.clear();
+  } while (queue.length > 0);
 };
 
+// does not worry about fully visiting ands
+// figures out which ands come before which for given starts
+// andTrack from a to b means b is before a
+export const andTracker = (...starts: any[]) => {
+  const visitedNodes = new Set(starts);
+  const andTrack = new EndoSetMapWithReverse<Edge[]>();
+  // queue entry's [0] and [1] are often redundant because Edge[1] = entry[1], but Edge can be null.
+  const queue = starts.map((node) => [null, node, null]) as [
+    Edge | null,
+    any,
+    Edge[] | null
+  ][];
+
+  while (queue.length > 0) {
+    const [fromEdge, fromNode, lastAnd] = queue.shift()!;
+
+    for (const forward of get(graph, fromNode)) {
+      const [edge, from, to] = forward;
+      // don't propagate to other `and` edges when coming from an anded edge
+      const backwardAnd = get(edgeAnds, edgeOp.get(forward));
+      if (backwardAnd.includes(fromEdge!)) continue;
+
+      // track and
+      const forwardAnd = edgeAnds.get(forward);
+      if (forwardAnd !== undefined && lastAnd !== null)
+        andTrack.add(forwardAnd, lastAnd);
+
+      // don't revisit nodes
+      if (visitedNodes.has(to)) continue;
+      visitedNodes.add(to);
+
+      queue.push([forward, to, forwardAnd ?? lastAnd]);
+    }
+  }
+  return andTrack;
+};
+
+// OLD NOTE:
 // This is in a good spot. It works well and I understand it more than category3!
 // core limitations (maybe can live with them though):
 // - consistency of pushed data is assumed. I can't easily reason about what happens

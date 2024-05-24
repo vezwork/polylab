@@ -1,33 +1,45 @@
-import { multiple, datum, func } from "./api.js";
-import { to } from "./core.js";
+import { datum, func, getInnerValue, setValue, tuple } from "./api.js";
+import { and, op, to } from "./core.js";
 
+// const pair = (a, b, ab = [] as any[]) => {
+//   ab[0] = [];
+//   const e1 = to(() => (ab[0][0] = a[0]))(a)(ab);
+//   const e2 = to(() => (ab[0][1] = b[0]))(b)(ab);
+//   const ope1 = to(() => (a[0] = ab[0][0]))(ab)(a);
+//   const ope2 = to(() => (b[0] = ab[0][1]))(ab)(b);
+//   op(e1, ope1);
+//   op(e2, ope2);
+//   and([e1, e2]);
+//   return ab;
+//   //return and([e1, e2]);
+// };
 // IMPORTANT: Update order matters!
 // e.g. if `c` updates but not `b` or `a`, then this will only set `a` with `a = c - b`.
-export const plus = (a, b) => {
+export const plus = (a, b, debug?: any) => {
   const c = func((a, b) => a + b)(a, b);
-  func((b, c) => c - b, a)(b, c); // IMPORTANT: the order of these last two lines matters
-  //func((a, c) => c - a, b)(a, c);
+  c.debug = debug;
+  func((a, c) => c - a, b)(a, c);
+  func((b, c) => c - b, a)(b, c);
   return c;
 };
-export const sub = (a, b) => {
-  const c = [undefined];
-  to(([[a, b]], c) => (c[0] = a - b))(multiple(a, b))(c);
-  to(([[b, c]], a) => (a[0] = c + b))(multiple(b, c))(a); // IMPORTANT: the order of these last two lines matters
-  to(([[a, c]], b) => (b[0] = a - c))(multiple(a, c))(b);
+export const sub = (a, b, debug?: any) => {
+  const c = func((a, b) => a - b)(a, b);
+  c.debug = debug;
+  func((a, c) => a - c, b)(a, c);
+  func((b, c) => c + b, a)(b, c);
   return c;
 };
-export const mul = (a, b) => {
-  const c = [undefined];
-  to(([[a, b]], c) => (c[0] = a * b))(multiple(a, b))(c);
-  to(([[b, c]], a) => (a[0] = c / b))(multiple(b, c))(a); // IMPORTANT: the order of these last two lines matters
-  to(([[a, c]], b) => (b[0] = c / a))(multiple(a, c))(b);
+export const mul = (a, b, debug?: any) => {
+  const c = func((a, b) => a * b)(a, b);
+  c.debug = debug;
+  func((a, c) => c / a, b)(a, c);
+  func((b, c) => c / b, a)(b, c);
   return c;
 };
 export const div = (a, b) => {
-  const c = [undefined];
-  to(([[a, b]], c) => (c[0] = a / b))(multiple(a, b))(c);
-  to(([[b, c]], a) => (a[0] = c * b))(multiple(b, c))(a); // IMPORTANT: the order of these last two lines matters
-  to(([[a, c]], b) => (b[0] = a / c))(multiple(a, c))(b);
+  const c = func((a, b) => a / b)(a, b);
+  func((a, c) => a / c, b)(a, c);
+  func((b, c) => c * b, a)(b, c);
   return c;
 };
 

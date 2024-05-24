@@ -1,57 +1,101 @@
-// I want to library-ify category5finite so that it is ready to
-// play around with in an article. It doesn't have to be perfect,
-// but currently category5finite is pretty incomprehensible to
-// others and probably to future me as well.
+import { assign, biAssign, datum, func, setValue, tuple } from "./api.js";
+import { push, to } from "./core.js";
+import { log, mul, plus, sub } from "./helpers.js";
 
-// Here's the changes I want to make:
-// -[] boil down the `push` algorithm in lib.ts so that it can be simply presented
-// -[] remove products in favour of multi-target `mo(..)(..)(...targets)`
-// -[] create better named functions for `d`,
-//   - `ob[0] = ..` will not be a thing because it will be functional
-// -[] make it functional. This means side effects are handled by the lenses / algorithm.
-//   -[] need to make a proof of concept because I'm not sure exactly how this will work.
-//   -[] `lift` should be possible e.g. `const max = lift(Math.max)`
-// -[] make a "point" class using vec2 I suppose
-// -[] make canvas drawing classes for points, lines, rects, paths, etc.
-// -[] make utility that produces values every frame with requestAnimationFrame
-// -[] make mouse and keyboard utilities
-// -[] make an IF and CASE utility
-// Axed changes:
-// - how to only render after everything is updated
-//   - wait... if I used svg this could be useful though.
+const canvas = document.getElementById("c") as HTMLCanvasElement;
+const ctx = canvas.getContext("2d")!;
 
-// SKETCH OF CODE:
-// const myAr = [1, 2, 3];
-// const myObj = {
-//   x: 10,
-//   y: 33,
-//   z: 2,
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+const ax = datum(400, "ax");
+const ay = datum(600);
+const bx = datum(undefined, "bx");
+const by = datum();
+const cx = datum(320, "cx");
+const cy = datum(220);
+
+const drawCircle = ([x, y]) => {
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, 2 * Math.PI);
+  ctx.stroke();
+};
+const lineBetween = (a, b) => {
+  const line = func(([[ax, ay], [bx, by]]) => [ax, ay, bx, by])(tuple(a, b));
+  func(([x1, y1, x2, y2]) => {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  })(line);
+  return line;
+};
+lineBetween(tuple(ax, ay), tuple(cx, cy));
+
+func(drawCircle)(tuple(ax, ay));
+func(drawCircle)(tuple(bx, by));
+func(drawCircle)(tuple(cx, cy));
+
+func(console.log)(tuple(ax, ay));
+
+const miny = func(([ay, cy]) => Math.min(ay, cy))(tuple(ay, cy));
+const minx = func(([ax, cx]) => Math.min(ax, cx))(tuple(ax, cx));
+func(([x, y]) =>
+  ctx.fillText("CROSSCUT STUDY INTERACTION VARIATION", x, y - 10)
+)(tuple(minx, miny));
+
+// const Δ = (
+//   ob,
+//   diff = (oldData, newData): any => newData - oldData,
+//   add = (data, changeData): any => changeData + data
+// ) => {
+//   let prev = ob[0];
+//   let change: any = null;
+//   const changeMo = func((v) => {
+//     change = diff(prev, v);
+//     prev = v;
+//     return change;
+//   })(ob);
+//   to(([obchange], v) => {
+//     v[0] = add(v[0], obchange);
+//   })(changeMo)(ob);
+//   return changeMo;
+// };
+// const Δplus = (a, b) => {
+//   const c = func(([a, b]) => a + b)(tuple(a, b));
+//   to(([Δc], [ab]) => {
+//     ab[0] += Δc / 2;
+//     ab[1] += Δc / 2;
+//   })(Δ(c))(tuple(a, b));
+//   // to(([[b, c]], a) => (a[0] = c - b))(tuple(b, c))(a); // IMPORTANT: the order of these last two lines matters
+//   // to(([[a, c]], b) => (b[0] = c - a))(tuple(a, c))(b);
+//   return c;
 // };
 
-// const min = lift(Math.min);
-// const c = min(focus(myObj, "x"), focus(myObj, "y"));
+const THING = datum(1 / 3, "THING");
+const one = datum(1, "one");
+const mTHING = sub(one, THING, "one - THING");
 
-import {
-  multiple,
-  assign,
-  datum,
-  func,
-  getValue,
-  setValue,
-  accessorLens,
-} from "./api.js";
-import { graph, push, to } from "./core.js";
-import { log, plus } from "./helpers.js";
+const mTHING2 = sub(one, mTHING, "one - mTHING");
+const mTHING3 = sub(one, mTHING2, "one - mTHING2");
+// console.log(THING, one, mTHING);
 
-const aa = datum(5);
-const a = datum();
-assign(aa, a);
-// const a0 = datum();
-// accessorLens(a)(a0, 0);
-const b = plus(a, 2);
-const bb = plus(b, 2);
+biAssign(plus(mul(ax, THING), mul(cx, mTHING)), bx);
+biAssign(plus(mul(ay, THING), mul(cy, mTHING)), by);
 
-const c = plus(a, bb);
-log("hello!", a, b, bb, c);
-push(aa);
-console.log([a, b, c].map((d) => d.value));
+// BUG: Why does this log at the wrong time!!?!?!
+// It logs out:
+//   x 400 260 320
+//   y 600 210 220
+// but draws ax and ay at a location different than 400,600!
+log("x", ax, bx, cx);
+log("y", ay, by, cy);
+
+log("mTHING+", mTHING, mTHING2, mTHING3);
+// push(one, THING);
+
+push(one, THING, ax, cx, ay, cy);
+console.log("---------------------------------------");
+
+setValue(bx)(260);
+setValue(by)(210);
+push(bx, by);

@@ -1,0 +1,26 @@
+category6finite was started to be a library-ification of category5finite,
+but while working on it I realized a limitation of this approach and
+made `TESTFUUU` in category5finite tests.ts.
+
+This completely derailed me, and I attempted to "fix" category6finite propagation order.
+After much trying, I realized I was not able to get it to work. I wrote Thoughts 100 and 101
+to try to figure out conceptually what was going on. I realized that I cannot reasonably hope
+to fix this approach.
+
+I was inspired on the FoC slack to try propagators and I made `../propagate/`. I thought
+that propagators were a more general, although less effecient approach to my problems. but
+after playing around with propagators I realized that it is difficult to express three-way
+relation updates in them (for example if I push a=2 and b=3 in a+b=c to get 2+3=5, then
+push a=9, I get loops or single source glitches that I don't know how to adress).
+
+Today on May 25 I looked back on category5finite and noticed that it is correctly computing
+somewhat complex nested three-way relations such as `eq(Δplus(mul(ax, THING), mul(cx, mTHING)), bx)`.
+I am starting to think that maybe category5finite propagation order does not need fixing, but rather
+that I need to become aware of how it works and its limitations and work with them.
+
+TL;DR lets put category6finite and propagate to the side for now, and revisit category5finite!
+
+I wrote some notes in my journal and realized I am still confused about what I am trying to do.
+There is a weird mix of equation solving and propagation that is maybe not as complementary as I
+imagined.
+Gonna take a break on this stuff for now!

@@ -7,10 +7,8 @@ import {
   unitDiskToHemisphere,
   unitDiskToUIDisk,
 } from "./draggingSphere.js";
-import { angleOf, length } from "../../../lib/math/Vec2.js";
 import { V3, v3normalize, v3rot } from "./v3.js";
 import { qap, qfromAxisAngle } from "./quat.js";
-//import { dotState } from "./draggingRP2.js";
 import { saxis } from "./draggingSphereUsage.js";
 import { mod } from "../../../lib/math/Number.js";
 
@@ -26,7 +24,7 @@ const dotMap = new Map();
 const lchValsToCssLchString = ([l, c, h]) =>
   `lch(${l.toFixed(1)}% ${c.toFixed(1)} ${h.toFixed(1)}rad)`;
 const SPACING = 3;
-const SIZE = "1";
+const SIZE = "1.2";
 const CHROMA = 77;
 
 let rotationAxis = v3normalize([0, 1, 0]);
@@ -78,40 +76,6 @@ for (let angle = 0; angle < Math.PI; angle += Math.PI / 32) {
   }
 }
 
-// for (let x = -50; x < 50; x += SPACING) {
-//   for (let y = -50; y < 50; y += SPACING) {
-//     if (length([x, y]) < 50) {
-//       const hemicoord = unitDiskToHemisphere([x / 50, y / 50]);
-//       const color = lchValsToCssLchString([
-//         50 + hemicoord[2] * 50,
-//         CHROMA,
-//         angleOf([x, y]),
-//       ]);
-//       const dot = createDot(SVG1, SVG2, color, SIZE);
-//       dot.pos = [x, y];
-//       dot.render();
-//       dots.push(dot);
-//     }
-//   }
-// }
-// for (let x = -50; x < 50; x += SPACING) {
-//   for (let y = -50; y < 50; y += SPACING) {
-//     if (length([x, y]) < 50) {
-//       const hemicoord = unitDiskToHemisphere([x / 50, y / 50]);
-//       const color = lchValsToCssLchString([
-//         50 - hemicoord[2] * 50,
-//         CHROMA,
-//         angleOf([-x, -y]),
-//       ]);
-//       const dot = createDot(SVG1, SVG2, color, SIZE);
-//       dot.pos = [x, y];
-//       dot.disk = 1;
-//       dot.render();
-//       dots.push(dot);
-//     }
-//   }
-// }
-
 function draw() {
   requestAnimationFrame(draw);
   for (const s of dots) {
@@ -134,11 +98,14 @@ function draw() {
     otherS.disk = go.disk;
     otherS.render();
   }
-  SVG1.append(document.getElementById("dragging3a_background_rect")!);
-  SVG2.append(document.getElementById("dragging3b_background_rect")!);
+  SVG1!.append(document.getElementById("dragging3a_border")!);
+  SVG2!.append(document.getElementById("dragging3b_border")!);
+
+  SVG3!.append(document.getElementById("dragging4a_border")!);
+  SVG4!.append(document.getElementById("dragging4b_border")!);
 }
 requestAnimationFrame(draw);
 
 // make the background draw on-top
-SVG1.append(document.getElementById("dragging3a_background_rect")!);
-SVG2.append(document.getElementById("dragging3b_background_rect")!);
+// SVG1!.append(document.getElementById("dragging3a_background_rect")!);
+// SVG2!.append(document.getElementById("dragging3b_background_rect")!);

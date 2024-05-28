@@ -186,6 +186,12 @@ export const createDraggableDot = (
       ela.style.fill = c;
       elb.style.fill = c;
     },
+    radius(r) {
+      ela.setAttribute("r", r);
+      elb.setAttribute("r", r);
+      clonea.setAttribute("r", r);
+      cloneb.setAttribute("r", r);
+    },
     movePos(delta) {
       this.pos = add(this.pos, delta);
       if (length(this.pos) > 50) {

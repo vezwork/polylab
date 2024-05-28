@@ -1,0 +1,498 @@
+<!-- #region -->
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1><a href="../exploring_spaces/">Exploring Spaces</a> 4.5: 3D Rotations</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+May 28 2024<br /><br />
+
+<!-- #endregion -->
+
+<section>
+  <h2>
+    The Space of 3D Rotations:
+    <span style="font-family: serif">SO(3)</span> a.k.a.
+    <span style="font-family: serif">ℝℙ<sup>3</sup></span>
+  </h2>
+  <div style="clear: left; display: flex; align-items: center">
+    <span style="font-family: serif; font-size: 40px">r =</span>
+    <svg
+      viewBox="-12 0 24 200"
+      width="22"
+      class="circle-input"
+      style="float: left; margin-left: 10px"
+    >
+      <circle class="draggable y" r="10"></circle>
+    </svg>
+    <span style="font-size: 30px; margin: 0 10px">✕</span>
+    <style>
+      .circle-input {
+        background: #eee;
+        border-radius: 10px;
+      }
+      .circle-input circle {
+        stroke: black;
+        stroke-width: 3px;
+      }
+      .circle-input.draggable {
+        cursor: grab;
+        fill: white;
+      }
+      .circle-input.dragging {
+        cursor: grabbing;
+        fill: hsl(200, 54%, 76%);
+      }
+    </style>
+    <script type="module" src="./draggingCircle.js"></script>
+    <svg
+      viewBox="-52 -52 104 104"
+      width="160"
+      id="dragging2a"
+      style="float: left"
+    >
+      <defs>
+        <mask id="hole">
+          <rect width="114" height="114" fill="white" x="-62" y="-62" />
+          <circle r="50" fill="black" />
+        </mask>
+      </defs>
+
+      <rect
+        id="dragging2a_background_rect"
+        width="114"
+        height="114"
+        fill="white"
+        x="-62"
+        y="-62"
+        mask="url(#hole)"
+        style="pointer-events: none"
+      />
+      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+      <circle
+        id="dragging2a_border"
+        cx="0"
+        cy="0"
+        r="50"
+        fill="none"
+        stroke="black"
+        stroke-width="2"
+      ></circle>
+    </svg>
+    <svg
+      viewBox="-52 -52 104 104"
+      width="160"
+      id="dragging2b"
+      style="float: left"
+    >
+      <defs>
+        <mask id="hole">
+          <rect width="104" height="104" fill="white" x="-52" y="-52" />
+          <circle r="50" fill="black" />
+        </mask>
+      </defs>
+      <rect
+        id="dragging2b_background_rect"
+        width="104"
+        height="104"
+        fill="white"
+        x="-52"
+        y="-52"
+        mask="url(#hole)"
+        style="pointer-events: none"
+      />
+      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+      <circle
+        id="dragging2b_border"
+        cx="0"
+        cy="0"
+        r="50"
+        fill="none"
+        stroke="black"
+        stroke-width="2"
+        stroke-dasharray="8"
+      ></circle>
+    </svg>
+    <style>
+      svg {
+        background: white;
+      }
+      .draggable {
+        stroke: black;
+        stroke-width: 2px;
+        cursor: grab;
+        fill: white;
+      }
+      .dragging {
+        cursor: grabbing;
+        fill: hsl(200, 54%, 76%) !important;
+      }
+    </style>
+    <script type="module" src="./draggingSphereUsage.js"></script>
+  </div>
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>
+    Rotating a Sphere Using Your Selected Point
+    <span style="font-family: serif">r</span>
+  </h2>
+
+  <span style="float: left; margin: 10px">
+    <svg
+      viewBox="-52 -52 104 104"
+      width="120"
+      id="dragging3a"
+      style="float: left"
+    >
+      <defs>
+        <mask id="hole">
+          <rect width="114" height="114" fill="white" x="-62" y="-62" />
+          <circle r="50" fill="black" />
+        </mask>
+      </defs>
+
+      <rect
+        id="dragging3a_background_rect"
+        width="114"
+        height="114"
+        fill="white"
+        x="-62"
+        y="-62"
+        mask="url(#hole)"
+        style="pointer-events: none"
+      />
+      <circle
+        id="dragging3a_border"
+        cx="0"
+        cy="0"
+        r="50"
+        fill="none"
+        stroke="black"
+        stroke-width="2"
+      ></circle>
+
+      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+    </svg>
+    <svg
+      viewBox="-52 -52 104 104"
+      width="120"
+      id="dragging3b"
+      style="float: left"
+    >
+      <defs>
+        <mask id="hole">
+          <rect width="104" height="104" fill="white" x="-52" y="-52" />
+          <circle r="50" fill="black" />
+        </mask>
+      </defs>
+      <rect
+        id="dragging3b_background_rect"
+        width="104"
+        height="104"
+        fill="white"
+        x="-52"
+        y="-52"
+        mask="url(#hole)"
+        style="pointer-events: none"
+      />
+      <circle
+        id="dragging3b_border"
+        cx="0"
+        cy="0"
+        r="50"
+        fill="none"
+        stroke="black"
+        stroke-width="2"
+        stroke-dasharray="8"
+      ></circle>
+      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+    </svg>
+
+    <div
+      style="display: flex; align-items: center; margin: 0px 80px; clear: both"
+    >
+      <span style="font-size: 80px">↓</span>
+      <span style="font-family: serif; font-size: 40px">r</span>
+    </div>
+
+    <svg
+      viewBox="-52 -52 104 104"
+      width="120"
+      id="dragging4a"
+      style="float: left"
+    >
+      <defs>
+        <mask id="hole">
+          <rect width="114" height="114" fill="white" x="-62" y="-62" />
+          <circle r="50" fill="black" />
+        </mask>
+      </defs>
+
+      <rect
+        id="dragging4a_background_rect"
+        width="114"
+        height="114"
+        fill="white"
+        x="-62"
+        y="-62"
+        mask="url(#hole)"
+        style="pointer-events: none"
+      />
+      <circle
+        id="dragging4a_border"
+        cx="0"
+        cy="0"
+        r="50"
+        fill="none"
+        stroke="black"
+        stroke-width="2"
+      ></circle>
+      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+    </svg>
+    <svg
+      viewBox="-52 -52 104 104"
+      width="120"
+      id="dragging4b"
+      style="float: left"
+    >
+      <defs>
+        <mask id="hole">
+          <rect width="104" height="104" fill="white" x="-52" y="-52" />
+          <circle r="50" fill="black" />
+        </mask>
+      </defs>
+      <rect
+        id="dragging4b_background_rect"
+        width="104"
+        height="104"
+        fill="white"
+        x="-52"
+        y="-52"
+        mask="url(#hole)"
+        style="pointer-events: none"
+      />
+      <circle
+        id="dragging4b_border"
+        cx="0"
+        cy="0"
+        r="50"
+        fill="none"
+        stroke="black"
+        stroke-width="2"
+        stroke-dasharray="8"
+      ></circle>
+      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+    </svg>
+    <style>
+      <style > svg {
+        background: white;
+      }
+      .draggable {
+        stroke: black;
+        stroke-width: 2px;
+        cursor: grab;
+        fill: white;
+      }
+      .dragging {
+        cursor: grabbing;
+        fill: hsl(200, 54%, 76%) !important;
+      }
+    </style>
+    <script type="module" src="./draggingSphereUsage2.js"></script>
+  </span>
+</section>
+
+<section style="float: left; width: 100%">
+  <h2>Question & Answer</h2>
+  <h3>
+    So <span style="font-family: serif">SO(3)</span> is the same as
+    <span style="font-family: serif">ℝℙ<sup>3</sup></span
+    >?
+  </h3>
+  Yep. They wrap around in the same way. We talked about what "wraps around
+  like" means in
+  <a href="../exploring_spaces_4/">Sphere</a>.
+  <h3>
+    So <span style="font-family: serif">SO(3)</span> is a circular slider input
+    and a sphere input?
+  </h3>
+  Almost. See the next question.
+  <h3>
+    Why does the point<svg
+      viewbox="-12 -12 24 24"
+      width="16"
+      style="vertical-align: baseline"
+    >
+      <circle r="9" fill="white" stroke="black" stroke-width="4"></circle>
+    </svg>
+    in the sphere input for <span style="font-family: serif">SO(3)</span> get
+    bigger and smaller as you move the circular slider?
+  </h3>
+  You can think of a point in <span style="font-family: serif">SO(3)</span> as
+  choosing how much to rotate, and an axis to rotate around. The amount of
+  rotation is chosen using the circular slider, and the axis to rotate around is
+  chosen using the sphere input.<br /><br />
+  The thing is, If you've chosen an amount of rotation close to 0, then moving
+  the axis barely changes the rotation; and if you've chosen 0 rotation, then
+  moving the axis doesn't change the rotation at all. This means that in the
+  space of 3D rotations, there's no space to move around when rotation amount is
+  zero, less space to move around when rotation amount is small, and more space
+  to move around when rotation amount is close to a half turn.<br /><br />
+  I thought of two ways this could be visualized as the rotation amount
+  decreases: 1. by shrinking the spherical inputs and leaving the point<svg
+    viewbox="-12 -12 24 24"
+    width="16"
+    style="vertical-align: baseline"
+  >
+    <circle r="9" fill="white" stroke="black" stroke-width="4"></circle>
+  </svg>
+  the same size, or 2. by making the point grow to fill the whole spherical
+  input. I went with 2. Do you know another way this could be visualized?
+  <div style="font-size: 20px; color: rgb(119, 4, 4); margin-top: 20px">
+    ⚠️ WARNING!!! Math-y and frustrated notes folow. Continue at your own risk.
+    What even in the world is going on with how people work with 3D rotations ⚠️
+    😵‍💫 ?
+  </div>
+  <h3>
+    What about <a href="https://eater.net/quaternions">Unit Quaternions</a> ≅
+    <a href="https://marctenbosch.com/quaternions/">Geometric Algebra Rotors</a>
+    ≅
+    <a
+      href="https://www.youtube.com/watch?v=b7OIbMCIfs4"
+      style="font-family: serif"
+      >SU(2) ≅ Spin(3)</a
+    >? Don't you need those for 3D rotations?
+  </h3>
+  No, you don't need those. <br /><br />The spaces listed in the question are
+  popular for working with 3D rotations. I believe I understand that they are
+  all the same<sup>1</sup>, but that they are not the same as
+  <span style="font-family: serif">SO(3)</span>. For every 3D rotation in
+  <span style="font-family: serif">SO(3)</span>, there are two points in each of
+  the listed spaces!.. <br /><br />Unit Quaternions ≅ Geometric Algebra Rotors ≅
+  <span style="font-family: serif">SU(2)</span> ≅
+  <span style="font-family: serif">Spin(3)</span> are overly complicated for
+  working with 3D rotations in that sense. <br /><br />
+  I still don't really understand why the listed spaces are more popular to work
+  with than SO(3). Is it because they have nicer algebraic properties? Is it
+  because they can more easily be interpolated? Is it because they are easier to
+  represent? <sup>2</sup> Let me know if you know a good explanation.<br /><br />
+  <small><sup>1</sup> isomorphic as lie groups?</small><br />
+  <small
+    ><sup>2</sup> I've heard that they avoid gimbal lock, are more numerically
+    stable in numerical computing, are faster, require less memory, etc. but I
+    don't think any of those are true because SO(3) is literally part of SU(2)
+    so you could use SU(2) but ignore the difference between negative and
+    positive points. Why doesn't anyone talk about using SO(3) directly!?</small
+  >
+  <h3>
+    What about
+    <span style="font-family: serif">O(3)</span>?
+  </h3>
+  <span style="font-family: serif">O(3)</span> is cool. Its the space of all
+  rotations of a sphere and all rotations of the mirror image of that sphere.
+  Input wise, if you put a switch input with two options beside the
+  <span style="font-family: serif">SO(3)</span> input above, then it would be
+  <span style="font-family: serif">O(3)</span>. I might make that and put it
+  here at some point.
+</section>
+
+<!-- #region -->
+<div style="clear: both"></div>
+<h2 id="comments">Exploring Spaces Comments</h2>
+<textarea
+  id="commenttext1"
+  style="width: 100%; height: 80px"
+  placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
+></textarea>
+<button id="commentbutton1">Submit comment</button>
+<div id="commentarea"></div>
+<script type="module">
+  const MY_FORKED_VAL_URL = "https://vez-tomatoSalmon.web.val.run/";
+
+  const getComments = async () => {
+    const response = await fetch(MY_FORKED_VAL_URL);
+    const json = await response.json();
+    return json;
+  };
+
+  const addComment = async (str) => {
+    try {
+      const response = await fetch(MY_FORKED_VAL_URL, {
+        method: "POST",
+        body: JSON.stringify(str),
+      });
+
+      if (response.status >= 400 && response.status < 600) {
+        /* error */
+        return false;
+      } else {
+        /* success */
+        return true;
+      }
+    } catch (e) {
+      /* error */
+      return false;
+    }
+  };
+
+  function appendComment(str) {
+    const div = document.createElement("div");
+    div.style.display = "block";
+    div.style.margin = "10px 0";
+    div.style.background = "#eee";
+    div.style.padding = "10px";
+    div.style.borderRadius = "10px";
+    div.textContent = str;
+    document.getElementById("commentarea").append(div);
+  }
+
+  (await getComments()).forEach(appendComment);
+
+  const text = document.getElementById("commenttext1");
+  const button = document.getElementById("commentbutton1");
+  button.addEventListener("click", async () => {
+    const value = text.value;
+
+    button.textContent = "🔄";
+    const success = await addComment(value);
+    if (success === false) {
+      button.textContent =
+        "❌ error (sorry theres no details or error reporting yet)";
+    } else {
+      button.textContent = "✅";
+      button.disabled = true;
+      text.disabled = true;
+      text.value = "";
+      appendComment(value);
+    }
+  });
+</script>
+<!-- #endregion -->

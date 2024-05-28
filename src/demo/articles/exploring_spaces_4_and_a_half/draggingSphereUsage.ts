@@ -4,13 +4,12 @@ import {
   unitDiskToUIDisk,
 } from "./draggingSphere.js";
 import { v3normalize } from "./v3.js";
-import { rp2SetPos } from "./draggingRP2.js";
 
 const AXIS = v3normalize([1, 0, 1]);
 export const saxis = createDraggableDot(
   document.querySelector("#dragging2a"),
-  document.querySelector("#dragging2b"),
-  rp2SetPos
+  document.querySelector("#dragging2b")
+  //   rp2SetPos
 );
 const tt = sphereToTwoUnitDisks(AXIS);
 saxis.pos = unitDiskToUIDisk(tt.v);

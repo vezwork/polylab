@@ -145,6 +145,12 @@ export const createDraggableDot = (svg1, svg2, setPosCallback = (x, y) => { }) =
             ela.style.fill = c;
             elb.style.fill = c;
         },
+        radius(r) {
+            ela.setAttribute("r", r);
+            elb.setAttribute("r", r);
+            clonea.setAttribute("r", r);
+            cloneb.setAttribute("r", r);
+        },
         movePos(delta) {
             this.pos = add(this.pos, delta);
             if (length(this.pos) > 50) {

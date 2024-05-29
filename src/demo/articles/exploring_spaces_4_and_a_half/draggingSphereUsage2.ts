@@ -11,6 +11,7 @@ import { V3, v3normalize, v3rot } from "./v3.js";
 import { qap, qfromAxisAngle } from "./quat.js";
 import { saxis } from "./draggingSphereUsage.js";
 import { mod } from "../../../lib/math/Number.js";
+import { rp2State } from "./dragging1.js";
 
 const SVG1 = document.querySelector("#dragging3a");
 const SVG2 = document.querySelector("#dragging3b");
@@ -85,12 +86,12 @@ function draw() {
       v: uiDiskToUnitDisk(s.pos),
     });
     const rh = v3rot(
-      twoUnitDisksToSphere({
-        disk: saxis.disk,
-        v: uiDiskToUnitDisk(saxis.pos),
-      }) as V3,
-      //unitDiskToHemisphere(uiDiskToUnitDisk(dotState.pos)) as V3,
-      (mod(window.scrub ?? 0, 400) / 400) * Math.PI * 2
+      // twoUnitDisksToSphere({
+      //   disk: saxis.disk,
+      //   v: uiDiskToUnitDisk(saxis.pos),
+      // }) as V3,
+      unitDiskToHemisphere(uiDiskToUnitDisk(rp2State.pos)) as V3,
+      (mod(window.scrub ?? 0, 200) / 200) * Math.PI * 2
     )(h as V3);
 
     const go = sphereToTwoUnitDisks(rh);

@@ -36,6 +36,21 @@ May 28 2024<br /><br />
 
 <!-- #endregion -->
 
+<section
+  style="
+    background-color: rgb(255, 247, 226);
+    color: rgb(83, 54, 0);
+    border-radius: 10px;
+    padding: 20px;
+  "
+>
+  <strong>⚠️ Major Correction - May 29 2024 ⚠️<br /></strong>
+  The 3D Rotation Space (<span style="font-family: serif">SO(3)</span> a.k.a.
+  <span style="font-family: serif">ℝℙ<sup>3</sup></span
+  >) input was previously incorrect and has been completely redone.<br /><br />
+  See the Question & Answer section below for more info.
+</section>
+
 <section>
   <h2>
     The Space of 3D Rotations:
@@ -50,9 +65,10 @@ May 28 2024<br /><br />
       class="circle-input"
       style="float: left; margin-left: 10px"
     >
-      <circle class="draggable y" r="10"></circle>
+      <circle class="draggable-circle y" r="10"></circle>
+      <circle class="draggable-circle y" r="10"></circle>
     </svg>
-    <span style="font-size: 30px; margin: 0 10px">✕</span>
+    <!-- <span style="font-size: 30px; margin: 0 10px">✕</span> -->
     <style>
       .circle-input {
         background: #eee;
@@ -61,101 +77,38 @@ May 28 2024<br /><br />
       .circle-input circle {
         stroke: black;
         stroke-width: 3px;
+        transition: fill 0.2s;
+        transition: stroke 0.2s;
       }
-      .circle-input.draggable {
+      .circle-input .draggable-circle {
         cursor: grab;
         fill: white;
       }
-      .circle-input.dragging {
+      .circle-input .dragging {
         cursor: grabbing;
         fill: hsl(200, 54%, 76%);
       }
     </style>
     <script type="module" src="./draggingCircle.js"></script>
     <svg
-      viewBox="-52 -52 104 104"
-      width="160"
-      id="dragging2a"
-      style="float: left"
+      viewBox="-50 -50 100 100"
+      width="180"
+      id="dragging1"
+      style="float: left; margin: 0 20px"
     >
-      <defs>
-        <mask id="hole">
-          <rect width="114" height="114" fill="white" x="-62" y="-62" />
-          <circle r="50" fill="black" />
-        </mask>
-      </defs>
-
-      <rect
-        id="dragging2a_background_rect"
-        width="114"
-        height="114"
-        fill="white"
-        x="-62"
-        y="-62"
-        mask="url(#hole)"
-        style="pointer-events: none"
-      />
-      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+      <circle cx="0" cy="0" r="50" fill="#eee" stroke="transparent"></circle>
+      <mask id="myMask">
+        <circle cx="0" cy="0" r="50" fill="white" stroke="transparent"></circle>
+      </mask>
+      <circle class="draggable" r="6" mask="url(#myMask)"></circle>
       <circle
-        id="dragging2a_border"
-        cx="0"
-        cy="0"
-        r="50"
-        fill="none"
-        stroke="black"
-        stroke-width="2"
+        class="clone draggable"
+        r="6"
+        cx="100"
+        mask="url(#myMask)"
       ></circle>
     </svg>
-    <svg
-      viewBox="-52 -52 104 104"
-      width="160"
-      id="dragging2b"
-      style="float: left"
-    >
-      <defs>
-        <mask id="hole">
-          <rect width="104" height="104" fill="white" x="-52" y="-52" />
-          <circle r="50" fill="black" />
-        </mask>
-      </defs>
-      <rect
-        id="dragging2b_background_rect"
-        width="104"
-        height="104"
-        fill="white"
-        x="-52"
-        y="-52"
-        mask="url(#hole)"
-        style="pointer-events: none"
-      />
-      <circle cx="0" cy="0" r="50" fill="#eee"></circle>
-      <circle
-        id="dragging2b_border"
-        cx="0"
-        cy="0"
-        r="50"
-        fill="none"
-        stroke="black"
-        stroke-width="2"
-        stroke-dasharray="8"
-      ></circle>
-    </svg>
-    <style>
-      svg {
-        background: white;
-      }
-      .draggable {
-        stroke: black;
-        stroke-width: 2px;
-        cursor: grab;
-        fill: white;
-      }
-      .dragging {
-        cursor: grabbing;
-        fill: hsl(200, 54%, 76%) !important;
-      }
-    </style>
-    <script type="module" src="./draggingSphereUsage.js"></script>
+    <script type="module" src="./dragging1.js"></script>
   </div>
 </section>
 
@@ -341,25 +294,62 @@ May 28 2024<br /><br />
   like" means in
   <a href="../exploring_spaces_4/">Sphere</a>.
   <h3>
-    So <span style="font-family: serif">SO(3)</span> is a circular slider input
-    and a sphere input?
+    Why is <span style="font-family: serif">SO(3)</span> represented as a slider
+    and a circular input that has edges that wrap around to the opposite edge?
   </h3>
-  Almost. See the next question.
+  You can think of a point in <span style="font-family: serif">SO(3)</span> as
+  choosing <strong>how much to rotate</strong>, and
+  <strong>an 3D axis to rotate around</strong>. The amount of rotation is chosen
+  using the slider, and the axis to rotate around is chosen using the circular
+  input.<br /><br />
+  The space of "<strong>how much to rotate</strong>" is a circle, which is
+  represented as a slider that wraps around top to bottom.<br /><br />
+  The space of <strong>3D axis to rotate around</strong> is the same as the
+  space of lines through the origin in the 3D, and that space is
+  <span style="font-family: serif">ℝℙ<sup>2</sup></span> which we explored in
+  <a href="../exploring_spaces_2/">Twisted Taping</a>.
   <h3>
-    Why does the point<svg
+    Why do the point<svg
       viewbox="-12 -12 24 24"
       width="16"
       style="vertical-align: baseline"
     >
       <circle r="9" fill="white" stroke="black" stroke-width="4"></circle>
     </svg>
-    in the sphere input for <span style="font-family: serif">SO(3)</span> get
-    bigger and smaller as you move the circular slider?
+    and shadow point<svg
+      viewbox="-12 -12 24 24"
+      width="16"
+      style="vertical-align: baseline"
+    >
+      <circle r="9" fill="#bbb" stroke="#bbb" stroke-width="4"></circle>
+    </svg>
+    in the slider swap when you move the point in the circular input across the
+    edge of the circle?
   </h3>
-  You can think of a point in <span style="font-family: serif">SO(3)</span> as
-  choosing how much to rotate, and an axis to rotate around. The amount of
-  rotation is chosen using the circular slider, and the axis to rotate around is
-  chosen using the sphere input.<br /><br />
+  Let me try to explain this without making another visualizer:<br /><br />
+  First, note that a 3D rotation by a certain amount around a vector is the same
+  as a 3D rotation by the negative of that amount around the vector pointing in
+  the opposite direction.<br /><br />
+  Second, axis/lines are like vectors, but unlike vectors they point in both
+  directions, so they are their own opposite.<br /><br />So, in order for the
+  input to not have any jumps in the rotation it represents, the rotation amount
+  must be negated when the axis selector point<svg
+    viewbox="-12 -12 24 24"
+    width="16"
+    style="vertical-align: baseline"
+  >
+    <circle r="9" fill="white" stroke="black" stroke-width="4"></circle>
+  </svg>
+  wraps around the edge of the input. The shadow point<svg
+    viewbox="-12 -12 24 24"
+    width="16"
+    style="vertical-align: baseline"
+  >
+    <circle r="9" fill="#bbb" stroke="#bbb" stroke-width="4"></circle>
+  </svg>
+  is there to show you what negative rotation amount you are close to by
+  wrapping around the edge of the circle.
+  <h3>Why does the circular input grow and shrink as you move the slider?</h3>
   The thing is, If you've chosen an amount of rotation close to 0, then moving
   the axis barely changes the rotation; and if you've chosen 0 rotation, then
   moving the axis doesn't change the rotation at all. This means that in the
@@ -375,11 +365,161 @@ May 28 2024<br /><br />
     <circle r="9" fill="white" stroke="black" stroke-width="4"></circle>
   </svg>
   the same size, or 2. by making the point grow to fill the whole spherical
-  input. I went with 2. Do you know another way this could be visualized?
-  <div style="font-size: 20px; color: rgb(119, 4, 4); margin-top: 20px">
-    ⚠️ WARNING!!! Math-y and frustrated notes folow. Continue at your own risk.
-    What even in the world is going on with how people work with 3D rotations ⚠️
-    😵‍💫 ?
+  input.
+  <span
+    style="
+      background-color: rgb(255, 247, 226);
+      color: rgb(83, 54, 0);
+      border-radius: 10px;
+      padding: 3px 5px;
+    "
+    >I previously went with 2, but have changed the input to use approach
+    1.</span
+  >
+  Do you know another way this could be visualized?
+  <div
+    style="
+      background-color: rgb(255, 247, 226);
+      color: rgb(83, 54, 0);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+    "
+  >
+    <h2>What changed in the Major Correction on May 29 2024?</h2>
+    The 3D Rotation input was previously:
+    <div style="clear: left; display: flex; align-items: center">
+      <svg
+        viewBox="-12 0 24 200"
+        width="22"
+        class="circle-input-old"
+        style="float: left; margin-left: 10px"
+      >
+        <circle class="draggable-circle-old y" r="10"></circle>
+      </svg>
+      <!-- <span style="font-size: 30px; margin: 0 10px">✕</span> -->
+      <style>
+        .circle-input-old {
+          background: #eee;
+          border-radius: 10px;
+        }
+        .circle-input-old circle {
+          stroke: black;
+          stroke-width: 3px;
+          transition: fill 0.2s;
+          transition: stroke 0.2s;
+        }
+        .circle-input-old .draggable-circle-old {
+          cursor: grab;
+          fill: white;
+        }
+        .circle-input-old .dragging {
+          cursor: grabbing;
+          fill: hsl(200, 54%, 76%);
+        }
+      </style>
+      <script type="module" src="./draggingCircleOld.js"></script>
+      <svg
+        viewBox="-52 -52 104 104"
+        width="160"
+        id="dragging2a"
+        style="float: left"
+      >
+        <defs>
+          <mask id="hole">
+            <rect width="114" height="114" fill="white" x="-62" y="-62" />
+            <circle r="50" fill="black" />
+          </mask>
+        </defs>
+
+        <rect
+          id="dragging2a_background_rect"
+          width="114"
+          height="114"
+          fill="rgb(255, 247, 226)"
+          x="-62"
+          y="-62"
+          mask="url(#hole)"
+          style="pointer-events: none"
+        />
+        <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+        <circle
+          id="dragging2a_border"
+          cx="0"
+          cy="0"
+          r="50"
+          fill="none"
+          stroke="black"
+          stroke-width="2"
+        ></circle>
+      </svg>
+      <svg
+        viewBox="-52 -52 104 104"
+        width="160"
+        id="dragging2b"
+        style="float: left"
+      >
+        <defs>
+          <mask id="hole">
+            <rect width="104" height="104" fill="white" x="-52" y="-52" />
+            <circle r="50" fill="black" />
+          </mask>
+        </defs>
+        <rect
+          id="dragging2b_background_rect"
+          width="104"
+          height="104"
+          fill="rgb(255, 247, 226)"
+          x="-52"
+          y="-52"
+          mask="url(#hole)"
+          style="pointer-events: none"
+        />
+        <circle cx="0" cy="0" r="50" fill="#eee"></circle>
+        <circle
+          id="dragging2b_border"
+          cx="0"
+          cy="0"
+          r="50"
+          fill="none"
+          stroke="black"
+          stroke-width="2"
+          stroke-dasharray="8"
+        ></circle>
+      </svg>
+      <style>
+        svg {
+          background: white;
+        }
+        .draggable {
+          stroke: black;
+          stroke-width: 2px;
+          cursor: grab;
+          fill: white;
+        }
+        .dragging {
+          cursor: grabbing;
+          fill: hsl(200, 54%, 76%) !important;
+        }
+      </style>
+      <script type="module" src="./draggingSphereUsage.js"></script>
+    </div>
+    I realized this input was incorrect while playing around with it and reading
+    some more about the difference between SO(3) and SU(2). I realized that this
+    input allowed you to selected a single 3D rotation in two different ways,
+    meaning that it is actually an SU(2) input, not an SO(3) input.
+    Specifically, given a selected 3D rotation you can get the same rotation by
+    moving the point in the two circles to the same place in the opposite circle
+    and vertically mirroring the point in the slider.<br /><br />The new input
+    is updated so that there is only <strong>one way</strong> to selected a 3D
+    rotation, meaning it now accurately represents the space of 3D rotations
+    called SO(3). <br /><br />I also updated the question and answer section to
+    match the redone input.
+  </div>
+
+  <div style="font-size: 20px; color: rgb(60, 2, 2); margin-top: 20px">
+    ⚠️ Math-y and frustrated notes folow. Continue at your own risk. What is
+    going on with how people work with 3D rotations ⚠️ 😵‍💫 ?
   </div>
   <h3>
     What about <a href="https://eater.net/quaternions">Unit Quaternions</a> ≅
@@ -389,7 +529,8 @@ May 28 2024<br /><br />
       href="https://www.youtube.com/watch?v=b7OIbMCIfs4"
       style="font-family: serif"
       >SU(2) ≅ Spin(3)</a
-    >? Don't you need those for 3D rotations?
+    >
+    ≅ 3-sphere? Don't you need those for 3D rotations?
   </h3>
   No, you don't need those. <br /><br />The spaces listed in the question are
   popular for working with 3D rotations. I believe I understand that they are
@@ -398,8 +539,8 @@ May 28 2024<br /><br />
   <span style="font-family: serif">SO(3)</span>, there are two points in each of
   the listed spaces!.. <br /><br />Unit Quaternions ≅ Geometric Algebra Rotors ≅
   <span style="font-family: serif">SU(2)</span> ≅
-  <span style="font-family: serif">Spin(3)</span> are overly complicated for
-  working with 3D rotations in that sense. <br /><br />
+  <span style="font-family: serif">Spin(3)</span> ≅ 3-sphere are overly
+  complicated for working with 3D rotations in that sense. <br /><br />
   I still don't really understand why the listed spaces are more popular to work
   with than SO(3). Is it because they have nicer algebraic properties? Is it
   because they can more easily be interpolated? Is it because they are easier to

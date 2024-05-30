@@ -60,7 +60,7 @@ export function makeDraggable(
 
       if (prevDiff > 0) {
         const diff = curDiff - prevDiff;
-        onZoom(diff);
+        onZoom(diff * 10);
       }
 
       // Cache the distance for the next move event

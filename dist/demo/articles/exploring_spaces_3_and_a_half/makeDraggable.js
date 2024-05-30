@@ -43,7 +43,7 @@ export function makeDraggable(el, eventToCoordinates, onMove = ([x, y]) => { }, 
             const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
             if (prevDiff > 0) {
                 const diff = curDiff - prevDiff;
-                onZoom(diff);
+                onZoom(diff * 10);
             }
             // Cache the distance for the next move event
             prevDiff = curDiff;

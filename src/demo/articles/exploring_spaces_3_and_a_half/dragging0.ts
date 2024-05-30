@@ -64,20 +64,23 @@ let state = {
     this._pos = x;
   },
   render() {
-    // scale and negate pos so dragging is in the right direction and not too fast.
     const x = this._pos;
+    // ARBITRARY PRECISION INDEPENDENT:
+    const halfWidth = (svg.clientWidth * SVG_WIDTH_SCALE) / 2;
+    const thing = Math.ceil(halfWidth / SPACING);
+
+    // ARBITRARY PRECISION SIMPLE NUMBER
+    const zoomBaseExponent = zoom / 3000;
+    const maxIterationsForHalfTicks = thing * 10 ** mod(-zoomBaseExponent, 1);
+    const baseExponent = -Math.ceil(zoomBaseExponent);
 
     // NUM, ZOOM, LAYOUT CALC
 
-    const zoomBaseExponent = zoom / 3000;
+    // EXP
     const zz = BASE ** zoomBaseExponent;
-
-    const halfWidth = (svg.clientWidth * SVG_WIDTH_SCALE) / 2;
-    const thing = Math.floor(halfWidth / SPACING); // should be ceil
-    const maxIterationsForHalfTicks = thing * 10 ** mod(-zoomBaseExponent, 1);
-
-    const baseExponent = -Math.ceil(zoomBaseExponent);
     const numTickGap = BASE ** baseExponent;
+
+    // TRUNC
     // as you zoom in this uses more of x, as you zoom out it truncates
     const startInGapBase = Math.round(x / numTickGap);
     const startX = startInGapBase * numTickGap;

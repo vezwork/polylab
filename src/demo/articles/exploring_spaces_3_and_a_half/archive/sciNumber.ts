@@ -5,20 +5,20 @@ const bigIntMax = (...args) => args.reduce((m, e) => (e > m ? e : m));
 const bigIntMin = (...args) => args.reduce((m, e) => (e < m ? e : m));
 // TODO: bigInt log ref: https://stackoverflow.com/questions/70382306/logarithm-of-a-bigint
 
-type SciNumber = { n: bigint; pow10: bigint };
-const sci = (n: bigint | number, pow10: bigint | number = 0n) => ({
+export type SciNumber = { n: bigint; pow10: bigint };
+export const sci = (n: bigint | number, pow10: bigint | number = 0n) => ({
   n: BigInt(n),
   pow10: BigInt(pow10),
 });
-const fromSci = (a: SciNumber) => a.n * 10n ** a.pow10;
-const sciLowerPower = (a: SciNumber, pow10: bigint) =>
+export const fromSci = (a: SciNumber) => a.n * 10n ** a.pow10;
+export const sciLowerPower = (a: SciNumber, pow10: bigint) =>
   pow10 > a.pow10
     ? error("pow10 > a.pow10")
     : {
         n: a.n * 10n ** (a.pow10 - pow10),
         pow10,
       };
-const sciAdd = (a: SciNumber, b: SciNumber) => {
+export const sciAdd = (a: SciNumber, b: SciNumber) => {
   const minPow10 = bigIntMin(a.pow10, b.pow10);
   const loweredA = sciLowerPower(a, minPow10);
   const loweredB = sciLowerPower(b, minPow10);
@@ -27,7 +27,7 @@ const sciAdd = (a: SciNumber, b: SciNumber) => {
     pow10: minPow10,
   };
 };
-const sciSub = (a: SciNumber, b: SciNumber) => {
+export const sciSub = (a: SciNumber, b: SciNumber) => {
   const minPow10 = bigIntMin(a.pow10, b.pow10);
   const loweredA = sciLowerPower(a, minPow10);
   const loweredB = sciLowerPower(b, minPow10);
@@ -36,7 +36,7 @@ const sciSub = (a: SciNumber, b: SciNumber) => {
     pow10: minPow10,
   };
 };
-const sciMul = (a: SciNumber, b: SciNumber) => ({
+export const sciMul = (a: SciNumber, b: SciNumber) => ({
   n: a.n * b.n,
   pow10: a.pow10 + b.pow10,
 });
@@ -46,7 +46,7 @@ const sciDiv = (a: SciNumber, b: SciNumber) => ({
   n: a.n / b.n,
   pow10: a.pow10 - b.pow10,
 });
-const sciPow = (a: SciNumber, b: SciNumber) => ({
+export const sciPow = (a: SciNumber, b: SciNumber) => ({
   n: a.n ** sciLowerPower(b, 0n).n,
   pow10: a.pow10 * sciLowerPower(b, 0n).n,
 });

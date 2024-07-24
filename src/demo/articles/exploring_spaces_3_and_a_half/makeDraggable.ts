@@ -108,8 +108,8 @@ export function makeDraggable(
     requestAnimationFrame(arrowKeyAnimationFrame);
     if (keysDown["ArrowLeft"]) onMove([1.5, 0]);
     if (keysDown["ArrowRight"]) onMove([-1.5, 0]);
-    if (keysDown["ArrowUp"]) onZoom(1);
-    if (keysDown["ArrowDown"]) onZoom(-1);
+    if (keysDown["ArrowUp"]) onZoom(20);
+    if (keysDown["ArrowDown"]) onZoom(-20);
   }
   requestAnimationFrame(arrowKeyAnimationFrame);
 

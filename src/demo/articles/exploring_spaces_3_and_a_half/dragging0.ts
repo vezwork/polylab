@@ -7,6 +7,12 @@ import {
 } from "./numerals.js";
 import { makeDraggable } from "./makeDraggable.js";
 import { mod } from "../../../lib/math/Number.js";
+import {
+  RadixSplitNum,
+  radixSplitNumAdd,
+  radixSplitNumFromNumber,
+} from "./radixSplitNum.js";
+radixSplitNumAdd;
 
 let BASE = 10;
 window.setBase = (b) => (BASE = b);
@@ -56,15 +62,9 @@ let state = {
   dragging: null,
   // my coordinates are messed up, so this is the pos value for pi.
   // see the first line of `render()` to see why.
-  _pos: Math.PI,
-  get pos(): undefined | number {
-    return this._pos;
-  },
-  set pos(x: number) {
-    this._pos = x;
-  },
+  pos: Math.PI,
   render() {
-    const x = this._pos;
+    const x = this.pos;
     // ARBITRARY PRECISION INDEPENDENT:
     const halfWidth = (svg.clientWidth * SVG_WIDTH_SCALE) / 2;
     const thing = Math.ceil(halfWidth / SPACING);
@@ -84,6 +84,21 @@ let state = {
     // as you zoom in this uses more of x, as you zoom out it truncates
     const startInGapBase = Math.round(x / numTickGap);
     const startX = startInGapBase * numTickGap;
+
+    const truncAt = (x: RadixSplitNum, i: number) => {
+      if (i <= 0)
+        return {
+          leftOfRadix: x.leftOfRadix,
+          rightOfRadix: x.rightOfRadix.slice(0, -i),
+        };
+      else return { leftOfRadix: x.leftOfRadix.slice(0, -i), rightOfRadix: [] };
+    };
+
+    // const N = radixSplitNumFromNumber(x, BASE);
+    // const NstartX = truncAt(N, baseExponent);
+    // const NstartInGapBase = NstartX.leftOfRadix.concat(NstartX.rightOfRadix);
+
+    // console.log(startInGapBase, NstartInGapBase);
 
     // e.g.
     // baseExponent:   -3

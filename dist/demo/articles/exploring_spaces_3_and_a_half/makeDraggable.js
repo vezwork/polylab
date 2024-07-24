@@ -89,9 +89,9 @@ export function makeDraggable(el, eventToCoordinates, onMove = ([x, y]) => { }, 
         if (keysDown["ArrowRight"])
             onMove([-1.5, 0]);
         if (keysDown["ArrowUp"])
-            onZoom(1);
+            onZoom(20);
         if (keysDown["ArrowDown"])
-            onZoom(-1);
+            onZoom(-20);
     }
     requestAnimationFrame(arrowKeyAnimationFrame);
     el.addEventListener("keydown", keydown);

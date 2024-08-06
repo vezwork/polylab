@@ -2,14 +2,22 @@
 // e match (pattern, e-graph) => e-node[]
 // e sub (result, e-node, e-graph) => e-graph
 
+let nodeIdCounter = 0;
+const nodes = new Map();
+
 const node = (value, ...children) => {
+  const hash = value + children.map((c) => ":" + c.id).join("");
+  if (nodes.has(hash)) return nodes.get(hash);
   const res = {
     isNode: true,
     value,
     children: children,
-    parent: null,
+    parents: [],
+    id: nodeIdCounter++,
+    hash,
   };
-  for (const child of children) child.parent = res;
+  nodes.set(hash, res);
+  for (const child of children) child.parents.push(res);
   return res;
 };
 const vari = (v, ...children) => {
@@ -22,24 +30,46 @@ const vari = (v, ...children) => {
   for (const child of children) child.parent = res;
   return res;
 };
-const nodeEq = (n1, n2) => {
-  if (n1.value !== n2.value) return false;
-  else if (n1.children.length !== n2.children.length) return false;
-  else return n1.children.every((v, i) => nodeEq(v, n2.children[i]));
-};
+const nodeEq = (n1, n2) => n1.hash === n2.hash;
 
 const a = node("f", node(1), node(2));
 const b = node("f", node(1), node(2));
 
 console.log("nodeEq!", nodeEq(a, b));
+console.log("nodes!", nodes);
 
+let idCounter = 0;
+const eClasses = new Set();
+const eNodes = new Map();
+
+const eNode = (value, ...children) => {
+  const hash = value + children.map((c) => ":" + c.id).join("");
+  if (eNodes.has(hash)) return nodes.get(hash);
+  const res = {
+    isENode: true,
+    value,
+    children: children,
+    parents: [],
+    id: nodeIdCounter++,
+    hash,
+  };
+  nodes.set(hash, res);
+  for (const child of children) child.parents.push(res);
+  return res;
+};
+
+const eNodes = new Map();
+let eClassIdCounter = 0;
 const eClassFromNode = (node, parentENode = null) => {
   const eNode = { isENode: true, value: node.value };
   eNode.children = node.children.map((n) => eClassFromNode(n, eNode));
+  const id = node.value + eNode.children.map((c) => "c" + c.id).join();
+  eNodes.set(id, eNode);
   return {
     isEClass: true,
     eNodes: [eNode],
     parents: [parentENode],
+    id: eClassIdCounter++,
   };
 };
 

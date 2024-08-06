@@ -1,20 +1,22 @@
 // source: https://github.com/manubb/union-find
 
-let idCounter = 0;
-export const makeSet = () => {
+export const sets = new Set();
+
+export const makeSet = (item) => {
   const singleton = {
     rank: 0,
-    id: idCounter++,
+    children: [],
+    item,
   };
   singleton.parent = singleton;
+
+  sets.add(singleton);
 
   return singleton;
 };
 
 export const find = (node) => {
-  if (node.parent !== node) {
-    node.parent = find(node.parent);
-  }
+  if (node.parent !== node) node.parent = find(node.parent);
 
   return node.parent;
 };
@@ -25,11 +27,23 @@ export const union = (node1, node2) => {
   if (root1 !== root2) {
     if (root1.rank < root2.rank) {
       root1.parent = root2;
+      root2.children.push(root1);
+      sets.delete(root1);
+      sets.add(root2);
     } else {
       root2.parent = root1;
+      root1.children.push(root2);
       if (root1.rank === root2.rank) root1.rank += 1;
+      sets.delete(root2);
+      sets.add(root1);
     }
   }
+};
+
+export const items = (node) => itemsHelper(find(node));
+const itemsHelper = function* (node) {
+  yield node.item;
+  for (const child of node.children) yield* itemsHelper(child);
 };
 
 /* 

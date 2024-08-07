@@ -1,14 +1,22 @@
 // source: https://github.com/manubb/union-find
 
-export const sets = new Set();
+import { makeHashcons, unionHashcons, hash } from "./hashcons.js";
 
+export const sets = new Set();
+export const setFromId = new Map();
+
+let idCounter = 0;
 export const makeSet = (item) => {
+  const id = idCounter++;
   const singleton = {
     rank: 0,
     children: [],
-    item,
+    parents: makeHashcons(),
+    items: new Set([hash(item)]),
+    id,
   };
   singleton.parent = singleton;
+  setFromId.set(id, singleton);
 
   sets.add(singleton);
 
@@ -28,23 +36,27 @@ export const union = (node1, node2) => {
     if (root1.rank < root2.rank) {
       root1.parent = root2;
       root2.children.push(root1);
+      root2.parents = unionHashcons(root2.parents, root1.parents);
+      root2.items = new Set([...root2.items, ...root1.items]);
       sets.delete(root1);
       sets.add(root2);
+      return root2;
     } else {
       root2.parent = root1;
       root1.children.push(root2);
       if (root1.rank === root2.rank) root1.rank += 1;
+      root1.parents = unionHashcons(root1.parents, root2.parents);
+      root1.items = new Set([...root1.items, ...root2.items]);
       sets.delete(root2);
       sets.add(root1);
+      return root1;
     }
   }
+  return root1;
 };
 
-export const items = (node) => itemsHelper(find(node));
-const itemsHelper = function* (node) {
-  yield node.item;
-  for (const child of node.children) yield* itemsHelper(child);
-};
+export const parents = (node) => find(node).parents;
+export const items = (node) => find(node).items;
 
 /* 
 MIT License

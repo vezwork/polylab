@@ -1,88 +1,114 @@
 import { map, first, skip, withIndex } from "../../lib/structure/Iterable.js";
+import { hash, makeHashcons } from "./hashcons.js";
+import {
+  find,
+  items,
+  union,
+  makeSet,
+  sets,
+  parents,
+  setFromId,
+} from "./union_find.js";
 
-let idCounter = 0;
-const eClasses = new Set();
-const eNodes = new Map();
+const worklist = [];
 
-const union = (eClass1, eClass2) => {
-  if (eClass1 === eClass2) return eClass1;
-  eClasses.delete(eClass2);
-  eClass2.childENodes.forEach((en) => {
-    en.eClass = eClass1;
-  });
-  for (const en of eClass2.parents) {
-    en.childEClasses = en.childEClasses.map((ec) =>
-      ec === eClass2 ? eClass1 : ec
-    );
-    const hash = en.value + en.childEClasses.map((c) => ":" + c.id).join("");
-    if (eNodes.has(hash)) eClass2.parents.delete(en);
-  }
-  eClass1.childENodes = eClass1.childENodes.union(eClass2.childENodes);
-  eClass1.parents = eClass1.parents.union(eClass2.parents);
-  return eClass1;
+export const merge = (id1, id2) => {
+  if (find(id1) === find(id2)) return find(id1);
+  const newId = union(id1, id2);
+
+  worklist.push(newId);
+
+  return newId;
 };
 
-const makeEClass = (...childENodes) => {
-  const id = idCounter++;
-  const newEClass = {
-    isEClass: true,
-    childENodes: new Set(childENodes),
-    parents: new Set(),
-    id,
-  };
-  //newEClass.toString = () => id;
-  newEClass.toString = () =>
-    id +
-    " : {" +
-    [...newEClass.childENodes].map((n) => n.toString()).join(",") +
-    "}";
-  eClasses.add(newEClass);
-  return newEClass;
+const canonicalize = (eNode) =>
+  makeENode(eNode.value, ...eNode.children.map(find));
+const hashcons = makeHashcons();
+const makeENode = (value, ...children) => ({
+  value,
+  children,
+});
+const add = (eNode) => {
+  eNode = canonicalize(eNode);
+  if (hashcons.has(eNode)) return hashcons.get(eNode);
+
+  const eClassId = makeSet(eNode);
+
+  for (const child of eNode.children) parents(child).set(eNode, eClassId);
+
+  hashcons.set(eNode, eClassId);
+  return eClassId;
 };
-// TODO: eClass gets ignores if eNodes has has, BUT it should merge eClasses!
-const makeENode = (value, childEClasses = []) => {
-  const hash = value + childEClasses.map((c) => ":" + c.id).join("");
-  if (eNodes.has(hash)) return eNodes.get(hash);
-  const eClass = makeEClass();
-  const newENode = {
-    isENode: true,
+
+export const e = (value, ...children) => add(makeENode(value, ...children));
+
+export const unhash = (str) => {
+  const [value, ...classIds] = str.split(":");
+  return makeENode(
     value,
-    eClass,
-    childEClasses,
-    hash,
-  };
-  newENode.toString = () =>
-    value +
-    (newENode.childEClasses.length
-      ? "(" + newENode.childEClasses.map((c) => ":" + c.id).join(",") + ")"
-      : "");
-  eNodes.set(hash, newENode);
-  eClass.childENodes.add(newENode);
-  for (const child of childEClasses) child.parents.add(newENode);
-  return newENode;
+    ...classIds.map(Number).map((id) => setFromId.get(id))
+  );
 };
-const e = (value, ...childEClasses) => makeENode(value, childEClasses).eClass;
+
+const rebuild = () => {
+  while (worklist.length > 0) {
+    const todo = worklist.map(find);
+    worklist.length = 0;
+    for (const eClass of todo) repair(eClass);
+  }
+};
+const repair = (eClass) => {
+  for (let [peNode, peClass] of parents(eClass)) {
+    peNode = unhash(peNode);
+    hashcons.remove(peNode);
+    find(peClass).items.delete(hash(peNode));
+    peNode = canonicalize(peNode);
+    find(peClass).items.add(hash(peNode));
+    hashcons.set(peNode, find(peClass));
+  }
+
+  const newParents = makeHashcons();
+  for (let [peNode, peClass] of parents(eClass)) {
+    peNode = unhash(peNode);
+    peNode = canonicalize(peNode);
+    if (newParents.has(peNode)) merge(peClass, newParents.get(peNode));
+    newParents.set(peNode, find(peClass));
+  }
+  find(eClass).parents = newParents;
+};
+
+const printENode = ({ value, children }) =>
+  value +
+  (children.length === 0 ? "" : "(" + children.map(printEClassId) + ")");
+const printEClassId = (eClass) => find(eClass).id + ":";
+const printEClass = (eClass) =>
+  printEClassId(eClass) + "{" + [...items(eClass)].join(", ") + "}";
+
+export const printEClasses = () =>
+  console.log([...sets].map(printEClass).join("\n"));
 
 const eClassMatches = (patternNode, eClass) => {
   if (eClass === undefined) return [];
-  return [...eClass.childENodes].flatMap((en) => eNodeMatches(patternNode, en));
+  return [...items(eClass)]
+    .map(unhash)
+    .flatMap((en) => eNodeMatches(patternNode, en));
 };
 const eNodeMatches = (patternNode, eNode) => {
   if (patternNode.var === undefined && eNode.value !== patternNode.value)
     return [];
   else if (
     patternNode.var === undefined &&
-    patternNode.children.length !== eNode.childEClasses.length
+    patternNode.children.length !== eNode.children.length
   )
     return [];
   else {
     const childrenMatches = patternNode.children.map((p, i) =>
-      eClassMatches(p, eNode.childEClasses[i])
+      eClassMatches(p, eNode.children[i])
     );
     return [
       ...objectCombos(
         childrenMatches,
-        patternNode.var ? { [patternNode.var]: eNode.eClass } : {}
+        patternNode.var ? { [patternNode.var]: find(hashcons.get(eNode)) } : {}
       ),
     ];
   }
@@ -100,44 +126,16 @@ const objectCombos = function* (childrenMatches, match) {
   }
 };
 
-// TODO: make matches with the same var require the same value
+// // TODO: make matches with the same var require the same value
 
-const node = (value, ...children) => ({
+export const node = (value, ...children) => ({
   value,
   children,
 });
-const vari = (v, ...children) => ({
+export const vari = (v, ...children) => ({
   var: v,
   children,
 });
-
-union(e("b"), e("+", e("a"), e("c")));
-
-console.log("eNodes\n", [...eNodes.values()].join("\n"));
-console.log("eClasses\n", [...eClasses].join("\n"));
-
-const rules = [
-  {
-    from: [node("+", vari("a"), vari("b")), vari("c")],
-    to: ({ a, b, c }) => union(a, e("-", c, b)),
-  },
-  {
-    from: [node("+", vari("a"), vari("b"))],
-    to: ({ a, b }, eClass) => union(eClass, e("+", b, a)),
-  },
-  {
-    from: [node("+", node("+", vari("a"), vari("b")), vari("c"))],
-    to: ({ a, b, c }, eClass) => union(eClass, e("+", a, e("+", b, c))),
-  },
-  {
-    from: [node("-", vari("a"), vari("b")), vari("c")],
-    to: ({ a, b, c }) => union(a, e("+", c, b)),
-  },
-  {
-    from: [vari("a")],
-    to: ({ a }) => union(a, e("+", a, e(0))),
-  },
-];
 
 const oneFromEach = function* (arrays) {
   if (arrays.length === 0) {
@@ -152,39 +150,33 @@ const oneFromEach = function* (arrays) {
 };
 const objFromObjs = (objs) => objs.reduce((prev, cur) => ({ ...prev, ...cur }));
 
-const runRules = () =>
-  rules.forEach(({ from, to }) =>
-    [...eClasses]
-      .map((c) => ({
-        c,
-        matches: from.map((pattern) => eClassMatches(pattern, c)),
-      }))
-      .map(({ c, matches }) => ({ c, matchCombos: oneFromEach(matches) }))
-      .map(({ c, matchCombos }) => [
-        ...map(map(matchCombos, objFromObjs), (o) => to(o, c)),
-      ])
-  );
+const readRule = ({ from, to }) =>
+  [...sets]
+    .map((c) => ({
+      c,
+      matches: from.map((pattern) => eClassMatches(pattern, c)),
+    }))
+    .map(({ c, matches }) => ({ c, to, matchCombos: oneFromEach(matches) }));
+const enactRule = (r) =>
+  r.map(({ c, to, matchCombos }) => [
+    ...map(map(matchCombos, objFromObjs), (o) => to(o, c)),
+  ]);
+// const runRule = ({ from, to }) =>
+//   [...sets]
+//     .map((c) => ({
+//       c,
+//       matches: from.map((pattern) => eClassMatches(pattern, c)),
+//     }))
+//     .map(({ c, matches }) => ({ c, matchCombos: oneFromEach(matches) }))
+//     .map(({ c, matchCombos }) => [
+//       ...map(map(matchCombos, objFromObjs), (o) => to(o, c)),
+//     ]);
+export const runRules = (rules) => {
+  rules.map(readRule).map(enactRule);
+  rebuild();
+};
 
-const checkEq = (...patterns) =>
-  [...eClasses]
+export const checkEq = (...patterns) =>
+  [...sets]
     .map((c) => patterns.map((pattern) => eClassMatches(pattern, c)))
     .some((matches) => matches.every((match) => match.length > 0));
-
-runRules();
-runRules();
-runRules();
-runRules();
-runRules();
-runRules();
-runRules();
-runRules();
-runRules();
-// its saturated!!! (how should I detect that?)
-
-console.log("eNodes\n", [...eNodes.values()].join("\n"));
-console.log("eClasses\n", [...eClasses].join("\n"));
-
-console.log(
-  "CHECK",
-  checkEq(node("a"), node("+", node("-", node("b"), node("c")), node(0)))
-);

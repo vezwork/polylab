@@ -1,0 +1,17 @@
+fn + := js`(a,b) => a+b`
+rule +(a b) ===> +(b a)
+
+fn - := js`(a,b) => a-b`
+rule -(a b) = c <==> a = +(b c)
+
+fn * := js`(a,b) => a*b`
+rule *(a b) ===> *(b a)
+
+fn / := js`(a,b) => a/b`
+rule /(a b) = c <==> a = *(b c)
+
+
+const width = -(left right)
+const center = +(left /(width 2))
+const left = 2
+const *(10, width) = 40

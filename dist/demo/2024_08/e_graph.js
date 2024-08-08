@@ -1,115 +1,182 @@
-// e init (tree) => e-graph
-// e match (pattern, e-graph) => e-node[]
-// e sub (result, e-node, e-graph) => e-graph
+import { map, first, skip, withIndex } from "../../lib/structure/Iterable.js";
+import { hash, makeHashcons } from "./hashcons.js";
+import {
+  find,
+  items,
+  union,
+  makeSet,
+  sets,
+  parents,
+  setFromId,
+} from "./union_find.js";
 
-let nodeIdCounter = 0;
-const nodes = new Map();
+const worklist = [];
 
-const node = (value, ...children) => {
-  const hash = value + children.map((c) => ":" + c.id).join("");
-  if (nodes.has(hash)) return nodes.get(hash);
-  const res = {
-    isNode: true,
+export const merge = (id1, id2) => {
+  if (find(id1) === find(id2)) return find(id1);
+  const newId = union(id1, id2);
+
+  worklist.push(newId);
+
+  return newId;
+};
+
+const canonicalize = (eNode) =>
+  makeENode(eNode.value, ...eNode.children.map(find));
+const hashcons = makeHashcons();
+const makeENode = (value, ...children) => ({
+  value,
+  children,
+});
+const add = (eNode) => {
+  eNode = canonicalize(eNode);
+  if (hashcons.has(eNode)) return hashcons.get(eNode);
+
+  const eClassId = makeSet(eNode);
+
+  for (const child of eNode.children) parents(child).set(eNode, eClassId);
+
+  hashcons.set(eNode, eClassId);
+  return eClassId;
+};
+
+export const e = (value, ...children) => add(makeENode(value, ...children));
+
+export const unhash = (str) => {
+  const [value, ...classIds] = str.split(":");
+  return makeENode(
     value,
-    children: children,
-    parents: [],
-    id: nodeIdCounter++,
-    hash,
-  };
-  nodes.set(hash, res);
-  for (const child of children) child.parents.push(res);
-  return res;
-};
-const vari = (v, ...children) => {
-  const res = {
-    isNode: true,
-    var: v,
-    children: children,
-    parent: null,
-  };
-  for (const child of children) child.parent = res;
-  return res;
-};
-const nodeEq = (n1, n2) => n1.hash === n2.hash;
-
-const a = node("f", node(1), node(2));
-const b = node("f", node(1), node(2));
-
-console.log("nodeEq!", nodeEq(a, b));
-console.log("nodes!", nodes);
-
-let idCounter = 0;
-const eClasses = new Set();
-const eNodes = new Map();
-
-const eNode = (value, ...children) => {
-  const hash = value + children.map((c) => ":" + c.id).join("");
-  if (eNodes.has(hash)) return nodes.get(hash);
-  const res = {
-    isENode: true,
-    value,
-    children: children,
-    parents: [],
-    id: nodeIdCounter++,
-    hash,
-  };
-  nodes.set(hash, res);
-  for (const child of children) child.parents.push(res);
-  return res;
+    ...classIds.map(Number).map((id) => setFromId.get(id))
+  );
 };
 
-const eNodes = new Map();
-let eClassIdCounter = 0;
-const eClassFromNode = (node, parentENode = null) => {
-  const eNode = { isENode: true, value: node.value };
-  eNode.children = node.children.map((n) => eClassFromNode(n, eNode));
-  const id = node.value + eNode.children.map((c) => "c" + c.id).join();
-  eNodes.set(id, eNode);
-  return {
-    isEClass: true,
-    eNodes: [eNode],
-    parents: [parentENode],
-    id: eClassIdCounter++,
-  };
+const rebuild = () => {
+  while (worklist.length > 0) {
+    const todo = worklist.map(find);
+    worklist.length = 0;
+    for (const eClass of todo) repair(eClass);
+  }
+};
+const repair = (eClass) => {
+  for (let [peNode, peClass] of parents(eClass)) {
+    peNode = unhash(peNode);
+    hashcons.remove(peNode);
+    find(peClass).items.delete(hash(peNode));
+    peNode = canonicalize(peNode);
+    find(peClass).items.add(hash(peNode));
+    hashcons.set(peNode, find(peClass));
+  }
+
+  const newParents = makeHashcons();
+  for (let [peNode, peClass] of parents(eClass)) {
+    peNode = unhash(peNode);
+    peNode = canonicalize(peNode);
+    if (newParents.has(peNode)) merge(peClass, newParents.get(peNode));
+    newParents.set(peNode, find(peClass));
+  }
+  find(eClass).parents = newParents;
 };
 
-console.log("eClassFromNode!", eClassFromNode(a));
+const printENode = ({ value, children }) =>
+  value +
+  (children.length === 0 ? "" : "(" + children.map(printEClassId) + ")");
+const printEClassId = (eClass) => find(eClass).id + ":";
+const printEClass = (eClass) =>
+  printEClassId(eClass) + "{" + [...items(eClass)].join(", ") + "}";
 
-const eClassMatches = (patternNode, eClass) => {
-  return eClass.eNodes.flatMap((en) => eNodeMatches(patternNode, en));
+export const printEClasses = () =>
+  console.log([...sets].map(printEClass).join("\n"));
+
+export const eClassMatches = (patternNode, eClass) => {
+  if (eClass === undefined) return [];
+  return [...items(eClass)]
+    .map(unhash)
+    .flatMap((en) => eNodeMatches(patternNode, en));
 };
 const eNodeMatches = (patternNode, eNode) => {
   if (patternNode.var === undefined && eNode.value !== patternNode.value)
     return [];
-  else if (patternNode.children.length !== eNode.children.length) return [];
+  else if (
+    patternNode.var === undefined &&
+    patternNode.children.length !== eNode.children.length
+  )
+    return [];
   else {
-    const childrenMatches = eNode.children.map((ec, i) =>
-      eClassMatches(patternNode.children[i], ec)
+    const childrenMatches = patternNode.children.map((p, i) =>
+      eClassMatches(p, eNode.children[i])
     );
     return [
-      ...gogo(
+      ...objectCombos(
         childrenMatches,
-        patternNode.var ? { [patternNode.var]: eNode.value } : {}
+        patternNode.var ? { [patternNode.var]: find(hashcons.get(eNode)) } : {}
       ),
     ];
   }
 };
 
-const gogo = function* (childrenMatches, match) {
+const objectCombos = function* (childrenMatches, match) {
   if (childrenMatches.length === 0) {
     yield { ...match };
     return;
   }
   for (const matches1 of childrenMatches[0]) {
-    for (const matches2 of gogo(childrenMatches.slice(1))) {
+    for (const matches2 of objectCombos(childrenMatches.slice(1))) {
       yield { ...match, ...matches1, ...matches2 };
     }
   }
 };
 
-console.log(
-  "eClassMatches!",
-  eClassMatches(vari("go", vari("1"), node(2)), eClassFromNode(a))
-);
+// // TODO: make matches with the same var require the same value
 
-// Aside: the implicit lifting language could maybe really help simplify this.
+export const node = (value, ...children) => ({
+  value,
+  children,
+});
+export const vari = (v, ...children) => ({
+  var: v,
+  children,
+});
+
+const oneFromEach = function* (arrays) {
+  if (arrays.length === 0) {
+    yield [];
+    return;
+  }
+  for (const item of arrays[0]) {
+    for (const array of oneFromEach(arrays.slice(1))) {
+      yield [item, ...array];
+    }
+  }
+};
+const objFromObjs = (objs) => objs.reduce((prev, cur) => ({ ...prev, ...cur }));
+
+const readRule = ({ from, to }) =>
+  [...sets]
+    .map((c) => ({
+      c,
+      matches: from.map((pattern) => eClassMatches(pattern, c)),
+    }))
+    .map(({ c, matches }) => ({ c, to, matchCombos: oneFromEach(matches) }));
+const enactRule = (r) =>
+  r.map(({ c, to, matchCombos }) => [
+    ...map(map(matchCombos, objFromObjs), (o) => to(o, c)),
+  ]);
+// const runRule = ({ from, to }) =>
+//   [...sets]
+//     .map((c) => ({
+//       c,
+//       matches: from.map((pattern) => eClassMatches(pattern, c)),
+//     }))
+//     .map(({ c, matches }) => ({ c, matchCombos: oneFromEach(matches) }))
+//     .map(({ c, matchCombos }) => [
+//       ...map(map(matchCombos, objFromObjs), (o) => to(o, c)),
+//     ]);
+export const runRules = (rules) => {
+  rules.map(readRule).map(enactRule);
+  rebuild();
+};
+
+export const checkEq = (...patterns) =>
+  [...sets]
+    .map((c) => patterns.map((pattern) => eClassMatches(pattern, c)))
+    .some((matches) => matches.every((match) => match.length > 0));

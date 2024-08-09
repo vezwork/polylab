@@ -107,7 +107,7 @@ const op = (value, ...children) =>
 const v = ([name]) => addENode(name);
 
 const build = () => {
-  //printEClasses();
+  printEClasses();
   runRules(eClasses, rules);
   rebuild();
   runRules(eClasses, rules);
@@ -128,7 +128,7 @@ const build = () => {
     newValues.set(find(k), v);
   }
   values = newValues;
-  //printEClasses();
+  printEClasses();
 };
 
 const evalC = (clas) => {
@@ -143,7 +143,7 @@ const evalC = (clas) => {
   if (parentValues.length > 0) {
     const { c, op, vs } = parentValues[0];
     values.set(find(c), definitions[op](...vs));
-    console.log(find(c).id, op, vs, values.get(find(c)));
+    console.debug(find(c).id, op, vs, values.get(find(c)));
     todo.push(find(c));
   }
 };
@@ -178,6 +178,18 @@ rules.push({
       .forEach((itemEClass, i) => merge(itemEClass, op("at", i, eClass))),
 });
 
+define("log", (...args) => (console.log(...args), true)); // return true so that value propagation doesn't call this more than once.
+
+const logValue = (varName) => op("log", varName + " =", v([varName]));
+
+logValue("left");
+logValue("width");
+logValue("center");
+logValue("right");
+logValue("other");
+logValue("o3");
+logValue("o4");
+
 eq(v`width`, op("-", v`right`, v`left`));
 eq(v`center`, op("+", v`left`, op("/", v`width`, 2)));
 eq(v`width`, 4);
@@ -189,14 +201,6 @@ eq(v`o4`, 99);
 
 build();
 evaluate();
-
-console.log("left = ", valueOf(v`left`));
-console.log("width = ", valueOf(v`width`));
-console.log("center = ", valueOf(v`center`));
-console.log("right = ", valueOf(v`right`));
-console.log("other = ", valueOf(v`other`));
-console.log("o3 = ", valueOf(v`o3`));
-console.log("o4 = ", valueOf(v`o4`));
 
 // printEClasses();
 // console.log([...values].map(([k, v]) => k.id + " : " + v).join("\n"));

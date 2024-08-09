@@ -1,4 +1,4 @@
-import { makeHashcons } from "./hashcons.js";
+import { makeHashcons, hash } from "./hashcons.js";
 import { makeUnionFind, items, parents, find } from "./unionFind.js";
 
 // I built this while heavily referencing the following paper:

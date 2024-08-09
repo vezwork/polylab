@@ -14,8 +14,15 @@ export const makeENode = (value, ...children) => ({
 });
 
 export const makeeGraph = () => {
-  const { union, makeSet, sets, setFromId, setFromNode, addNode, deleteNode } =
-    makeUnionFind();
+  const {
+    union,
+    makeEClass,
+    eClasses,
+    eClassFromId,
+    eClassFromENode,
+    addNode,
+    deleteNode,
+  } = makeUnionFind();
 
   const worklist = [];
 
@@ -33,9 +40,9 @@ export const makeeGraph = () => {
 
   const add = (eNode) => {
     eNode = canonicalize(eNode);
-    if (setFromNode.has(eNode)) return setFromNode.get(eNode);
+    if (eClassFromENode.has(eNode)) return eClassFromENode.get(eNode);
 
-    return makeSet(eNode);
+    return makeEClass(eNode);
   };
 
   const addENode = (value, ...children) => add(makeENode(value, ...children));
@@ -53,7 +60,7 @@ export const makeeGraph = () => {
       addNode(peClass, canonicalize(peNode));
     }
 
-    const newParents = makeHashcons([], setFromId);
+    const newParents = makeHashcons([], eClassFromId);
     for (let [peNode, peClass] of parents(eClass)) {
       peNode = canonicalize(peNode); // is this redundant? its in the paper
       if (newParents.has(peNode)) merge(peClass, newParents.get(peNode));
@@ -67,7 +74,7 @@ export const makeeGraph = () => {
     printEClassId(eClass) + "{" + [...items(eClass)].map(hash).join(", ") + "}";
 
   const printEClasses = () =>
-    console.log([...sets].map(printEClass).join("\n"));
+    console.log([...eClasses].map(printEClass).join("\n"));
 
   return {
     merge,
@@ -76,8 +83,8 @@ export const makeeGraph = () => {
 
     printEClasses,
 
-    setFromId,
-    sets,
-    setFromNode,
+    eClassFromId,
+    eClasses,
+    eClassFromENode,
   };
 };

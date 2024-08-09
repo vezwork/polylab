@@ -8,38 +8,38 @@ import {
 } from "./hashcons.js";
 
 export const makeUnionFind = () => {
-  const sets = new Set();
-  const setFromId = new Map();
-  const setFromNode = makeHashcons();
+  const eClasses = new Set();
+  const eClassFromId = new Map();
+  const eClassFromENode = makeHashcons();
 
   let idCounter = 0;
-  const makeSet = (item) => {
+  const makeEClass = (item) => {
     const id = idCounter++;
     const singleton = {
       isEClass: true,
       rank: 0,
-      parents: makeHashcons([], setFromId),
-      items: makeHashset([item], setFromId),
+      parents: makeHashcons([], eClassFromId),
+      items: makeHashset([item], eClassFromId),
       id,
     };
     singleton.parent = singleton;
-    setFromId.set(id, singleton);
+    eClassFromId.set(id, singleton);
 
-    sets.add(singleton);
+    eClasses.add(singleton);
 
     for (const child of item.children) parents(child).set(item, singleton);
-    setFromNode.set(item, singleton);
+    eClassFromENode.set(item, singleton);
 
     return singleton;
   };
 
   const deleteNode = (eClass, eNode) => {
-    setFromNode.remove(eNode);
+    eClassFromENode.remove(eNode);
     find(eClass).items.delete(eNode);
   };
   const addNode = (eClass, eNode) => {
     find(eClass).items.add(eNode);
-    setFromNode.set(eNode, find(eClass));
+    eClassFromENode.set(eNode, find(eClass));
   };
 
   const union = (node1, node2) => {
@@ -50,23 +50,31 @@ export const makeUnionFind = () => {
         root1.parent = root2;
         root2.parents = unionHashcons(root2.parents, root1.parents);
         root2.items = unionHashset(root2.items, root1.items);
-        sets.delete(root1);
-        sets.add(root2);
+        eClasses.delete(root1);
+        eClasses.add(root2);
         return root2;
       } else {
         root2.parent = root1;
         if (root1.rank === root2.rank) root1.rank += 1;
         root1.parents = unionHashcons(root1.parents, root2.parents);
         root1.items = unionHashset(root1.items, root2.items);
-        sets.delete(root2);
-        sets.add(root1);
+        eClasses.delete(root2);
+        eClasses.add(root1);
         return root1;
       }
     }
     return root1;
   };
 
-  return { union, makeSet, sets, setFromId, setFromNode, deleteNode, addNode };
+  return {
+    union,
+    makeEClass,
+    eClasses,
+    eClassFromId,
+    eClassFromENode,
+    deleteNode,
+    addNode,
+  };
 };
 
 export const find = (node) => {

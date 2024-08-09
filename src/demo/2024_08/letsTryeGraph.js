@@ -9,16 +9,19 @@ const {
   checkEq,
   unhash,
   eClassMatches,
-  setFromId,
-  sets,
-  setFromNode,
+  eClassFromId,
+  eClasses,
+  eClassFromENode,
   rebuild,
 } = makeeGraph();
 
-const processToRule = (v, lookup) =>
+const eNodesFromPatternLookup = (v, lookup) =>
   v.var
-    ? find(setFromNode.get(lookup[v.var]))
-    : addENode(v.value, ...v.children.map((c) => processToRule(c, lookup)));
+    ? find(eClassFromENode.get(lookup[v.var]))
+    : addENode(
+        v.value,
+        ...v.children.map((c) => eNodesFromPatternLookup(c, lookup))
+      );
 
 const makeRule = ({ from, to }) => {
   const fromfrom = Array.isArray(from) ? from : [from];
@@ -27,17 +30,20 @@ const makeRule = ({ from, to }) => {
         to.equations.forEach((equation) =>
           equation.forEach((otherEquation) =>
             merge(
-              processToRule(equation[0], lookup),
-              processToRule(otherEquation, lookup)
+              eNodesFromPatternLookup(equation[0], lookup),
+              eNodesFromPatternLookup(otherEquation, lookup)
             )
           )
         )
     : Array.isArray(to)
     ? (lookup) =>
         to.forEach((otherTo) =>
-          merge(processToRule(to[0], lookup), processToRule(otherTo, lookup))
+          merge(
+            eNodesFromPatternLookup(to[0], lookup),
+            eNodesFromPatternLookup(otherTo, lookup)
+          )
         )
-    : (lookup, eClass) => merge(eClass, processToRule(to, lookup));
+    : (lookup, eClass) => merge(eClass, eNodesFromPatternLookup(to, lookup));
   return {
     from: fromfrom,
     to: toto,
@@ -102,19 +108,19 @@ const v = ([name]) => addENode(name);
 
 const build = () => {
   //printEClasses();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
-  runRules(sets, rules);
+  runRules(eClasses, rules);
   rebuild();
 
   const newValues = new Map();
@@ -163,15 +169,13 @@ define("/", (a, b) => a / b);
 isInverse("*", "/");
 
 define("[]", (...args) => args);
-// define(":", (el, list) => [el, ...list]);
-// define("(-:)", ([a, ...rest]) => a);
 define("at", (index, array) => array[index]);
-addRule({
-  from: nodeEq(pvar("arr"), pnode("[]", pvar("arr[0]"), pvar("arr[1]"))),
-  to: nodeAnd(
-    nodeEq(pvar("arr[0]"), pnode("at", pnode(0), pvar("arr"))),
-    nodeEq(pvar("arr[1]"), pnode("at", pnode(1), pvar("arr")))
-  ), // todo: deal with arbitrary number of args
+rules.push({
+  from: [pvar("arr").withValue("[]")],
+  to: (lookup, eClass) =>
+    lookup.arr.children
+      .map(find)
+      .forEach((itemEClass, i) => merge(itemEClass, op("at", i, eClass))),
 });
 
 eq(v`width`, op("-", v`right`, v`left`));
@@ -179,7 +183,9 @@ eq(v`center`, op("+", v`left`, op("/", v`width`, 2)));
 eq(v`width`, 4);
 eq(v`left`, 10);
 eq(v`other`, op("[]", v`center`, v`width`));
-eq(op("[]", v`other2`, v`o3`), v`other`);
+eq(op("[]", v`other2`, v`o3`, v`o4`), v`other`);
+eq(v`o4`, 13);
+eq(v`o4`, 99);
 
 build();
 evaluate();
@@ -188,8 +194,9 @@ console.log("left = ", valueOf(v`left`));
 console.log("width = ", valueOf(v`width`));
 console.log("center = ", valueOf(v`center`));
 console.log("right = ", valueOf(v`right`));
-console.log("other2 = ", valueOf(v`other2`));
+console.log("other = ", valueOf(v`other`));
 console.log("o3 = ", valueOf(v`o3`));
+console.log("o4 = ", valueOf(v`o4`));
 
 // printEClasses();
 // console.log([...values].map(([k, v]) => k.id + " : " + v).join("\n"));

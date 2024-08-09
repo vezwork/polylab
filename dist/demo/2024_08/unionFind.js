@@ -10,6 +10,7 @@ import {
 export const makeUnionFind = () => {
   const sets = new Set();
   const setFromId = new Map();
+  const setFromNode = makeHashcons();
 
   let idCounter = 0;
   const makeSet = (item) => {
@@ -26,7 +27,19 @@ export const makeUnionFind = () => {
 
     sets.add(singleton);
 
+    for (const child of item.children) parents(child).set(item, singleton);
+    setFromNode.set(item, singleton);
+
     return singleton;
+  };
+
+  const deleteNode = (eClass, eNode) => {
+    setFromNode.remove(eNode);
+    find(eClass).items.delete(eNode);
+  };
+  const addNode = (eClass, eNode) => {
+    find(eClass).items.add(eNode);
+    setFromNode.set(eNode, find(eClass));
   };
 
   const union = (node1, node2) => {
@@ -53,7 +66,7 @@ export const makeUnionFind = () => {
     return root1;
   };
 
-  return { union, makeSet, sets, setFromId };
+  return { union, makeSet, sets, setFromId, setFromNode, deleteNode, addNode };
 };
 
 export const find = (node) => {

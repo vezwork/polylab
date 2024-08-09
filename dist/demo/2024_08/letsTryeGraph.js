@@ -11,13 +11,13 @@ const {
   eClassMatches,
   setFromId,
   sets,
-  hashcons,
+  setFromNode,
   rebuild,
 } = makeeGraph();
 
 const processToRule = (v, lookup) =>
   v.var
-    ? find(hashcons.get(lookup[v.var]))
+    ? find(setFromNode.get(lookup[v.var]))
     : addENode(v.value, ...v.children.map((c) => processToRule(c, lookup)));
 
 const makeRule = ({ from, to }) => {

@@ -1,4 +1,4 @@
-import { hash, makeHashcons } from "./hashcons.js";
+import { makeHashcons } from "./hashcons.js";
 import { makeUnionFind, items, parents, find } from "./unionFind.js";
 
 // I built this while heavily referencing the following paper:
@@ -14,10 +14,10 @@ export const makeENode = (value, ...children) => ({
 });
 
 export const makeeGraph = () => {
-  const { union, makeSet, sets, setFromId } = makeUnionFind();
+  const { union, makeSet, sets, setFromId, setFromNode, addNode, deleteNode } =
+    makeUnionFind();
 
   const worklist = [];
-  const hashcons = makeHashcons([], setFromId);
 
   const merge = (id1, id2) => {
     if (find(id1) === find(id2)) return find(id1);
@@ -33,14 +33,9 @@ export const makeeGraph = () => {
 
   const add = (eNode) => {
     eNode = canonicalize(eNode);
-    if (hashcons.has(eNode)) return hashcons.get(eNode);
+    if (setFromNode.has(eNode)) return setFromNode.get(eNode);
 
-    const eClassId = makeSet(eNode);
-
-    for (const child of eNode.children) parents(child).set(eNode, eClassId);
-
-    hashcons.set(eNode, eClassId);
-    return eClassId;
+    return makeSet(eNode);
   };
 
   const addENode = (value, ...children) => add(makeENode(value, ...children));
@@ -54,16 +49,13 @@ export const makeeGraph = () => {
   };
   const repair = (eClass) => {
     for (let [peNode, peClass] of parents(eClass)) {
-      hashcons.remove(peNode);
-      find(peClass).items.delete(peNode);
-      peNode = canonicalize(peNode);
-      find(peClass).items.add(peNode);
-      hashcons.set(peNode, find(peClass));
+      deleteNode(peClass, peNode);
+      addNode(peClass, canonicalize(peNode));
     }
 
     const newParents = makeHashcons([], setFromId);
     for (let [peNode, peClass] of parents(eClass)) {
-      peNode = canonicalize(peNode);
+      peNode = canonicalize(peNode); // is this redundant? its in the paper
       if (newParents.has(peNode)) merge(peClass, newParents.get(peNode));
       newParents.set(peNode, find(peClass));
     }
@@ -84,8 +76,8 @@ export const makeeGraph = () => {
 
     printEClasses,
 
-    hashcons,
     setFromId,
     sets,
+    setFromNode,
   };
 };

@@ -131,22 +131,20 @@ const build = () => {
   printEClasses();
 };
 
-const evalC = (clas) => {
-  const parentValues = [...find(clas).parents]
+const evalC = (clas) =>
+  [...find(clas).parents]
     .filter(([n, c]) => values.get(find(c)) === undefined)
     .map(([n, c]) => ({
       c,
       op: n.value,
       vs: n.children.map((c) => values.get(c)),
     }))
-    .filter(({ vs }) => !vs.some((v) => v === undefined));
-  if (parentValues.length > 0) {
-    const { c, op, vs } = parentValues[0];
-    values.set(find(c), definitions[op](...vs));
-    console.debug(find(c).id, op, vs, values.get(find(c)));
-    todo.push(find(c));
-  }
-};
+    .filter(({ vs }) => !vs.some((v) => v === undefined))
+    .forEach(({ c, op, vs }) => {
+      console.debug(find(c).id, op, vs, values.get(find(c)));
+      values.set(find(c), definitions[op](...vs));
+      todo.push(find(c));
+    });
 
 const evaluate = () => {
   while (todo.length > 0) {
@@ -183,24 +181,23 @@ define("log", (...args) => (console.log(...args), true)); // return true so that
 const logValue = (varName) => op("log", varName + " =", v([varName]));
 
 logValue("left");
-logValue("width");
-logValue("center");
 logValue("right");
-logValue("other");
-logValue("o3");
-logValue("o4");
+logValue("arr1");
+logValue("arr2");
 
 eq(v`width`, op("-", v`right`, v`left`));
 eq(v`center`, op("+", v`left`, op("/", v`width`, 2)));
 eq(v`width`, 4);
 eq(v`left`, 10);
-eq(v`other`, op("[]", v`center`, v`width`));
-eq(op("[]", v`other2`, v`o3`, v`o4`), v`other`);
-eq(v`o4`, 13);
-eq(v`o4`, 99);
+eq(v`myArray`, op("[]", v`center`, v`width`));
+eq(op("[]", v`arr0`, v`arr1`, v`arr2`), v`myArray`);
+eq(v`arr2`, 13);
+eq(v`arr2`, 99);
 
 build();
 evaluate();
+
+console.log(valueOf(v`arr1log`));
 
 // printEClasses();
 // console.log([...values].map(([k, v]) => k.id + " : " + v).join("\n"));

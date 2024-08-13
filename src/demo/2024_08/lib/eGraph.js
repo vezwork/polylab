@@ -74,7 +74,7 @@ export const makeeGraph = () => {
     printEClassId(eClass) + "{" + [...items(eClass)].map(hash).join(", ") + "}";
 
   const printEClasses = () =>
-    console.log([...eClasses].map(printEClass).join("\n"));
+    console.debug([...eClasses].map(printEClass).join("\n"));
 
   return {
     merge,

@@ -1,0 +1,11 @@
+
+
+define drawRect as JS((xy,wh)=>document.querySelector("#c").getContext('2d').fillRect(...xy,...wh))
+define +v as JS(([x1,y1], [x2,y2])=>[x1+x2,y1+y2])
+
+xy = Array(10 10)
+wh = Array(50 50)
+drawRect(xy wh)
+drawRect(+v(xy wh) wh)
+
+JS(run())

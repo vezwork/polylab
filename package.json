@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "build": "tsc & cpx \"./src/**/*.{html,png,jpg,svg,js,mp4,mp3}\" ./dist/",
-    "watch": "tsc --watch & cpx --watch \"./src/**/*.{html,png,jpg,svg,js,mp4,mp3}\" ./dist/ & http-server --no-cache"
+    "watch": "tsc --watch & cpx --watch \"./src/**/*.{html,png,jpg,svg,js,mp4,mp3,el0}\" ./dist/ & http-server --no-cache"
   },
   "devDependencies": {
     "cpx": "^1.5.0",

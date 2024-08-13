@@ -1,5 +1,12 @@
-import { map } from "../../lib/structure/Iterable.js";
 import { makeENode } from "./eGraph.js";
+
+// like array map, but for any iterable. Copied from my Iterable.js lib.
+export const map = function* <T, Y>(
+  iterable: Iterable<T>,
+  func: (t: T) => Y
+): Generator<Y> {
+  for (const item of iterable) yield func(item);
+};
 
 export const hash = ({ value, children }) =>
   value + children.map((c) => ":" + c.id).join("");

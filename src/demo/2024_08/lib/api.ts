@@ -149,6 +149,7 @@ export const makeAPI = () => {
     build,
     evaluate,
     nodeEq,
+    nodeAnd,
     define,
     op,
     v,

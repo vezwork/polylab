@@ -33,10 +33,40 @@ import { makeAPI } from "./lib/api.js";
 const pValue = (str) => {
   let parse = "";
   for (const char of str) {
-    if (char === " " || char === "\n" || char === "(" || char === ")") break;
+    if (
+      char === " " ||
+      char === "\n" ||
+      char === "(" ||
+      char === ")" ||
+      char === "[" ||
+      char === "]"
+    )
+      break;
     parse += char;
   }
   return { parse, str: str.slice(parse.length) };
+};
+
+/**
+ * @type {ParserCombinator}
+ * @param {string} str parse this string if it starts with a valid value
+ * @returns {{ parse: LispAST[], str: string }}
+ */
+const pArray = (initStr) => {
+  if (initStr.at(0) !== "[") return { parse: "", str: initStr };
+  let str = initStr.slice(1);
+
+  const parse = { op: "Array", args: [] };
+  while (true) {
+    const res = ((str) => pLisp(str))(str.trim());
+    if (res.parse === "") {
+      str = str.trim();
+      if (str.at(0) !== "]") return { parse: "", str: initStr };
+      return { parse, str: str.slice(1) };
+    }
+    str = res.str;
+    parse.args.push(res.parse);
+  }
 };
 
 /**
@@ -96,7 +126,7 @@ const pOr = (p1) => (p2) => (str) => {
  *
  * @type {(str: string) => { parse: LispAST, str: string }}
  */
-const pLisp = pOr(pList)(pValue);
+const pLisp = pOr(pArray)(pOr(pList)(pValue));
 
 const hackyParse = (myStr) => {
   const res = [];
@@ -119,6 +149,13 @@ const hackyParse = (myStr) => {
   }
 
   while (true) {
+    const i = res.findIndex((v) => v === "and");
+    if (i === -1) break;
+    const spliced = res.splice(i - 1, 3);
+    res.splice(i - 1, 0, { op: "AND", args: [spliced[0], spliced[2]] });
+  }
+
+  while (true) {
     const i = res.findIndex((v) => v === "define");
     if (i === -1) break;
     const spliced = res.splice(i, 4);
@@ -136,8 +173,19 @@ const hackyParse = (myStr) => {
 };
 
 const makeInterpreter = () => {
-  const { addRule, nodeEq, define, op, v, eGraph, eq, build, evaluate, rules } =
-    makeAPI();
+  const {
+    addRule,
+    nodeEq,
+    define,
+    op,
+    v,
+    eGraph,
+    eq,
+    build,
+    evaluate,
+    rules,
+    nodeAnd,
+  } = makeAPI();
   const find = myFind; // have to do this so `eval` has access to it
   const run = (n) => {
     build(n);
@@ -169,6 +217,7 @@ const makeInterpreter = () => {
   };
   const interpOpInRule = (arg) => {
     if (arg.op === "EQUAL") return nodeEq(...arg.args.map(interpInRule));
+    if (arg.op === "AND") return nodeAnd(...arg.args.map(interpInRule));
     return pnode(arg.op, ...arg.args.map(interpInRule));
   };
   const interpRule = ({ args: [from, to] }) =>
@@ -177,12 +226,13 @@ const makeInterpreter = () => {
     addRule({ from: interpInRule(from), to: interpInRule(to) });
     addRule({ from: interpInRule(to), to: interpInRule(from) });
   };
-  return { interp, build, evaluate };
+  return { interp, build, evaluate, run };
 };
 
 const interpretBuildEval = (code) => {
-  const { interp, build, evaluate } = makeInterpreter();
+  const { interp, run } = makeInterpreter();
   hackyParse(code).forEach(interp);
+  run(5);
 };
 
 const BUILTINS_PREFIX = `

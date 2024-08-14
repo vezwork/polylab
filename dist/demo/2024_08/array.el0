@@ -1,5 +1,5 @@
-myArray = Array(3 6)
-Array(arr0 arr1 99) = myArray
+myArray = [3 6]
+[arr0 arr1 99] = myArray
 
 log("myArray=" myArray)
 

@@ -1,0 +1,47 @@
+define √ as JS(Math.sqrt)
+define ^2 as JS(x=>x**2)
+rule √(b) = sqrtb <==> b = ^2(sqrtb)
+
+define angle as JS((x, y) => Math.atan2(y, x))
+define hypot as JS(Math.hypot)
+define sin as JS(Math.sin)
+define cos as JS(Math.cos)
+𝜏 = JS(Math.PI*2)
+
+rule length(x y) ==> √(+(^2(x) ^2(y)))
+JS(// ref: https://www.mathsisfun.com/algebra/trig-finding-side-right-triangle.html)
+rule angle(x y) = θ ==> sin(θ) = /(y length(x y)) and 
+                        cos(θ) = /(x length(x y))
+rule polar(x y) ==> [length(x y) angle(x y)]
+
+
+turns = 0.25
+l = 33
+
+θ = *(turns 𝜏)
+[l θ] = polar(x y)
+
+log("vec:" [x y] "polar:" polar(x y) "turns:" turns)
+
+
+
+
+
+
+
+
+
+JS(/* NOTES
+define length as ([x y]) <=> √(+(^(x 2) ^(y 2)))
+define angle as ([x y]) => atan2(y x)
+define polar as (xy) <=> [length(xy) angle(xy)]
+
+want to use define because it explicitly sets a value.
+want to make <=> into a "machine"
+want the evaluator to initialize a new evaluation on a machine when the defined name is called
+still have to deal with the fact that the machine can be called in any which way. Do I need to
+  add a rule for all these ways!? Yes, with value pushing we would need that.
+
+polar([x 7]) = [10 *(TAU turns)]
+*/)
+

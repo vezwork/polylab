@@ -1,6 +1,28 @@
+JS(/*
+define set as JS((i, arr, x) => {
+    arr.length = Math.max(arr.length, i+1)
+    return arr.with(i, x)
+})
+rule x = at(i arr) ==> arr = set(i arr x)
+at(3 myArray) = 7777
+
+// only works if you comment out "conflicting value setting!!" in api */)
+
+define json as JS(JSON.stringify)
+
 myArray = [3 6]
-[arr0 arr1 99] = myArray
+[arr0 arr1 99 arr3] = myArray
+
+
+
+JS(/*
+// interesting that you can do this
+go(1) = 3
+log(go(1))
+*/)
+
+JS(// arr3 = 1717)
+JS(// ^ this only works because of a bug in api.ts evalC)
 
 log("myArray=" myArray)
-
-JS(run())
+log("myArrayJson=" json(myArray))

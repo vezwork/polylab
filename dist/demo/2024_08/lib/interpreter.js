@@ -1,6 +1,6 @@
-import { pnode, pvar } from "./lib/matchEGraph.js";
-import { find as myFind } from "./lib/unionFind.js";
-import { makeAPI } from "./lib/api.js";
+import { pnode, pvar } from "./matchEGraph.js";
+import { find as myFind } from "./unionFind.js";
+import { makeAPI } from "./api.js";
 /**
  * Lisp Parser
  *
@@ -167,7 +167,7 @@ const hackyParse = (myStr) => {
     return res;
 };
 const makeInterpreter = () => {
-    const { addRule, nodeEq, define, op, v, eGraph, eq, build, evaluate, rules, valueOf, nodeAnd, } = makeAPI();
+    const { addRule, nodeEq, define, op, v, eGraph, eq, build, evaluate, rules, valueOf, nodeAnd, definitions, } = makeAPI();
     const find = myFind; // have to do this so `eval` has access to it
     const run = (n) => {
         build(n);

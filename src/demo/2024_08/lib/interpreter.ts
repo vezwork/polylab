@@ -1,6 +1,6 @@
-import { pnode, pvar } from "./lib/matchEGraph.js";
-import { find as myFind } from "./lib/unionFind.js";
-import { makeAPI } from "./lib/api.js";
+import { pnode, pvar } from "./matchEGraph.js";
+import { find as myFind } from "./unionFind.js";
+import { makeAPI } from "./api.js";
 
 /**
  * Lisp Parser
@@ -184,7 +184,9 @@ const makeInterpreter = () => {
     build,
     evaluate,
     rules,
+    valueOf,
     nodeAnd,
+    definitions,
   } = makeAPI();
   const find = myFind; // have to do this so `eval` has access to it
   const run = (n) => {
@@ -232,7 +234,7 @@ const makeInterpreter = () => {
 const interpretBuildEval = (code) => {
   const { interp, run } = makeInterpreter();
   hackyParse(code).forEach(interp);
-  run(5);
+  run(3);
 };
 
 const BUILTINS_PREFIX = `
@@ -250,6 +252,7 @@ define log as JS(console.log)
 
 define Array as JS((...args)=>args)
 define at as JS((i, arr) => arr.at(i))
+
 JS(
     rules.push({
         from: [pvar("arr").withValue("Array")],

@@ -1,9 +1,19 @@
 import { makeeGraph } from "./eGraph.js";
 import { runRules } from "./matchEGraph.js";
 import { find } from "./unionFind.js";
+const tryOrError = (f) => {
+    try {
+        return f();
+    }
+    catch (e) {
+        return e;
+    }
+};
 export const makeAPI = () => {
     const eGraph = makeeGraph();
     const { merge, printEClasses, addENode, unhash, eClassFromId, eClasses, eClassFromENode, rebuild, } = eGraph;
+    const rules = [];
+    const definitions = {};
     const eNodesFromPatternLookup = (v, lookup) => v.var
         ? find(eClassFromENode.get(lookup[v.var]))
         : addENode(v.value, ...v.children.map((c) => eNodesFromPatternLookup(c, lookup)));
@@ -22,8 +32,6 @@ export const makeAPI = () => {
     const nodeAnd = (...equations) => ({ equations });
     const nodeEq = (...c) => c;
     const addRule = (r) => rules.push(makeRule(r));
-    const rules = [];
-    const definitions = {};
     const define = (key, f) => {
         definitions[key] = f;
     };
@@ -52,8 +60,12 @@ export const makeAPI = () => {
         console.debug("eClasses before build:");
         printEClasses();
         for (let i = 0; i < n; i++) {
+            let startTime = performance.now();
             runRules(eClasses, rules);
+            console.debug("# eNodes:", [...eClasses].reduce((acc, cur) => acc + cur.items._set.size, 0), "# rules:", rules.length, "rules time:", performance.now() - startTime);
+            startTime = performance.now();
             rebuild();
+            console.debug("rebuild time:", performance.now() - startTime);
         }
         const newValues = new Map();
         for (const [k, v] of values) {
@@ -63,8 +75,8 @@ export const makeAPI = () => {
         console.debug("eClasses after build:");
         printEClasses();
     };
+    const prevValueSet = new Map();
     const evalC = (clas) => [...find(clas).parents]
-        .filter(([n, c]) => values.get(find(c)) === undefined)
         .map(([n, c]) => ({
         c,
         op: n.value,
@@ -72,19 +84,41 @@ export const makeAPI = () => {
     }))
         .filter(({ argValues }) => !argValues.some((v) => v === undefined))
         .forEach(({ c, op, argValues }) => {
-        try {
-            values.set(find(c), definitions[op](...argValues) ?? true); // don't set falsy values otherwise this value will be filled in multiple times (see the filter above)
-            console.debug({
-                eClassId: find(c).id,
-                op,
-                argValues,
-                resultOfOpOnArgValues: values.get(find(c)),
-            });
-            todo.push(find(c));
+        const prevValue = values.get(find(c));
+        const newValue = tryOrError(() => definitions[op](...argValues));
+        const debugInfo = {
+            eClassId: find(c).id,
+            op,
+            argValues,
+            prevValue,
+            evalClassId: clas.id,
+            newValue,
+        };
+        if (newValue instanceof Error) {
+            if (definitions[op]) {
+                console.error(`Error while evaluating operation \`${op}\`.`, debugInfo);
+                return;
+            }
+            else {
+                console.error(`Tried to evaluate un-defined operation \`${op}\`.`, debugInfo);
+                return;
+            }
         }
-        catch (e) {
-            console.error(`couldn't evaluate operation: ${op}. Did you define it?`);
+        if (prevValue !== undefined) {
+            if (JSON.stringify(prevValue) === JSON.stringify(newValue)) {
+                console.warn("prevValue === newValue", debugInfo);
+                return;
+            }
+            else {
+                console.error("conflicting value setting!!", prevValue, "!==", newValue, debugInfo, "previously set by:", prevValueSet.get(find(c)));
+                return;
+            }
         }
+        values.set(find(c), newValue);
+        prevValueSet.set(find(c), { op, argValues, evalClassId: clas.id });
+        console.debug(debugInfo);
+        todo.push(find(c));
+        console.debug();
     });
     const evaluate = () => {
         while (todo.length > 0) {

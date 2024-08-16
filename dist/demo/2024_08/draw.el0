@@ -1,9 +1,33 @@
-define drawRect as JS((xy,wh)=>document.querySelector("#c").getContext('2d').fillRect(...xy,...wh))
-define +v as JS(([x1,y1], [x2,y2])=>[x1+x2,y1+y2])
+define draw as JS(([xy,wh,color])=>{
+    const ctx = document.querySelector("#c").getContext('2d')
+    ctx.fillStyle=color
+    ctx.fillRect(...xy,...wh)
+})
+define drawable as JS(()=>[[], []])
 
-xy = [10 10]
-wh = [50 50]
-drawRect(xy wh)
-drawRect(+v(xy wh) wh)
+JS(/* it is not appropriate to use rules as functions, especially here, for two reasons:
+- It absolutely blows up the eClassMatches because these patterns match on all eNodes in each eClass
+  e.g. var x1 has a bunch of other things in its eClass that will match, multiplied by ALL OTHER VARS
+- It isn't properly bidirectional 
+  e.g. 
+  `rule x([x y]) ==> x
+  x(myVec) = 0` does not work.
 
-JS(run())
+could be overcome in two ways I can think of:
+- functions as pointers from arg and result eClasses to function definition arg and result eClasses
+  - good for recursion
+- rules that delete the eNode they match on and replace it with the result
+  - could be good for "simplifications" (strict eNode improvements) for performance
+*/)
+rule beside([[x1 y1] [w1 h1] c1] [[x2 y2] [w2 h2] c2]) ==> x2 = +(x1 w1)
+rule ontop([[x1 y1] [w1 h1] c1] [[x2 y2] [w2 h2] c2]) ==> y2 = +(y1 h1)
+
+draw1 = [[_0 _1] [20 20] "red"]
+draw2 = [[70 70] [20 20] "green"]
+draw3 = [[0 _2] [20 20] "purple"]
+ontop(draw2 draw1)
+beside(draw1 draw2)
+ontop(draw3 draw2)
+draw(draw1)
+draw(draw2)
+draw(draw3)

@@ -8,14 +8,16 @@ define sin as JS(Math.sin)
 define cos as JS(Math.cos)
 𝜏 = JS(Math.PI*2)
 
-rule length(x y) ==> √(+(^2(x) ^2(y)))
+replace length(x y) ==> √(+(^2(x) ^2(y)))
 JS(// ref: https://www.mathsisfun.com/algebra/trig-finding-side-right-triangle.html)
-rule angle(x y) = θ ==> sin(θ) = /(y length(x y)) and 
-                        cos(θ) = /(x length(x y))
-rule polar(x y) ==> [length(x y) angle(x y)]
+rule angle(x y) = θ ==> { 
+  sin(θ) = /(y length(x y))
+  cos(θ) = /(x length(x y))
+}
+replace polar(x y) ==> [length(x y) angle(x y)]
 
 
-turns = 0.25
+turns = 0.12
 l = 33
 
 θ = *(turns 𝜏)

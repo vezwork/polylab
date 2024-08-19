@@ -7,32 +7,43 @@ import {
   unionHashset,
 } from "./hashcons.js";
 
+export const find = (node) => {
+  if (node.parent !== node) node.parent = find(node.parent);
+
+  return node.parent;
+};
+export const parents = (node) => find(node).parents;
+export const items = (node) => find(node).items;
+
 export const makeUnionFind = () => {
   const eClasses = new Set();
   const eClassFromId = new Map();
   const eClassFromENode = makeHashcons();
 
   let idCounter = 0;
-  const makeEClass = (item) => {
+  const makeEClass = (eNode) => {
     const id = idCounter++;
-    const singleton = {
+    const newEClass = {
       isEClass: true,
       rank: 0,
       parents: makeHashcons([], eClassFromId),
-      items: makeHashset([item], eClassFromId),
+      items: makeHashset([eNode], eClassFromId),
       id,
     };
-    singleton.parent = singleton;
-    eClassFromId.set(id, singleton);
+    newEClass.parent = newEClass;
+    eClassFromId.set(id, newEClass);
 
-    eClasses.add(singleton);
+    eClasses.add(newEClass);
 
-    for (const child of item.children) parents(child).set(item, singleton);
-    eClassFromENode.set(item, singleton);
+    for (const child of eNode.children) parents(child).set(eNode, newEClass);
+    eClassFromENode.set(eNode, newEClass);
 
-    return singleton;
+    return newEClass;
   };
 
+  // note that this does not remove eNode/eClass fron eNode.children's parents hashcons.
+  // which is necessary for fully removing the eNode from the eGraph. The reason it doesn't
+  // is because this is used in rebuild, where that is not needed (based on the egg paper).
   const deleteNode = (eClass, eNode) => {
     eClassFromENode.remove(eNode);
     find(eClass).items.delete(eNode);
@@ -76,14 +87,6 @@ export const makeUnionFind = () => {
     addNode,
   };
 };
-
-export const find = (node) => {
-  if (node.parent !== node) node.parent = find(node.parent);
-
-  return node.parent;
-};
-export const parents = (node) => find(node).parents;
-export const items = (node) => find(node).items;
 
 /* 
 MIT License

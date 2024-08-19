@@ -4,9 +4,9 @@ export const map = function* (iterable, func) {
     for (const item of iterable)
         yield func(item);
 };
-export const hash = ({ value, children }) => value + children.map((c) => ":" + c.id).join("");
+export const hash = ({ value, children }) => value + children.map((c) => "␚" + c.id).join("");
 export const unhash = (str, setFromId) => {
-    const [value, ...classIds] = str.split(":");
+    const [value, ...classIds] = str.split("␚");
     return makeENode(value, ...classIds.map(Number).map((id) => setFromId.get(id)));
 };
 export const makeHashcons = (keyValues, setFromId) => {

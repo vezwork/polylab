@@ -48,6 +48,8 @@ export const matchRule =
   ({ from, to }) =>
   (eClass) => {
     const matches = from.map((pattern) => eClassMatches(pattern, eClass));
+    if (matches.length > 0 && matches[0].length > 1000)
+      console.error("TOO MANY MATCHES:", from, matches);
     return {
       c: eClass,
       to,
@@ -55,9 +57,12 @@ export const matchRule =
     };
   };
 const matchRuleOnAll = (eClasses) => (rule) =>
-  [...eClasses].map(matchRule(rule));
-export const enactRuleOnMatches = (matches) =>
+  [...eClasses]
+    .map(matchRule(rule))
+    .filter(({ matchCombos }) => matchCombos.length > 0);
+export const enactRuleOnMatches = (matches) => {
   matches.map(({ c, to, matchCombos }) => matchCombos.map((o) => to(o, c)));
+};
 export const runRules = (eClasses, rules) =>
   rules.map(matchRuleOnAll(eClasses)).map(enactRuleOnMatches);
 

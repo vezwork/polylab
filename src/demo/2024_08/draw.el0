@@ -1,33 +1,41 @@
-define draw as JS(([xy,wh,color])=>{
+define max as JS(Math.max)
+define min as JS(Math.min)
+
+define drawBox as JS(([[x1,y1],[x2,y2],color])=>{
     const ctx = document.querySelector("#c").getContext('2d')
     ctx.fillStyle=color
-    ctx.fillRect(...xy,...wh)
+    ctx.fillRect(x1, y1, x2-x1, y2-y1) // takes width and height
 })
-define drawable as JS(()=>[[], []])
+define drawLine as JS(([[xy1],[xy2],color])=>{
+    const ctx = document.querySelector("#c").getContext('2d')
+    ctx.strokeStyle=color
+    ctx.beginPath();
+    ctx.moveTo(...xy1);
+    ctx.lineTo(...xy2);
 
-JS(/* it is not appropriate to use rules as functions, especially here, for two reasons:
-- It absolutely blows up the eClassMatches because these patterns match on all eNodes in each eClass
-  e.g. var x1 has a bunch of other things in its eClass that will match, multiplied by ALL OTHER VARS
-- It isn't properly bidirectional 
-  e.g. 
-  `rule x([x y]) ==> x
-  x(myVec) = 0` does not work.
+    // Draw the Path
+    ctx.stroke();
+})
 
-could be overcome in two ways I can think of:
-- functions as pointers from arg and result eClasses to function definition arg and result eClasses
-  - good for recursion
-- rules that delete the eNode they match on and replace it with the result
-  - could be good for "simplifications" (strict eNode improvements) for performance
-*/)
-rule beside([[x1 y1] [w1 h1] c1] [[x2 y2] [w2 h2] c2]) ==> x2 = +(x1 w1)
-rule ontop([[x1 y1] [w1 h1] c1] [[x2 y2] [w2 h2] c2]) ==> y2 = +(y1 h1)
+replace beside([[x11 y11] [x12 y12] c1] [[x21 y21] [x22 y22] c2]) ==> {
+    x12 = x21
+    [[min(x11 x21) min(y11 y21)] [max(x21 x22) max(y21 y22)] c1]
+}
 
-draw1 = [[_0 _1] [20 20] "red"]
-draw2 = [[70 70] [20 20] "green"]
-draw3 = [[0 _2] [20 20] "purple"]
-ontop(draw2 draw1)
-beside(draw1 draw2)
-ontop(draw3 draw2)
-draw(draw1)
-draw(draw2)
-draw(draw3)
+replace ontop([[x11 y11] [x12 y12] c1] [[x21 y21] [x22 y22] c2]) ==> {
+    y12 = y21
+    [[min(x11 x21) min(y11 y21)] [max(x21 x22) max(y21 y22)] c1]
+}
+
+draw1 = [[x1 y1] [+(x1 20) +(y1 20)] "red"]
+draw2 = [[70 70] [90 90] "green"]
+draw3 = [[0 y3] [20 +(y3 20)] "purple"]
+ontop(draw1 draw2)
+draw1AndDraw2 = beside(draw1 draw2)
+ontop(draw3 draw1AndDraw2)
+drawBox(draw1)
+drawBox(draw2)
+drawBox(draw3)
+
+drawLine([draw1 draw2 "cyan"])
+drawLine([draw1 draw3 "cyan"])

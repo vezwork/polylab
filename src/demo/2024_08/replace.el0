@@ -1,0 +1,16 @@
+JS(
+    /* rewrite test --- used as reference for implementing `replace`
+    const ec = (eNode) => find(eClassFromENode.get(eNode))
+    rules.push({
+        from: [pvar("dog", pvar("a"), pvar("b")).withValue("dog")],
+        to: (lookup, eClass) => {
+            const eNode = lookup.dog
+            for (const child of eNode.children) parents(child).remove(eNode);
+            eGraph.deleteNode(eClass, eNode)
+            eGraph.merge(eClass, op("+", ec(lookup.a), ec(lookup.b)))
+        },
+    });*/
+)
+replace dog(a b) ==> +(a b)
+
+log(dog(1 2))

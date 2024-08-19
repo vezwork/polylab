@@ -9,9 +9,9 @@ export const map = function* <T, Y>(
 };
 
 export const hash = ({ value, children }) =>
-  value + children.map((c) => ":" + c.id).join("");
+  value + children.map((c) => "␚" + c.id).join("");
 export const unhash = (str, setFromId) => {
-  const [value, ...classIds] = str.split(":");
+  const [value, ...classIds] = str.split("␚");
   return makeENode(
     value,
     ...classIds.map(Number).map((id) => setFromId.get(id))

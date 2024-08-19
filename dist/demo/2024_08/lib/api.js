@@ -1,6 +1,6 @@
 import { makeeGraph } from "./eGraph.js";
 import { runRules } from "./matchEGraph.js";
-import { find } from "./unionFind.js";
+import { find, parents } from "./unionFind.js";
 const tryOrError = (f) => {
     try {
         return f();
@@ -21,7 +21,7 @@ export const makeAPI = () => {
         const fromfrom = Array.isArray(from) ? from : [from];
         const toto = to.equations
             ? (lookup) => to.equations.forEach((equation) => equation.forEach((otherEquation) => merge(eNodesFromPatternLookup(equation[0], lookup), eNodesFromPatternLookup(otherEquation, lookup))))
-            : Array.isArray(to)
+            : Array.isArray(to) // an array represents an equation `a = b`.
                 ? (lookup) => to.forEach((otherTo) => merge(eNodesFromPatternLookup(to[0], lookup), eNodesFromPatternLookup(otherTo, lookup)))
                 : (lookup, eClass) => merge(eClass, eNodesFromPatternLookup(to, lookup));
         return {
@@ -29,9 +29,48 @@ export const makeAPI = () => {
             to: toto,
         };
     };
+    const makeReplaceRule = ({ from, to }) => {
+        const toto = to.equations
+            ? (lookup, eClass) => {
+                const eNode = lookup.replaceOp;
+                for (const child of eNode.children)
+                    parents(child).remove(eNode);
+                eGraph.deleteNode(eClass, eNode);
+                to.equations.forEach((equation, i) => {
+                    if (i === to.equations.length - 1) {
+                        // if last expression, return it
+                        merge(eClass, eNodesFromPatternLookup(Array.isArray(equation) ? equation[0] : equation, lookup));
+                    }
+                    if (Array.isArray(equation))
+                        equation.forEach((otherTo) => {
+                            merge(eNodesFromPatternLookup(equation[0], lookup), eNodesFromPatternLookup(otherTo, lookup));
+                        });
+                });
+            }
+            : Array.isArray(to) // an array represents an equation `a = b`.
+                ? (lookup, eClass) => to.forEach((otherTo) => {
+                    const eNode = lookup.replaceOp;
+                    for (const child of eNode.children)
+                        parents(child).remove(eNode);
+                    eGraph.deleteNode(eClass, eNode);
+                    merge(eNodesFromPatternLookup(to[0], lookup), eNodesFromPatternLookup(otherTo, lookup));
+                })
+                : (lookup, eClass) => {
+                    const eNode = lookup.replaceOp;
+                    for (const child of eNode.children)
+                        parents(child).remove(eNode);
+                    eGraph.deleteNode(eClass, eNode);
+                    merge(eClass, eNodesFromPatternLookup(to, lookup));
+                };
+        return {
+            from: [from],
+            to: toto,
+        };
+    };
     const nodeAnd = (...equations) => ({ equations });
     const nodeEq = (...c) => c;
     const addRule = (r) => rules.push(makeRule(r));
+    const addReplaceRule = (r) => rules.push(makeReplaceRule(r));
     const define = (key, f) => {
         definitions[key] = f;
     };
@@ -49,9 +88,10 @@ export const makeAPI = () => {
     }));
     const op = (value, ...children) => addENode(value, ...children.map((arg) => {
         if (!arg.isEClass) {
+            const newENodeClass = find(addENode(arg));
             setValue(arg, arg);
-            todo.push(find(addENode(arg)));
-            return addENode(arg);
+            todo.push(newENodeClass);
+            return newENodeClass;
         }
         return arg;
     }));
@@ -132,6 +172,7 @@ export const makeAPI = () => {
     return {
         eGraph,
         addRule,
+        addReplaceRule,
         build,
         evaluate,
         nodeEq,
@@ -146,5 +187,6 @@ export const makeAPI = () => {
         makeRule,
         printEClasses,
         rebuild,
+        eClassFromENode,
     };
 };

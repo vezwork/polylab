@@ -1,0 +1,14 @@
+JS(/* it is not appropriate to use rules as functions, especially here, for two reasons:
+- It absolutely blows up the eClassMatches because these patterns match on all eNodes in each eClass
+  e.g. var x1 has a bunch of other things in its eClass that will match, multiplied by ALL OTHER VARS
+- It isn't properly bidirectional 
+  e.g. 
+  `rule x([x y]) ==> x
+  x(myVec) = 0` does not work.
+
+could be overcome in two ways I can think of:
+- functions as pointers from arg and result eClasses to function definition arg and result eClasses
+  - good for recursion
+-[x] (DONE) rules that delete the eNode they match on and replace it with the result
+  - could be good for "simplifications" (strict eNode improvements) for performance
+*/)

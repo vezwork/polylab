@@ -1,5 +1,5 @@
 import { pnode, pvar } from "./matchEGraph.js";
-import { find as myFind } from "./unionFind.js";
+import { find as myFind, parents as myParents } from "./unionFind.js";
 import { makeAPI } from "./api.js";
 
 /**
@@ -39,7 +39,9 @@ const pValue = (str) => {
       char === "(" ||
       char === ")" ||
       char === "[" ||
-      char === "]"
+      char === "]" ||
+      char === "{" ||
+      char === "}"
     )
       break;
     parse += char;
@@ -62,6 +64,29 @@ const pArray = (initStr) => {
     if (res.parse === "") {
       str = str.trim();
       if (str.at(0) !== "]") return { parse: "", str: initStr };
+      return { parse, str: str.slice(1) };
+    }
+    str = res.str;
+    parse.args.push(res.parse);
+  }
+};
+
+/**
+ * copy pasted from pArray
+ * @type {ParserCombinator}
+ * @param {string} str parse this string if it starts with a valid value
+ * @returns {{ parse: LispAST[], str: string }}
+ */
+const pBlock = (initStr) => {
+  if (initStr.at(0) !== "{") return { parse: "", str: initStr };
+  let str = initStr.slice(1);
+
+  const parse = { op: "BLOCK", args: [] };
+  while (true) {
+    const res = ((str) => pLisp(str))(str.trim());
+    if (res.parse === "") {
+      str = str.trim();
+      if (str.at(0) !== "}") return { parse: "", str: initStr };
       return { parse, str: str.slice(1) };
     }
     str = res.str;
@@ -126,9 +151,9 @@ const pOr = (p1) => (p2) => (str) => {
  *
  * @type {(str: string) => { parse: LispAST, str: string }}
  */
-const pLisp = pOr(pArray)(pOr(pList)(pValue));
+const pLisp = pOr(pBlock)(pOr(pArray)(pOr(pList)(pValue)));
 
-const hackyParse = (myStr) => {
+const initialPass = (myStr) => {
   const res = [];
   while (true) {
     const p = pLisp(myStr.trim());
@@ -140,21 +165,15 @@ const hackyParse = (myStr) => {
     res.push(p.parse);
     if (myStr.length === 0) break;
   }
-
+  return res;
+};
+const infixPass = (res) => {
   while (true) {
     const i = res.findIndex((v) => v === "=");
     if (i === -1) break;
     const spliced = res.splice(i - 1, 3);
     res.splice(i - 1, 0, { op: "EQUAL", args: [spliced[0], spliced[2]] });
   }
-
-  while (true) {
-    const i = res.findIndex((v) => v === "and");
-    if (i === -1) break;
-    const spliced = res.splice(i - 1, 3);
-    res.splice(i - 1, 0, { op: "AND", args: [spliced[0], spliced[2]] });
-  }
-
   while (true) {
     const i = res.findIndex((v) => v === "define");
     if (i === -1) break;
@@ -167,14 +186,36 @@ const hackyParse = (myStr) => {
     if (i === -1) break;
     const spliced = res.splice(i, 4);
     const op = spliced[2] === "==>" ? "RULE" : "BIRULE";
-    res.splice(i, 0, { op, args: [spliced[1], spliced[3]] });
+    if (spliced[3].op === "BLOCK")
+      res.splice(i, 0, {
+        op,
+        args: [spliced[1], { op: "BLOCK", args: infixPass(spliced[3].args) }],
+      });
+    else res.splice(i, 0, { op, args: [spliced[1], spliced[3]] });
+  }
+  while (true) {
+    const i = res.findIndex((v) => v === "replace");
+    if (i === -1) break;
+    const spliced = res.splice(i, 4);
+    const op = "REPLACE";
+    if (spliced[3].op === "BLOCK")
+      res.splice(i, 0, {
+        op,
+        args: [spliced[1], { op: "BLOCK", args: infixPass(spliced[3].args) }],
+      });
+    else res.splice(i, 0, { op, args: [spliced[1], spliced[3]] });
   }
   return res;
+};
+const hackyParse = (myStr) => {
+  const res = initialPass(myStr);
+  return infixPass(res);
 };
 
 const makeInterpreter = () => {
   const {
     addRule,
+    addReplaceRule,
     nodeEq,
     define,
     op,
@@ -187,8 +228,10 @@ const makeInterpreter = () => {
     valueOf,
     nodeAnd,
     definitions,
+    eClassFromENode,
   } = makeAPI();
   const find = myFind; // have to do this so `eval` has access to it
+  const parents = myParents; // have to do this so `eval` has access to it
   const run = (n) => {
     build(n);
     evaluate();
@@ -209,6 +252,7 @@ const makeInterpreter = () => {
     if (arg.op === "JS") return eval(arg.js);
     if (arg.op === "EQUAL") return eq(...arg.args.map(interp));
     if (arg.op === "RULE") return interpRule(arg);
+    if (arg.op === "REPLACE") return interpReplaceRule(arg);
     if (arg.op === "BIRULE") return interpBirule(arg);
     return op(arg.op, ...arg.args.map(interp));
   };
@@ -219,11 +263,18 @@ const makeInterpreter = () => {
   };
   const interpOpInRule = (arg) => {
     if (arg.op === "EQUAL") return nodeEq(...arg.args.map(interpInRule));
-    if (arg.op === "AND") return nodeAnd(...arg.args.map(interpInRule));
+    if (arg.op === "BLOCK") return nodeAnd(...arg.args.map(interpInRule));
     return pnode(arg.op, ...arg.args.map(interpInRule));
   };
   const interpRule = ({ args: [from, to] }) =>
     addRule({ from: interpInRule(from), to: interpInRule(to) });
+  const interpReplaceRule = ({ args: [from, to] }) =>
+    addReplaceRule({
+      from: interpFirstFromOpInReplaceRule(from),
+      to: interpInRule(to),
+    });
+  const interpFirstFromOpInReplaceRule = (arg) =>
+    pvar("replaceOp", ...arg.args.map(interpInRule)).withValue(arg.op);
   const interpBirule = ({ args: [from, to] }) => {
     addRule({ from: interpInRule(from), to: interpInRule(to) });
     addRule({ from: interpInRule(to), to: interpInRule(from) });
@@ -233,7 +284,9 @@ const makeInterpreter = () => {
 
 const interpretBuildEval = (code) => {
   const { interp, run } = makeInterpreter();
-  hackyParse(code).forEach(interp);
+  const parsedCode = hackyParse(code);
+  console.log(parsedCode);
+  parsedCode.forEach(interp);
   run(3);
 };
 

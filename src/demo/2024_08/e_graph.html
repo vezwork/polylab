@@ -1,6 +1,62 @@
 <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
-<!-- <script src="./commuteInverseArrayLog.js" type="module"></script> -->
-<!-- <script src="./vectors.js" type="module"></script> -->
+
 <script src="./lib/interpreter.js" type="module"></script>
-<script src="./draw.el0" type="text/el0"></script>
+<!-- <script src="./draw.el0" type="text/el0"></script> -->
+
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/gh/vanillawc/wc-codemirror@1/index.js"
+></script>
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/gh/vanillawc/wc-codemirror@1/mode/javascript/javascript.js"
+></script>
+
+<select id="file-select">
+  <option value="./starter.el0">starter</option>
+  <option value="./polar.el0">polar</option>
+  <option value="./draw.el0">draw</option>
+</select>
+<wc-codemirror id="e1" style="font-size: 18px; height: 600px">
+  <script type="wc-content">
+    .
+  </script>
+</wc-codemirror>
+<button id="run">run</button>
+<div
+  id="result"
+  style="font-size: 20px; font-family: monospace; border: 1px solid black"
+></div>
 <canvas id="c"></canvas>
+
+<script type="module">
+  import { interpretBuildEval } from "./lib/interpreter.js";
+  import { BUILTINS_PREFIX } from "./lib/builtins.js";
+
+  const e1 = document.getElementById("e1");
+  const fileSelector = document.getElementById("file-select");
+  const runButton = document.getElementById("run");
+
+  setTimeout(
+    () =>
+      fetch("./starter.el0")
+        .then((v) => v.text())
+        .then((code) => {
+          e1.value = code;
+        }),
+    100
+  );
+
+  fileSelector.addEventListener("change", (e) => {
+    fetch(e.target.value)
+      .then((v) => v.text())
+      .then((code) => {
+        e1.value = code;
+      });
+  });
+
+  runButton.addEventListener("click", (e) => {
+    document.getElementById("result").innerText = "";
+    interpretBuildEval(BUILTINS_PREFIX + e1.value);
+  });
+</script>

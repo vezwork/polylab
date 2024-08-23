@@ -1,6 +1,7 @@
 import { pnode, pvar } from "./matchEGraph.js";
 import { find as myFind, parents as myParents } from "./unionFind.js";
 import { makeAPI } from "./api.js";
+import { BUILTINS_PREFIX } from "./builtins.js";
 /**
  * Lisp Parser
  *
@@ -270,40 +271,12 @@ const makeInterpreter = () => {
     };
     return { interp, build, evaluate, run };
 };
-const interpretBuildEval = (code) => {
+export const interpretBuildEval = (code) => {
     const { interp, run } = makeInterpreter();
     const parsedCode = hackyParse(code);
-    console.log(parsedCode);
     parsedCode.forEach(interp);
-    run(3);
+    run(6);
 };
-const BUILTINS_PREFIX = `
-define + as JS((a,b)=>a+b)
-define - as JS((a,b)=>a-b)
-rule +(a b) ==> +(b a)
-rule a = +(b c) <==> b = -(a c)
-
-define * as JS((a,b)=>a*b)
-define / as JS((a,b)=>a/b)
-rule *(a b) ==> *(b a)
-rule a = *(b c) <==> b = /(a c)
-
-define log as JS(console.log)
-
-define Array as JS((...args)=>args)
-define at as JS((i, arr) => arr.at(i))
-
-JS(
-    rules.push({
-        from: [pvar("arr").withValue("Array")],
-        to: (lookup, eClass) =>
-            lookup.arr.children
-            .map(find)
-            .forEach((itemEClass, i) =>
-                eGraph.merge(itemEClass, op("at", i, eClass))
-        ),
-    });  
-)`;
 for (const script of document.querySelectorAll('script[type="text/el0"]')) {
     if (script.src)
         fetch(script.src)

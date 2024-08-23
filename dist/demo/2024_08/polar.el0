@@ -14,16 +14,30 @@ rule angle(x y) = θ ==> {
   sin(θ) = /(y length(x y))
   cos(θ) = /(x length(x y))
 }
-replace polar(x y) ==> [length(x y) angle(x y)]
+replace polar(x y) ==> [length(x y) angle(x y)] 
 
 
-turns = 0.12
 l = 33
 
 θ = *(turns 𝜏)
 [l θ] = polar(x y)
 
 log("vec:" [x y] "polar:" polar(x y) "turns:" turns)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

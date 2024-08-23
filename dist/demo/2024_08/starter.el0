@@ -1,5 +1,5 @@
 width = 4
-left = 10
+center = 33
 
 -(right left) = width
 center = +(left /(width 2))
@@ -8,5 +8,3 @@ log("left=" left)
 log("right=" right)
 log("width=" width)
 log("center=" center)
-
-JS(run())

@@ -125,6 +125,9 @@ export const makeAPI = () => {
         .filter(({ argValues }) => !argValues.some((v) => v === undefined))
         .forEach(({ c, op, argValues }) => {
         const prevValue = values.get(find(c));
+        // temp to prevent extra logging
+        if (prevValue !== undefined)
+            return;
         const newValue = tryOrError(() => definitions[op](...argValues));
         const debugInfo = {
             eClassId: find(c).id,

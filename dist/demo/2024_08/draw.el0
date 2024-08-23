@@ -27,15 +27,25 @@ replace ontop([[x11 y11] [x12 y12] c1] [[x21 y21] [x22 y22] c2]) ==> {
     [[min(x11 x21) min(y11 y21)] [max(x21 x22) max(y21 y22)] c1]
 }
 
-draw1 = [[x1 y1] [+(x1 20) +(y1 20)] "red"]
-draw2 = [[70 70] [90 90] "green"]
-draw3 = [[0 y3] [20 +(y3 20)] "purple"]
-ontop(draw1 draw2)
-draw1AndDraw2 = beside(draw1 draw2)
-ontop(draw3 draw1AndDraw2)
-drawBox(draw1)
-drawBox(draw2)
-drawBox(draw3)
 
-drawLine([draw1 draw2 "cyan"])
-drawLine([draw1 draw3 "cyan"])
+
+
+
+
+
+
+
+
+
+
+redBox = [[x1 y1] [+(x1 20) +(y1 20)] "red"]
+greenBox = [[70 70] [90 90] "green"]
+purpleBox = [[0 y3] [20 +(y3 20)] "purple"]
+ontop(redBox greenBox)
+ontop(purpleBox beside(greenBox redBox))
+drawBox(redBox)
+drawBox(greenBox)
+drawBox(purpleBox)
+
+drawLine([redBox greenBox "cyan"])
+drawLine([draw1 purpleBox "cyan"])

@@ -40,6 +40,10 @@ export const normalVec2FromAngle = (theta) => [
     Math.cos(theta),
     Math.sin(theta),
 ];
+export const fromPolar = (length, theta) => [
+    length * Math.cos(theta),
+    length * Math.sin(theta),
+];
 export const setAngle = (theta) => (v) => mul(length(v), normalVec2FromAngle(theta));
 export const setAngleFromVec = (angleVec) => (v) => mul(length(v), normalize(angleVec));
 export const assign = (v1) => (v2) => {

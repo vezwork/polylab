@@ -7,10 +7,13 @@ import {
   angleOf,
   fromPolar,
   length,
-} from "../../lib/math/Vec2.js";
-import { lerp } from "../../lib/math/Line2.js";
-import { interpolateHex, rgbFromGradientSample } from "../../lib/math/Color.js";
-import { mo, push } from "./lib.js";
+} from "../../../lib/math/Vec2.js";
+import { lerp } from "../../../lib/math/Line2.js";
+import {
+  interpolateHex,
+  rgbFromGradientSample,
+} from "../../../lib/math/Color.js";
+import { mo, push } from "../lib.js";
 
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
@@ -42,25 +45,32 @@ function drawArrow(context, from, to) {
   context.stroke();
 }
 
-const nexts = (p) => Arrow.all.filter(({ p1 }) => p1 === p).map(({ p2 }) => p2);
+const nexts = (p) => Arrow.all.filter(({ p1 }) => p1 === p);
 
 function* bfs(start) {
   const visitedNodes = new Set([start]);
-  const queue = [start];
+  const visitedEdges = new Set();
+  const queue = [[null, start]];
 
   while (true) {
-    const currentVertex = queue.shift();
-    yield [currentVertex, visitedNodes, queue];
+    const [currentEdge, currentVertex] = queue.shift();
+    if (currentEdge) visitedEdges.add(currentEdge);
+    yield { visitedEdges, queueEdges: queue.map(([e, n]) => e), currentEdge };
+    yield { node: [currentVertex, visitedNodes, queue.map(([e, n]) => n)] };
 
-    for (const to of nexts(currentVertex)) {
+    for (const edge of nexts(currentVertex)) {
+      const to = edge.p2;
       if (!visitedNodes.has(to)) {
         visitedNodes.add(to);
-        queue.push(to);
-        yield [currentVertex, visitedNodes, queue];
+        queue.push([edge, to]);
+
+        yield { visitedEdges, queueEdges: queue.map(([e, n]) => e) };
+        yield { node: [currentVertex, visitedNodes, queue.map(([e, n]) => n)] };
       }
     }
     if (queue.length === 0) {
-      yield [null, visitedNodes, queue];
+      yield { visitedEdges, queueEdges: queue.map(([e, n]) => e) };
+      yield { node: [null, visitedNodes, queue.map(([e, n]) => n)] };
       break;
     }
   }
@@ -140,6 +150,7 @@ const p2 = new Point([100, 200], "B");
 new Arrow(p1, p2);
 let B = bfs(p1);
 let bfsPoint = [p1, [], []];
+let bfsEdge = { visitedEdges: new Set(), queueEdges: [] };
 
 document.addEventListener("keydown", (e) => {
   console.log(e.key);
@@ -147,6 +158,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Alt") {
     B = bfs(p1);
     bfsPoint = [p1, [], []];
+    bfsEdge = { visitedEdges: new Set(), queueEdges: [] };
   }
   if (e.key === "Meta") {
     const close = Point.all.find(({ p }) => distance(p, pointer) < 28);
@@ -180,18 +192,53 @@ function draw() {
 
   ctx.fillStyle = "#EEDDEF";
   ctx.clearRect(0, 0, c.width, c.height);
+
+  const { visitedEdges, queueEdges, currentEdge } = bfsEdge;
+  for (const e of visitedEdges) {
+    const gap = 30;
+    const a = lerp([e.p1.p, e.p2.p])(gap / distance(e.p1.p, e.p2.p));
+    const b = lerp([e.p1.p, e.p2.p])(1 - gap / distance(e.p1.p, e.p2.p));
+    drawArrow(ctx, a, b);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "YellowGreen";
+    ctx.stroke();
+    ctx.lineCap = "round";
+  }
+  for (const e of queueEdges) {
+    const gap = 30;
+    const a = lerp([e.p1.p, e.p2.p])(gap / distance(e.p1.p, e.p2.p));
+    const b = lerp([e.p1.p, e.p2.p])(1 - gap / distance(e.p1.p, e.p2.p));
+    drawArrow(ctx, a, b);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "orange";
+    ctx.stroke();
+    ctx.lineCap = "round";
+  }
+  if (currentEdge) {
+    const e = currentEdge;
+    const gap = 30;
+    const a = lerp([e.p1.p, e.p2.p])(gap / distance(e.p1.p, e.p2.p));
+    const b = lerp([e.p1.p, e.p2.p])(1 - gap / distance(e.p1.p, e.p2.p));
+    drawArrow(ctx, a, b);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "red";
+    ctx.stroke();
+    ctx.lineCap = "round";
+  }
+
   Point.all.forEach((p) => p.drawUnder());
+
   Arrow.all.forEach((p) => p.draw());
   Point.all.forEach((p) => p.draw());
-  if (t % 40 === 0) {
+  if (t % 8 === 0) {
     const { value, done } = B.next();
     if (!done) {
-      bfsPoint = value;
+      if (value.node) bfsPoint = value.node;
+      if (value.visitedEdges) bfsEdge = value;
     }
   }
 
   const [p, visited, queue] = bfsPoint;
-
   for (const v of visited) {
     drawCircle(v.p, 28);
     ctx.strokeStyle = "YellowGreen";

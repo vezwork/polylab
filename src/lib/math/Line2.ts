@@ -28,6 +28,8 @@ export const coLerp =
   ([start, end]: [Vec2, Vec2]) =>
   (p: Vec2): number =>
     basisProj(sub(end, start))(sub(p, start));
+export const vecPointToSeg = (p: Vec2, l: [Vec2, Vec2]): Vec2 =>
+  sub(lerp(l)(clamp(0, coLerp(l)(p), 1)), p);
 
 const thing =
   (v: Vec2) =>

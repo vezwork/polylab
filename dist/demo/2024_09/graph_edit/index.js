@@ -7,6 +7,7 @@ import {
   angleOf,
   fromPolar,
   length,
+  mul,
 } from "../../../lib/math/Vec2.js";
 import { lerp, vecPointToSeg } from "../../../lib/math/Line2.js";
 import {
@@ -17,9 +18,16 @@ import {
   Arrow,
   pointer,
   drawArrow,
+  MID_DOT,
 } from "./graph_edit.js";
 
-const MID_DOT = "·";
+const p1 = new Point([100, 100], "A");
+const p2 = new Point([100, 200], "A");
+const p3 = new Point([100, 500], "a");
+new Arrow(p1, p2);
+
+const instanceFromSpec = new Map();
+instanceFromSpec.set(p1, p3);
 
 // const nexts = (p) =>
 //   Arrow.all.filter(
@@ -31,17 +39,11 @@ let sym = "a";
 let fresh = () => (sym = String.fromCharCode(sym.charCodeAt() + 1));
 
 const OP = "⁻";
-const isOp = (a, b) => {
-  if (a.split("").at(-1) === OP && b.split("").at(-1) !== OP) return true;
-  if (a.split("").at(-1) !== OP && b.split("").at(-1) === OP) return true;
-  return false;
-};
-const isSameSym = (a, b) => {
-  if (a.split("").at(0) === b.split("").at(0)) return true;
-  return false;
-};
-const getSym = (a) => a.split("").at(0);
-const isOpSym = (a, b) => isSameSym(a, b) && isOp(a, b);
+const isSymOp = (a) => a.split("").at(-1) === OP;
+const forgetOpSym = (a) => a.split("").at(0);
+const areOp = (a, b) => isSymOp(a) !== isSymOp(b);
+const areSame = (a, b) => forgetOpSym(a) === forgetOpSym(b);
+const isOpSym = (a, b) => areSame(a, b) && areOp(a, b);
 const addSym = (syms, sym) => {
   if (isOpSym(syms.at(-1), sym)) return syms.slice(0, -1);
   return [...syms, sym];
@@ -53,38 +55,111 @@ const concatSyms = (as, bs) => {
   }
   return res;
 };
+const arrowFromSym = (s) => Arrow.all.find((ar) => ar.label === s);
 
-const dog = new Map();
-function* walk(start) {
+const pathFromNode = new Map();
+function* labelEdges(start) {
   const visitedNodes = new Set([start]);
-  const queue = [[[], start, Symbol()]];
-  dog.set(start, "");
+  const queue = [start];
+  pathFromNode.clear();
+  pathFromNode.set(start, []);
 
   while (queue.length !== 0) {
-    const [path, currentVertex, fromSym] = queue.shift();
+    const currentVertex = queue.shift();
+    const path = pathFromNode.get(currentVertex);
 
     for (const edge of nexts(currentVertex)) {
       const to = edge.p2;
       if (!visitedNodes.has(to)) {
         edge.label = fresh();
-        const newPath = path.concat([edge.label]);
+        const newPath = path.concat([edge]);
+        pathFromNode.set(to, newPath);
 
-        const toSym = Symbol();
         visitedNodes.add(to);
-        queue.push([newPath, to, toSym]);
-        dog.set(to, newPath);
-        // label edge as Symbol()
+        queue.push(to);
 
-        console.log("lll", edge.label);
-        yield { edge, path: newPath, fromSym, toSym };
+        yield { edge };
       } else {
         edge.label = concatSyms(
-          path.toReversed().map((s) => `${s}${OP}`),
-          dog.get(to)
+          path
+            .map((ar) => ar.label)
+            .toReversed()
+            .map((s) => `${s}${OP}`),
+          pathFromNode.get(to).map((ar) => ar.label)
         );
         yield { edge };
-        // label edge as inv(path(from)) -> path(to)
       }
+    }
+  }
+}
+
+const createFollowEdge = (sym, curSpec, curInst) => {
+  const toSpec = loopFollowEdge(sym, curSpec);
+  if (followEdge(sym, curInst)) {
+    return [toSpec, followEdge(sym, curInst)];
+  } else {
+    // create edge based on spec
+    const specAr = loopArrowFromSymAndPoint(sym, curSpec);
+    if (isSymOp(sym)) {
+      const toInst = new Point(add(curInst.p, mul(-1, specAr.v)), "!");
+      new Arrow(toInst, curInst, forgetOpSym(sym));
+      return [toSpec, toInst];
+    } else {
+      const toInst = new Point(add(curInst.p, specAr.v), "!");
+      new Arrow(curInst, toInst, sym);
+      return [toSpec, toInst];
+    }
+  }
+};
+const createFollowEdges = ([sym, ...rest], curSpec, curInst) =>
+  sym
+    ? createFollowEdges(rest, ...createFollowEdge(sym, curSpec, curInst))
+    : curInst;
+
+const loopArrowsOut = (p) =>
+  Arrow.all.filter(
+    ({ p1 }) => p1 === p || (p.char !== MID_DOT && p1.char === p.char)
+  );
+const loopArrowsIn = (p) =>
+  Arrow.all.filter(
+    ({ p2 }) => p2 === p || (p.char !== MID_DOT && p2.char === p.char)
+  );
+const arrowFromSymAndPoint = (sym, p) =>
+  isSymOp(sym)
+    ? p.arrowsIn.find((ar) => ar.label === forgetOpSym(sym))
+    : p.arrowsOut.find((ar) => ar.label === sym);
+const loopArrowFromSymAndPoint = (sym, p) =>
+  isSymOp(sym)
+    ? loopArrowsIn(p).find((ar) => ar.label === forgetOpSym(sym))
+    : loopArrowsOut(p).find((ar) => ar.label === sym);
+const followEdge = (sym, p) =>
+  arrowFromSymAndPoint(sym, p)?.[isSymOp(sym) ? "p1" : "p2"];
+const loopFollowEdge = (sym, p) =>
+  loopArrowFromSymAndPoint(sym, p)?.[isSymOp(sym) ? "p1" : "p2"];
+
+const followEdges = ([sym, ...rest], cur) =>
+  sym ? followEdges(rest, followEdge(sym, cur)) : cur;
+const loopFollowEdges = ([sym, ...rest], cur) =>
+  sym ? loopFollowEdges(rest, loopFollowEdge(sym, cur)) : cur;
+
+function* loopWalkEdges(start) {
+  const queue = [[start, p3]];
+
+  while (queue.length !== 0) {
+    const [specNode, instNode] = queue.shift();
+
+    for (const arrow of loopArrowsOut(specNode)) {
+      if (Array.isArray(arrow.label)) {
+        const iTo = createFollowEdges(arrow.label, specNode, instNode);
+        new Arrow(instNode, iTo, arrow.label);
+        // TODO: add to queue if iTo is new?
+        // ALT TODO: make all arrow labels into arrays and figure out how to make that work
+      } else {
+        const b = createFollowEdge(arrow.label, specNode, instNode);
+        queue.push(b);
+        console.log("queue.push(b)", b);
+      }
+      yield { edge: arrow };
     }
   }
 }
@@ -92,36 +167,31 @@ function* walk(start) {
 c.addEventListener("pointermove", (ev) => {
   for (const e of Arrow.all) {
     if (length(vecPointToSeg(pointer, e.seg)) <= 8) {
-      if (Array.isArray(e.label)) {
-        e.label.map(getSym).forEach((s) =>
-          Arrow.all.forEach((ar) => {
-            if (ar.label === s) ar.hover = true;
-          })
-        );
-      } else {
-        e.hover = true;
-      }
+      (Array.isArray(e.label) ? e.label : [e.label])
+        .map(forgetOpSym)
+        .map(arrowFromSym)
+        .map((ar) => (ar.hover = true));
     }
   }
 });
 
-const p1 = new Point([100, 100], MID_DOT);
-const p2 = new Point([100, 200], MID_DOT);
-const p3 = new Point([100, 500], "a");
-new Arrow(p1, p2, "A→₀A");
-let B = walk(p1);
+let B = labelEdges(p1);
 let bfsPoint = null;
+let myFlag = loopWalkEdges(p1);
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Alt") {
-    B = walk(p1);
+    // B = labelEdges(p1);
+    // myFlag = loopWalkEdges(p1);
+    const { value, done } = B.next();
+    if (!done) bfsPoint = value;
+    else {
+      bfsPoint = myFlag.next()?.value;
+    }
   }
 });
 
 let t = 0;
-const fmap = new Map();
-const femap = new Map();
-fmap.set(p1, p3);
 function draw() {
   requestAnimationFrame(draw);
 
@@ -139,29 +209,6 @@ function draw() {
   ctx.strokeStyle = "black";
 
   drawGraph();
-
-  if (t % 50 === 0) {
-    const { value, done } = B.next();
-    if (!done) {
-      bfsPoint = value;
-      const { edge: e, path, fromSym, toSym } = bfsPoint;
-
-      const ffrom = fmap.get(fromSym) ?? p3;
-
-      //   fmap.set(toSym, new Point(add(ffrom.p, e.v), e.p2.char.toLowerCase()));
-      //   if (!femap.get(fromSym)) femap.set(fromSym, new Map());
-      //   femap.get(fromSym).set(toSym, new Arrow(ffrom, fmap.get(toSym)));
-
-      //   const ffrom = fmap.get(e.p1);
-      //   if (!fmap.get(e.p2)) {
-      //     fmap.set(e.p2, new Point(add(ffrom.p, e.v), e.p2.char.toLowerCase()));
-      //   }
-      //   if (!femap.get(e.p1)?.get(e.p2)) {
-      //     if (!femap.get(e.p1)) femap.set(e.p1, new Map());
-      //     femap.get(e.p1).set(e.p2, new Arrow(fmap.get(e.p1), fmap.get(e.p2)));
-      //   }
-    }
-  }
 
   t++;
 }

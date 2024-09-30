@@ -16,6 +16,8 @@ export const c = ctx.canvas;
 const dpr = window.devicePixelRatio;
 ctx.scale(dpr, dpr);
 
+export const MID_DOT = "·";
+
 function drawCircle(p, r) {
   ctx.beginPath();
   ctx.ellipse(p[0], p[1], r, r, 0, 0, Math.PI * 2);
@@ -51,12 +53,18 @@ export class Point {
     this.char = char;
     Point.all.push(this);
   }
+  get arrowsOut() {
+    return Arrow.all.filter((ar) => ar.p1 === this);
+  }
+  get arrowsIn() {
+    return Arrow.all.filter((ar) => ar.p2 === this);
+  }
   draw() {
     ctx.fillStyle = "black";
     ctx.font = "bold 48px serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillText(this.char, this.p[0], this.p[1] + 4);
+    ctx.fillText(this.char, this.p[0], this.p[1] + 4, 27 * 2);
   }
   drawUnder() {
     drawCircle(this.p, 27);
@@ -95,9 +103,10 @@ export class Arrow {
     ctx.textAlign = "center";
     ctx.strokeStyle = "white";
     ctx.lineWidth = 5;
-    ctx.strokeText(this.label, ...lerp([this.p1.p, this.p2.p])(0.5));
+    const label = Array.isArray(this.label) ? this.label.join("") : this.label;
+    ctx.strokeText(label, ...lerp([this.p1.p, this.p2.p])(0.5));
     ctx.fillStyle = "black";
-    ctx.fillText(this.label, ...lerp([this.p1.p, this.p2.p])(0.5));
+    ctx.fillText(label, ...lerp([this.p1.p, this.p2.p])(0.5));
   }
 }
 
@@ -108,8 +117,9 @@ c.addEventListener("pointerdown", (e) => {
   const close = Point.all.find(({ p }) => distance(p, pointer) < 28);
   if (close) {
     dragging = close;
+    console.log("dragging", dragging);
     c.style.cursor = "grabbing";
-  } else new Point(v(...pointer), ".");
+  } else new Point(v(...pointer), "·");
   // new Point();
 });
 c.addEventListener("pointermove", (e) => {

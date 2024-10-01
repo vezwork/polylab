@@ -20,11 +20,10 @@ import {
   drawArrow,
   MID_DOT,
 } from "./graph_edit.js";
+import { concat } from "../../../lib/structure/Iterable.js";
 
 const p1 = new Point([100, 100], "A");
-const p2 = new Point([100, 200], "A");
 const p3 = new Point([100, 500], "a");
-new Arrow(p1, p2);
 
 const instanceFromSpec = new Map();
 instanceFromSpec.set(p1, p3);
@@ -93,7 +92,7 @@ function* labelEdges(start) {
   }
 }
 
-const createFollowEdge = (sym, curSpec, curInst) => {
+const createFollowEdge = (sym, curSpec, curInst, q) => {
   const toSpec = loopFollowEdge(sym, curSpec);
   if (followEdge(sym, curInst)) {
     return [toSpec, followEdge(sym, curInst)];
@@ -103,17 +102,19 @@ const createFollowEdge = (sym, curSpec, curInst) => {
     if (isSymOp(sym)) {
       const toInst = new Point(add(curInst.p, mul(-1, specAr.v)), "!");
       new Arrow(toInst, curInst, forgetOpSym(sym));
+      q.push([toSpec, toInst]);
       return [toSpec, toInst];
     } else {
       const toInst = new Point(add(curInst.p, specAr.v), "!");
       new Arrow(curInst, toInst, sym);
+      q.push([toSpec, toInst]);
       return [toSpec, toInst];
     }
   }
 };
-const createFollowEdges = ([sym, ...rest], curSpec, curInst) =>
+const createFollowEdges = ([sym, ...rest], curSpec, curInst, q) =>
   sym
-    ? createFollowEdges(rest, ...createFollowEdge(sym, curSpec, curInst))
+    ? createFollowEdges(rest, ...createFollowEdge(sym, curSpec, curInst, q), q)
     : curInst;
 
 const loopArrowsOut = (p) =>
@@ -150,14 +151,10 @@ function* loopWalkEdges(start) {
 
     for (const arrow of loopArrowsOut(specNode)) {
       if (Array.isArray(arrow.label)) {
-        const iTo = createFollowEdges(arrow.label, specNode, instNode);
+        const iTo = createFollowEdges(arrow.label, specNode, instNode, queue);
         new Arrow(instNode, iTo, arrow.label);
-        // TODO: add to queue if iTo is new?
-        // ALT TODO: make all arrow labels into arrays and figure out how to make that work
       } else {
-        const b = createFollowEdge(arrow.label, specNode, instNode);
-        queue.push(b);
-        console.log("queue.push(b)", b);
+        createFollowEdge(arrow.label, specNode, instNode, queue);
       }
       yield { edge: arrow };
     }
@@ -175,20 +172,27 @@ c.addEventListener("pointermove", (ev) => {
   }
 });
 
-let B = labelEdges(p1);
 let bfsPoint = null;
-let myFlag = loopWalkEdges(p1);
 
+let stepper = concat(labelEdges(p1), loopWalkEdges(p1));
+
+let keydown = false;
 document.addEventListener("keydown", (e) => {
   if (e.key === "Alt") {
+    keydown = true;
+    t = 0;
     // B = labelEdges(p1);
     // myFlag = loopWalkEdges(p1);
-    const { value, done } = B.next();
-    if (!done) bfsPoint = value;
-    else {
-      bfsPoint = myFlag.next()?.value;
-    }
+    // const { value, done } = B.next();
+    // if (!done) bfsPoint = value;
+    // else {
+    bfsPoint = stepper.next()?.value;
+    // }
   }
+  if (e.key === "Control") stepper = concat(labelEdges(p1), loopWalkEdges(p1));
+});
+document.addEventListener("keyup", (e) => {
+  if (e.key === "Alt") keydown = false;
 });
 
 let t = 0;
@@ -209,6 +213,10 @@ function draw() {
   ctx.strokeStyle = "black";
 
   drawGraph();
+
+  if (t !== 0 && t % 10 === 0 && keydown) {
+    bfsPoint = stepper.next()?.value;
+  }
 
   t++;
 }

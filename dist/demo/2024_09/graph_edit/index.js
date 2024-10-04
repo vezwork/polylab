@@ -189,7 +189,11 @@ document.addEventListener("keydown", (e) => {
     bfsPoint = stepper.next()?.value;
     // }
   }
-  if (e.key === "Control") stepper = concat(labelEdges(p1), loopWalkEdges(p1));
+  if (e.key === "Control") {
+    //reset
+    Arrow.all.forEach((ar) => (ar.label = "."));
+    stepper = concat(labelEdges(p1), loopWalkEdges(p1));
+  }
 });
 document.addEventListener("keyup", (e) => {
   if (e.key === "Alt") keydown = false;
@@ -199,14 +203,16 @@ let t = 0;
 function draw() {
   requestAnimationFrame(draw);
 
-  ctx.fillStyle = "#EEDDEF";
   ctx.clearRect(0, 0, c.width, c.height);
+
+  ctx.fillStyle = "#EEDDEF";
+  ctx.fillRect(20, c.height / 2 - 50, c.width, 2);
 
   if (bfsPoint?.edge) {
     const e = bfsPoint.edge;
     drawArrow(ctx, ...e.seg);
     ctx.lineWidth = 6;
-    ctx.strokeStyle = "red";
+    ctx.strokeStyle = "violet";
     ctx.stroke();
     ctx.lineCap = "round";
   }

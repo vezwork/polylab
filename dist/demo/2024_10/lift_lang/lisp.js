@@ -1,4 +1,3 @@
-"use strict";
 // based on  Copy and pasted from src/demo/2024_08/lib/interpreter.ts
 /**
  * Lisp Parser
@@ -128,7 +127,7 @@ const initialPass = (myStr) => {
     while (true) {
         const p = pLisp(myStr.trim());
         if (myStr === p.str) {
-            console.error("PARSE FAIL @", p);
+            throw ["PARSE FAIL @", p];
             break; // parse fail
         }
         myStr = p.str;
@@ -155,8 +154,7 @@ const infixPass = (res) => {
     }
     return res;
 };
-const hackyParse = (myStr) => {
+export const hackyParse = (myStr) => {
     const res = initialPass(myStr);
     return infixPass(res);
 };
-console.log(hackyParse("(1 2 3)"));

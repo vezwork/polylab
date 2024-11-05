@@ -1,6 +1,40 @@
-<script src="./implicit_lifting.js" type="module"></script>
-<script src="./lisp.js" type="module"></script>
+<style>
+  * {
+    font-size: 15px;
+    font-family: monospace;
+  }
+  #error {
+    background-color: rgba(255, 0, 0, 0.2);
+  }
+  #results div {
+    padding: 10px;
+    border-bottom: 1px solid rgb(221, 191, 255);
+  }
+  #input {
+    width: 100%;
+  }
+</style>
 
-TODO: make a language based on implicit lifting and my lisp
-<br />
-I haven't done anything other than copy and paste the relevant code to here.
+<div id="results"></div>
+<input type="text" id="input" style="padding: 10px" />
+<div id="error"></div>
+<script type="module">
+  import { hackyParse } from "./lisp.js";
+  import { hackyInterp } from "./lang.js";
+  const input = document.getElementById("input");
+  const error = document.getElementById("error");
+  const results = document.getElementById("results");
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      error.innerText = "";
+      const resDiv = document.createElement("div");
+      try {
+        resDiv.innerText = hackyParse(input.value).map(hackyInterp);
+        results.append(resDiv);
+      } catch (e) {
+        console.error("error", e);
+        error.innerText = JSON.stringify(e);
+      }
+    }
+  });
+</script>

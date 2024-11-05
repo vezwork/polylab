@@ -5,31 +5,33 @@
 // in this demo, functions must be curried and they are called like `fname[F](arg1)[F](arg2)` etc.
 // functions are defined like `wr((a) => wr((b) => a + b))`
 
-const ARG_F = Symbol("ARG_F");
-const F = Symbol("F");
+export const ARG_F = Symbol("ARG_F");
+export const F = Symbol("F");
 
 const wrf = (f) => (arg) => {
   if (arg[ARG_F]) return arg[ARG_F](f);
   else return f(arg);
 };
-const wr = (f) => ({
+export const wr = (f) => ({
   debug_f: f, // can be removed, just here for debugging
   [F]: wrf(f),
 });
 
-const plus = wr((a) => wr((b) => a + b));
+export const plus = wr((a) => wr((b) => a + b));
 
-const spr = (...rawArgs) => {
+export const spr = (...rawArgs) => {
   // optionally make `spr` associative:
   const args = rawArgs.flatMap((rarg) => (rarg.isSpr ? rarg : [rarg]));
   args.isSpr = true;
+
   args[F] = (v) => spr(...args.map((arg) => arg[F](v)));
   args[ARG_F] = (f) => spr(...args.map(f));
-  args.toString = () => "...(" + args.join(" ") + ")";
+
+  args.toString = () => "..(" + args.join(" ") + ")";
   return args;
 };
 
-const symb = (name) => {
+export const symb = (name) => {
   const ret = {
     name,
     toString: () => "symb::" + name,
@@ -42,7 +44,7 @@ const unap = (f, arg) => {
   if (arg) args.push(arg);
   const ret = {
     args: () => args,
-    toString: () => "unap(" + args.join(")(") + ")",
+    toString: () => "unap[" + f + "](" + args.join(")(") + ")",
   };
   ret[F] = (arg) => {
     args.push(arg);
@@ -51,7 +53,7 @@ const unap = (f, arg) => {
   return ret;
 };
 
-const atom = (v: any = undefined) => {
+export const atom = (v: any = undefined) => {
   const listeners = [];
   let myVal = v;
   const listen = (f) => listeners.unshift(f);
@@ -85,7 +87,7 @@ const atom = (v: any = undefined) => {
 // taking the diagonal elements of nested vecs, but it is currently
 // implemented in func and [ARG_F] more effeciently. It would work
 // better, but still be less effecient, in a lazy eval language.
-const vec = (...args) => {
+export const vec = (...args) => {
   args.isVec = true;
   const func = (v) =>
     v.isVec
@@ -101,37 +103,36 @@ const vec = (...args) => {
 // in this demo, functions must be curried and they are called like `fname[F](arg1)[F](arg2)` etc.
 console.log(
   "3 + ...(1 2 3)" +
-    "\n" +
+    "\n=" +
     plus[F](3)[F](spr(1, 2, 3)) +
     "\n" +
     "...(1 2 3) + 3" +
-    "\n" +
+    "\n=" +
     plus[F](spr(1, 2, 3))[F](3) +
     "\n" +
     "...(1 2) + ...(1 2 3)" +
-    "\n" +
+    "\n=" +
     plus[F](spr(1, 2))[F](spr(1, 2, 3)) +
     "\n" +
     "...(1 2 3) + ...(1 2)" +
-    "\n" +
+    "\n=" +
     plus[F](spr(1, 2, 3))[F](spr(1, 2)) +
     "\n"
 );
 //plus[PA](spr(3,4))[PA](vec(1,2)),
 //plus[PA](plus[PA](vec(3,4))[PA](spr(1,2)))[PA](2))
 
-console.log("2 + [10 0]" + "\n" + plus[F](2)[F](vec(10, 0)));
-console.log("...(3 4) + [10 0]" + "\n" + plus[F](spr(3, 4))[F](vec(10, 0)));
-console.log("[10 0] + ...(3 4)" + "\n" + plus[F](vec(10, 0))[F](spr(3, 4)));
-console.log("[3 4] + [8 -11]" + "\n" + plus[F](vec(3, 4))[F](vec(8, -11)));
+console.log("2 + [10 0]" + "\n=" + plus[F](2)[F](vec(10, 0)));
+console.log("...(3 4) + [10 0]" + "\n=" + plus[F](spr(3, 4))[F](vec(10, 0)));
+console.log("[10 0] + ...(3 4)" + "\n=" + plus[F](vec(10, 0))[F](spr(3, 4)));
+console.log("[3 4] + [8 -11]" + "\n=" + plus[F](vec(3, 4))[F](vec(8, -11)));
 
-console.log("x + 2" + "\n" + plus[F](symb("x"))[F](2));
-console.log("2 + x" + "\n" + plus[F](2)[F](symb("x")));
+console.log("x + 2" + "\n=" + plus[F](symb("x"))[F](2));
+console.log("2 + x" + "\n=" + plus[F](2)[F](symb("x")));
 
 const s = atom();
 const sNew = plus[F](s)[F](2);
 console.log(sNew);
-console.log("s = atom(); sNew = s + 2; s.emit('hello')");
 s.listen((v) => console.log("s emitted: " + v));
 sNew.listen((v) => console.log("sNew emitted: " + v));
 s.emit("hello");
@@ -140,9 +141,6 @@ const a = atom("yo ");
 const b = atom("cool");
 const c = plus[F](a)[F](b);
 const d = plus[F](c)[F]("!!!");
-console.log(
-  "a = atom('yo'); b = atom('cool'); c = a + b; d = c + '!!!'; a.emit('hey '); b.emit('neato')"
-);
 a.listen((v) => console.log("a emitted: " + v));
 b.listen((v) => console.log("b emitted: " + v));
 c.listen((v) => console.log("c emitted: " + v));
@@ -157,7 +155,7 @@ a.emit("hey ");
 b.emit("neato");
 
 const copy = (ob) => JSON.parse(JSON.stringify(ob));
-const δ = wr((x) =>
+export const δ = wr((x) =>
   wr((f) => {
     const difFunc = (arg) => {
       const h = 0.001;
@@ -171,19 +169,17 @@ const δ = wr((x) =>
     return wr(difFunc);
   })
 );
-const grad = δ[F](vec(0, 1));
+export const grad = δ[F](vec(0, 1));
 // same as: `const nabla = vec(partial[F](0), partial[F](1));`
 
 console.log(
-  "hello",
-  "δ1([x y] => x*y)([3 4])",
-  δ[F](1)
+  "δ(0)(x*y)([3 4])\n=",
+  δ[F](0)
     [F](([x, y]) => x * y)
     [F](vec(3, 4)),
   // why doesn't this work?: `grad[F](([x, y]) => x * y)[F](vec(3, 4))`
   // it would work if we actually kept track of the types I think.
-  "\n",
-  "grad([x y] => x*y)([3 4])",
+  "\ngrad(x*y)([3 4])\n=",
   grad[F](([x, y]) => x * y)[F]([3, 4])
 );
 

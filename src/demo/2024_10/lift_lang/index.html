@@ -6,12 +6,15 @@
   #error {
     background-color: rgba(255, 0, 0, 0.2);
   }
-  #results div {
+  #results > div {
     padding: 10px;
     border-bottom: 1px solid rgb(221, 191, 255);
   }
   #input {
     width: 100%;
+  }
+  .prog {
+    color: rgb(221, 191, 255);
   }
 </style>
 
@@ -21,16 +24,42 @@
 <script type="module">
   import { hackyParse } from "./lisp.js";
   import { hackyInterp } from "./lang.js";
+
+  const history = [];
+  let curHistory = null;
+
   const input = document.getElementById("input");
   const error = document.getElementById("error");
   const results = document.getElementById("results");
   input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp") {
+      if (curHistory === null) {
+        input.value = history.at(-1);
+        curHistory = -1;
+      } else {
+        curHistory -= 1;
+        input.value = history.at(curHistory) ?? "";
+      }
+    }
+    if (e.key === "ArrowDown") {
+      if (curHistory !== null) {
+        curHistory += 1;
+        input.value = history.at(curHistory) ?? "";
+      }
+    }
     if (e.key === "Enter") {
       error.innerText = "";
       const resDiv = document.createElement("div");
+      const resProgDiv = document.createElement("div");
+      resProgDiv.className = "prog";
+      resProgDiv.innerText = input.value;
       try {
-        resDiv.innerText = hackyParse(input.value).map(hackyInterp);
+        resDiv.append(resProgDiv);
+        resDiv.append(hackyParse(input.value).map(hackyInterp));
         results.append(resDiv);
+        history.push(input.value);
+        input.value = "";
+        curHistory = null;
       } catch (e) {
         console.error("error", e);
         error.innerText = JSON.stringify(e);

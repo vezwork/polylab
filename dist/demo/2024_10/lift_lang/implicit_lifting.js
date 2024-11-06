@@ -57,6 +57,7 @@ export const atom = (v = undefined) => {
         listen,
         emit,
         value: () => myVal,
+        toString: () => `atom(${myVal})`,
         [F]: (v) => {
             if (v.isStrm) {
                 const ret = atom(myVal[F](v.value()));

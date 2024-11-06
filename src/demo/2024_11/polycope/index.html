@@ -1,0 +1,155 @@
+<!-- <script src="./index.js" type="module"></script> -->
+<style>
+  div {
+    padding: 10px;
+    border: 1px solid black;
+  }
+</style>
+<script type="module">
+  import { history } from "./history.js";
+
+  const { pushHistory, undo, redo, mainline } = history();
+
+  const ed2 = document.createElement("div");
+  ed2.tabIndex = 0;
+  document.body.append(ed2);
+
+  const insertAt = (str, i, char) =>
+    str.slice(0, i) + char + str.slice(i, str.length);
+  const deleteAt = (str, i) => str.slice(0, i) + str.slice(i + 1, str.length);
+
+  function discrim(e) {
+    if (e.key.length === 1) return true;
+    if (e.key === "Enter") return true;
+    if (e.key === "Backspace") return true;
+    if (e.key.startsWith("Arrow")) return true;
+  }
+
+  function reduce() {
+    let str = "";
+
+    let curPos = 0;
+
+    const linePos = (str, curPos) => {
+      let lineIndex = 0;
+      let inlineIndex = 0;
+      for (let i = 0; i < str.length; i++) {
+        if (i < curPos) {
+          inlineIndex++;
+          if (str[i] === "\n") {
+            lineIndex++;
+            inlineIndex = 0;
+          }
+        }
+      }
+      return [inlineIndex, lineIndex];
+    };
+
+    let lines = [[]];
+    let draws = [[]];
+
+    const CHAR_WIDTH = 12;
+    const CHAR_HEIGHT = 15;
+
+    for (const e of mainline()) {
+      if (e.key === "ArrowDown") {
+        const [x, y] = linePos(str, curPos);
+        const l = draws[y + 1];
+        if (l) {
+          if (l.length === 0) {
+            curPos += lines.at(y).length - x + 1;
+            continue;
+          }
+          const res = l.sort(
+            (a, b) =>
+              Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
+          );
+          curPos = res.at(0).pp;
+        }
+      }
+      if (e.key === "ArrowUp") {
+        const [x, y] = linePos(str, curPos);
+        const l = draws[y - 1];
+        if (l) {
+          if (l.length === 0) {
+            curPos -= x + 1;
+            console.log(curPos);
+            continue;
+          }
+          const res = l.sort(
+            (a, b) =>
+              Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
+          );
+          curPos = res.at(0).pp;
+        }
+      }
+      if (e.key === "ArrowLeft") curPos = Math.max(curPos - 1, 0);
+      if (e.key === "ArrowRight") curPos = Math.min(curPos + 1, str.length);
+      if (e.key.length === 1) {
+        str = insertAt(str, curPos, e.key);
+        curPos++;
+      }
+      if (e.key === "Enter") {
+        str = insertAt(str, curPos, "\n");
+        curPos++;
+      }
+      if (e.key === "Backspace") {
+        str = curPos > 0 ? deleteAt(str, curPos - 1) : str;
+        curPos--;
+      }
+
+      lines = str.split("\n").map((s) => s.split(""));
+      let pp = 0;
+      draws = lines.map((line, y) => {
+        const m1 = line.map((char, x) => {
+          const m2 = { y: y * CHAR_HEIGHT, x: x * CHAR_WIDTH, char, pp };
+          pp++;
+          return m2;
+        });
+        pp++;
+        return m1;
+      });
+    }
+
+    ed2.innerHTML = "";
+    for (const l of draws) {
+      for (const d of l) {
+        const char = document.createElement("span");
+        ed2.append(char);
+        char.style.position = "absolute";
+        char.innerText = d.char;
+        char.style.transform = `translate(${d.x}px, ${d.y}px)`;
+      }
+    }
+    const [x, y] = linePos(str, curPos);
+    const char = document.createElement("span");
+    char.style.display = "block";
+    ed2.append(char);
+    char.style.position = "absolute";
+    char.style.height = 20;
+    char.style.width = 2;
+    char.style.background = "black";
+    char.style.transform = `translate(${x * CHAR_WIDTH - 3}px, ${
+      y * CHAR_HEIGHT
+    }px)`;
+  }
+
+  ed2.addEventListener("keydown", (e) => {
+    if (e.key === "z" && e.metaKey && e.shiftKey) redo();
+    else if (e.key === "z" && e.metaKey) undo();
+    else if (discrim(e)) pushHistory({ key: e.key });
+
+    reduce();
+  });
+</script>
+
+TODO: <br />
+- nesting<br />
+- selection<br />
+- copy&paste<br />
+- mouse picking<br /><br />
+
+good things so far:<br />
+- having knowledge over the positions of characters during history replay<br />
+- mapping str -> lines -> draws is pretty easy to think about<br />
+- basic history is out of the way<br />

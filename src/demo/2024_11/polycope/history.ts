@@ -13,12 +13,17 @@ export const history = () => {
   };
   const pushHistory = (data) => {
     historyHead = addHistoryItemAtNode(historyHead)(data);
+    return historyHead.data;
   };
   const undo = () => {
+    const cur = historyHead;
     historyHead = historyHead.parent ?? historyHead;
+    return [historyHead.data, cur.data];
   };
   const redo = () => {
+    const cur = historyHead;
     historyHead = historyHead.next.at(-1) ?? historyHead;
+    return [historyHead.data, cur.data];
   };
   const mainline = () => {
     const result = [];

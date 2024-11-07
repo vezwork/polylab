@@ -1,150 +1,242 @@
 <!-- <script src="./index.js" type="module"></script> -->
 <style>
+  body {
+    position: relative;
+    margin: 0;
+  }
   div {
-    padding: 10px;
+    padding: 4px;
+    min-height: 20px;
+    min-width: 100px;
     border: 1px solid black;
   }
 </style>
 <script type="module">
   import { history } from "./history.js";
 
+  const caretEl = document.createElement("span");
+  caretEl.style.display = "block";
+  document.body.prepend(caretEl);
+  caretEl.style.position = "absolute";
+  caretEl.style.width = "2px";
+  caretEl.style.height = "100px";
+  caretEl.style.background = "black";
+
+  const insertAt = (str, i, char) => str.toSpliced(i, 0, char);
+  const deleteAt = (str, i) => str.toSpliced(i, 1);
+  const linePos = (str, curPos) => {
+    let lineIndex = 0;
+    let inlineIndex = 0;
+    for (let i = 0; i < str.length; i++) {
+      if (i < curPos) {
+        inlineIndex++;
+        if (str[i] === "\n") {
+          lineIndex++;
+          inlineIndex = 0;
+        }
+      }
+    }
+    return [inlineIndex, lineIndex];
+  };
+
   const { pushHistory, undo, redo, mainline } = history();
 
-  const ed2 = document.createElement("div");
-  ed2.tabIndex = 0;
-  document.body.append(ed2);
+  let focusId = "init";
+  let elFromFocusId = {};
 
-  const insertAt = (str, i, char) =>
-    str.slice(0, i) + char + str.slice(i, str.length);
-  const deleteAt = (str, i) => str.slice(0, i) + str.slice(i + 1, str.length);
+  let caretPos = 0;
+
+  const editor = (id = Math.random() + "") => {
+    const ed2 = document.createElement("div");
+    elFromFocusId[id] = ed2;
+    ed2.style.display = "inline-block";
+    ed2.tabIndex = 0;
+    ed2.addEventListener("click", (e) => {
+      e.stopPropagation();
+      focusId = id;
+      caretPos = 0;
+      renderCaret();
+    });
+
+    let str = [];
+    let lines = [[]];
+    let els = [[]];
+
+    function reset() {
+      str = [];
+      lines = [[]];
+      els = [[]];
+      ed2.innerHTML = "";
+    }
+
+    function act(e) {
+      if (e.id !== id) return;
+      focusId = e.id;
+      caretPos = e.caretPos;
+
+      if (e.newId) {
+        const newE = editor(e.newId);
+        newE.render();
+        str = insertAt(str, caretPos, newE);
+
+        caretPos = 0;
+        focusId = newE.id;
+      } else if (e.key.length === 1) {
+        str = insertAt(str, caretPos, e.key);
+
+        caretPos++;
+      }
+      if (e.key === "Enter") {
+        str = insertAt(str, caretPos, "\n");
+        caretPos++;
+      }
+      if (e.key === "Backspace") {
+        if (caretPos > 0) {
+          str = deleteAt(str, caretPos - 1);
+          caretPos--;
+        }
+      }
+
+      lines = [[]];
+      for (const charOrEditor of str) {
+        if (charOrEditor === "\n") lines.push([]);
+        else lines.at(-1).push(charOrEditor);
+      }
+      ed2.str = str;
+      ed2.lines = lines;
+    }
+
+    function render() {
+      let pos = 0;
+      return lines.map((line, y) => {
+        const startCaretSink = document.createElement("span");
+        ed2.append(startCaretSink);
+        let els = line.map((char, x) => {
+          let charEl;
+          if (char.isEditor) {
+            charEl = char;
+          } else if (char === " ") {
+            charEl = document.createElement("span");
+            charEl.style.display = "inline-block";
+            charEl.style.verticalAlign = "bottom";
+            charEl.style.width = "8px";
+            charEl.style.height = "16px";
+          } else {
+            charEl = document.createElement("span");
+            charEl.innerText = char;
+          }
+          ed2.append(charEl);
+          return charEl;
+        });
+        els = [startCaretSink, ...els];
+        const brEl = document.createElement("br");
+        ed2.append(brEl);
+        return els;
+      });
+    }
+
+    function renderCaret() {
+      const [x, y] = linePos(str, caretPos);
+      const rect = ed2.els[y][x].getBoundingClientRect();
+
+      caretEl.style.height = rect.height;
+      caretEl.style.transform = `translate(${rect.right}px, ${rect.y}px)`;
+    }
+
+    ed2.id = id;
+    ed2.reduce = reduce;
+    ed2.lines = lines;
+    ed2.str = str;
+    ed2.renderCaret = renderCaret;
+    ed2.render = render;
+    ed2.reset = reset;
+    ed2.act = act;
+    ed2.isEditor = true;
+    return ed2;
+  };
+
+  const e1 = editor("init");
+  document.body.append(e1);
 
   function discrim(e) {
     if (e.key.length === 1) return true;
     if (e.key === "Enter") return true;
     if (e.key === "Backspace") return true;
-    if (e.key.startsWith("Arrow")) return true;
   }
-
-  function reduce() {
-    let str = "";
-
-    let curPos = 0;
-
-    const linePos = (str, curPos) => {
-      let lineIndex = 0;
-      let inlineIndex = 0;
-      for (let i = 0; i < str.length; i++) {
-        if (i < curPos) {
-          inlineIndex++;
-          if (str[i] === "\n") {
-            lineIndex++;
-            inlineIndex = 0;
-          }
-        }
-      }
-      return [inlineIndex, lineIndex];
-    };
-
-    let lines = [[]];
-    let draws = [[]];
-
-    const CHAR_WIDTH = 12;
-    const CHAR_HEIGHT = 15;
-
+  function bigreduce() {
+    for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
     for (const e of mainline()) {
+      const el = elFromFocusId[e.id];
+      el.act(e);
+    }
+    for (const [id, el] of Object.entries(elFromFocusId)) {
+      el.els = el.render();
+    }
+    const focusedEl = elFromFocusId[focusId];
+    focusedEl.renderCaret();
+  }
+  bigreduce();
+  document.body.addEventListener("keydown", (e) => {
+    let actionId = focusId;
+
+    if (elFromFocusId[focusId]) {
+      const { str, els, lines } = elFromFocusId[focusId];
       if (e.key === "ArrowDown") {
-        const [x, y] = linePos(str, curPos);
+        const [x, y] = linePos(str, caretPos);
         const l = draws[y + 1];
         if (l) {
           if (l.length === 0) {
-            curPos += lines.at(y).length - x + 1;
-            continue;
+            caretPos += lines.at(y).length - x + 1;
+          } else {
+            const res = l.sort(
+              (a, b) =>
+                Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
+            );
+            caretPos = res.at(0).pp;
           }
-          const res = l.sort(
-            (a, b) =>
-              Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
-          );
-          curPos = res.at(0).pp;
         }
       }
       if (e.key === "ArrowUp") {
-        const [x, y] = linePos(str, curPos);
+        const [x, y] = linePos(str, caretPos);
         const l = draws[y - 1];
         if (l) {
           if (l.length === 0) {
-            curPos -= x + 1;
-            console.log(curPos);
-            continue;
+            caretPos -= x + 1;
+          } else {
+            const res = l.sort(
+              (a, b) =>
+                Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
+            );
+            caretPos = res.at(0).pp;
           }
-          const res = l.sort(
-            (a, b) =>
-              Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
-          );
-          curPos = res.at(0).pp;
         }
       }
-      if (e.key === "ArrowLeft") curPos = Math.max(curPos - 1, 0);
-      if (e.key === "ArrowRight") curPos = Math.min(curPos + 1, str.length);
-      if (e.key.length === 1) {
-        str = insertAt(str, curPos, e.key);
-        curPos++;
+      if (e.key === "ArrowLeft") caretPos = Math.max(caretPos - 1, 0);
+      if (e.key === "ArrowRight") caretPos = Math.min(caretPos + 1, str.length);
+      if (e.key.startsWith("Arrow")) {
+        elFromFocusId[focusId]?.renderCaret();
+        return;
       }
-      if (e.key === "Enter") {
-        str = insertAt(str, curPos, "\n");
-        curPos++;
-      }
-      if (e.key === "Backspace") {
-        str = curPos > 0 ? deleteAt(str, curPos - 1) : str;
-        curPos--;
-      }
+    }
 
-      lines = str.split("\n").map((s) => s.split(""));
-      let pp = 0;
-      draws = lines.map((line, y) => {
-        const m1 = line.map((char, x) => {
-          const m2 = { y: y * CHAR_HEIGHT, x: x * CHAR_WIDTH, char, pp };
-          pp++;
-          return m2;
-        });
-        pp++;
-        return m1;
+    if (e.key === "b" && e.metaKey)
+      pushHistory({
+        key: e.key,
+        id: focusId,
+        newId: Math.random() + "",
+        caretPos,
       });
-    }
+    else if (e.key === "z" && e.metaKey && e.shiftKey) actionId = redo()[0]?.id;
+    else if (e.key === "z" && e.metaKey) actionId = undo()[1]?.id;
+    else if (discrim(e)) pushHistory({ key: e.key, id: focusId, caretPos });
 
-    ed2.innerHTML = "";
-    for (const l of draws) {
-      for (const d of l) {
-        const char = document.createElement("span");
-        ed2.append(char);
-        char.style.position = "absolute";
-        char.innerText = d.char;
-        char.style.transform = `translate(${d.x}px, ${d.y}px)`;
-      }
-    }
-    const [x, y] = linePos(str, curPos);
-    const char = document.createElement("span");
-    char.style.display = "block";
-    ed2.append(char);
-    char.style.position = "absolute";
-    char.style.height = 20;
-    char.style.width = 2;
-    char.style.background = "black";
-    char.style.transform = `translate(${x * CHAR_WIDTH - 3}px, ${
-      y * CHAR_HEIGHT
-    }px)`;
-  }
-
-  ed2.addEventListener("keydown", (e) => {
-    if (e.key === "z" && e.metaKey && e.shiftKey) redo();
-    else if (e.key === "z" && e.metaKey) undo();
-    else if (discrim(e)) pushHistory({ key: e.key });
-
-    reduce();
+    bigreduce();
   });
 </script>
 
 TODO: <br />
-- nesting<br />
+- pull history out of editor<br />
+- nested caret nav: caretope<br />
 - selection<br />
 - copy&paste<br />
 - mouse picking<br /><br />

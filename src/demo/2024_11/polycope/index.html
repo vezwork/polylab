@@ -5,14 +5,16 @@
     margin: 0;
   }
   div {
-    padding: 4px;
-    min-height: 20px;
-    min-width: 100px;
+    padding: 4px 8px;
+    min-width: 14px;
     border: 1px solid black;
+    vertical-align: middle;
   }
 </style>
 <script type="module">
   import { history } from "./history.js";
+  import { Caret } from "./caret.js";
+  import { CaretSink, ContainerSink } from "./caretsink.js";
 
   const caretEl = document.createElement("span");
   caretEl.style.display = "block";
@@ -42,21 +44,25 @@
   const { pushHistory, undo, redo, mainline } = history();
 
   let focusId = "init";
+  let caretPos = 0;
   let elFromFocusId = {};
 
-  let caretPos = 0;
+  let carryPos = -1;
+  let carryId = null;
 
-  const editor = (id = Math.random() + "") => {
-    const ed2 = document.createElement("div");
-    elFromFocusId[id] = ed2;
-    ed2.style.display = "inline-block";
-    ed2.tabIndex = 0;
-    ed2.addEventListener("click", (e) => {
+  const editor = (id = Math.random() + "", parent) => {
+    const wrapEl = document.createElement("div");
+    elFromFocusId[id] = wrapEl;
+    wrapEl.style.display = "inline-block";
+    wrapEl.tabIndex = 0;
+    wrapEl.addEventListener("click", (e) => {
       e.stopPropagation();
       focusId = id;
       caretPos = 0;
       renderCaret();
     });
+    wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
+    wrapEl.sink.parent = parent ?? null;
 
     let str = [];
     let lines = [[]];
@@ -66,7 +72,8 @@
       str = [];
       lines = [[]];
       els = [[]];
-      ed2.innerHTML = "";
+
+      wrapEl.innerHTML = "";
     }
 
     function act(e) {
@@ -75,7 +82,7 @@
       caretPos = e.caretPos;
 
       if (e.newId) {
-        const newE = editor(e.newId);
+        const newE = editor(e.newId, wrapEl.sink);
         newE.render();
         str = insertAt(str, caretPos, newE);
 
@@ -94,6 +101,11 @@
         if (caretPos > 0) {
           str = deleteAt(str, caretPos - 1);
           caretPos--;
+        } else {
+          // TODO
+          //   caretPos = wrapEl.pos - 1;
+          //   focusId = wrapEl.parentId;
+          console.log(wrapEl.parentId === undefined);
         }
       }
 
@@ -102,15 +114,18 @@
         if (charOrEditor === "\n") lines.push([]);
         else lines.at(-1).push(charOrEditor);
       }
-      ed2.str = str;
-      ed2.lines = lines;
+      wrapEl.str = str;
+      wrapEl.lines = lines;
     }
 
     function render() {
       let pos = 0;
       return lines.map((line, y) => {
         const startCaretSink = document.createElement("span");
-        ed2.append(startCaretSink);
+        wrapEl.append(startCaretSink);
+        startCaretSink.pos = pos;
+        startCaretSink.parentId = id;
+        pos++;
         let els = line.map((char, x) => {
           let charEl;
           if (char.isEditor) {
@@ -118,40 +133,51 @@
           } else if (char === " ") {
             charEl = document.createElement("span");
             charEl.style.display = "inline-block";
-            charEl.style.verticalAlign = "bottom";
+            charEl.style.verticalAlign = "middle";
             charEl.style.width = "8px";
             charEl.style.height = "16px";
           } else {
             charEl = document.createElement("span");
             charEl.innerText = char;
           }
-          ed2.append(charEl);
+          wrapEl.append(charEl);
+
+          charEl.pos = pos;
+          charEl.parentId = id;
+          pos++;
           return charEl;
         });
         els = [startCaretSink, ...els];
         const brEl = document.createElement("br");
-        ed2.append(brEl);
+        wrapEl.append(brEl);
         return els;
       });
     }
 
     function renderCaret() {
       const [x, y] = linePos(str, caretPos);
-      const rect = ed2.els[y][x].getBoundingClientRect();
+      const rect = wrapEl.els[y][x].getBoundingClientRect();
 
       caretEl.style.height = rect.height;
       caretEl.style.transform = `translate(${rect.right}px, ${rect.y}px)`;
     }
+    function getCaretopeSink(pos) {
+      const [x, y] = linePos(str, pos);
+      // remove container sinks so they don't throw off the indexing
+      const caretSinkLine = wrapEl.sink.lines[y].filter((s) => !s.lines);
+      return caretSinkLine[x];
+    }
+    wrapEl.getCaretopeSink = getCaretopeSink;
 
-    ed2.id = id;
-    ed2.lines = lines;
-    ed2.str = str;
-    ed2.renderCaret = renderCaret;
-    ed2.render = render;
-    ed2.reset = reset;
-    ed2.act = act;
-    ed2.isEditor = true;
-    return ed2;
+    wrapEl.id = id;
+    wrapEl.lines = lines;
+    wrapEl.str = str;
+    wrapEl.renderCaret = renderCaret;
+    wrapEl.render = render;
+    wrapEl.reset = reset;
+    wrapEl.act = act;
+    wrapEl.isEditor = true;
+    return wrapEl;
   };
 
   const e1 = editor("init");
@@ -170,6 +196,24 @@
     }
     for (const [id, el] of Object.entries(elFromFocusId)) {
       el.els = el.render();
+      el.sink.lines = el.els.map((line) =>
+        line.flatMap((charEl) => {
+          if (charEl.isEditor) {
+            const containerSink = charEl.sink;
+            const sink = new CaretSink(() => charEl.getBoundingClientRect());
+            sink.parent = el.sink;
+            sink.charEl = charEl;
+            containerSink.parent = el.sink;
+            containerSink.charEl = charEl;
+            return [containerSink, sink];
+          } else {
+            const sink = new CaretSink(() => charEl.getBoundingClientRect());
+            sink.parent = el.sink;
+            sink.charEl = charEl;
+            return sink;
+          }
+        })
+      );
     }
     const focusedEl = elFromFocusId[focusId];
     focusedEl.renderCaret();
@@ -179,67 +223,93 @@
     let actionId = focusId;
 
     if (elFromFocusId[focusId]) {
-      const { str, els, lines } = elFromFocusId[focusId];
       if (e.key === "ArrowDown") {
-        const [x, y] = linePos(str, caretPos);
-        const l = draws[y + 1];
-        if (l) {
-          if (l.length === 0) {
-            caretPos += lines.at(y).length - x + 1;
-          } else {
-            const res = l.sort(
-              (a, b) =>
-                Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
-            );
-            caretPos = res.at(0).pp;
-          }
+        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
+        if (carryId)
+          c.carrySink = elFromFocusId[carryId].getCaretopeSink(carryPos);
+        c.moveDown();
+        focusId = c.caretSink.charEl.parentId;
+        caretPos = c.caretSink.charEl.pos;
+        if (c.carrySink) {
+          carryPos = c.carrySink.charEl.pos;
+          carryId = c.carrySink.charEl.parentId;
+        } else {
+          carryId = null;
         }
       }
       if (e.key === "ArrowUp") {
-        const [x, y] = linePos(str, caretPos);
-        const l = draws[y - 1];
-        if (l) {
-          if (l.length === 0) {
-            caretPos -= x + 1;
-          } else {
-            const res = l.sort(
-              (a, b) =>
-                Math.abs(a.x - x * CHAR_WIDTH) - Math.abs(b.x - x * CHAR_WIDTH)
-            );
-            caretPos = res.at(0).pp;
-          }
+        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
+        if (carryId)
+          c.carrySink = elFromFocusId[carryId].getCaretopeSink(carryPos);
+        c.moveUp();
+        focusId = c.caretSink.charEl.parentId;
+        caretPos = c.caretSink.charEl.pos;
+        if (c.carrySink) {
+          carryPos = c.carrySink.charEl.pos;
+          carryId = c.carrySink.charEl.parentId;
+        } else {
+          carryId = null;
         }
       }
-      if (e.key === "ArrowLeft") caretPos = Math.max(caretPos - 1, 0);
-      if (e.key === "ArrowRight") caretPos = Math.min(caretPos + 1, str.length);
+      if (e.key === "ArrowLeft") {
+        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
+        c.moveLeft();
+        focusId = c.caretSink.charEl.parentId;
+        caretPos = c.caretSink.charEl.pos;
+        if (c.carrySink) {
+          carryPos = c.carrySink.charEl.pos;
+          carryId = c.carrySink.charEl.parentId;
+        } else {
+          carryId = null;
+        }
+      }
+      if (e.key === "ArrowRight") {
+        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
+        c.moveRight();
+        focusId = c.caretSink.charEl.parentId;
+        caretPos = c.caretSink.charEl.pos;
+        if (c.carrySink) {
+          carryPos = c.carrySink.charEl.pos;
+          carryId = c.carrySink.charEl.parentId;
+        } else {
+          carryId = null;
+        }
+      }
+
       if (e.key.startsWith("Arrow")) {
         elFromFocusId[focusId]?.renderCaret();
         return;
       }
     }
 
-    if (e.key === "b" && e.metaKey)
+    if (e.key === "b" && e.metaKey) {
       pushHistory({
         key: e.key,
         id: focusId,
         newId: Math.random() + "",
         caretPos,
       });
-    else if (e.key === "z" && e.metaKey && e.shiftKey) actionId = redo()[0]?.id;
-    else if (e.key === "z" && e.metaKey) actionId = undo()[1]?.id;
-    else if (discrim(e)) pushHistory({ key: e.key, id: focusId, caretPos });
-
-    bigreduce();
+      bigreduce();
+    } else if (e.key === "z" && e.metaKey && e.shiftKey) {
+      actionId = redo()[0]?.id;
+      bigreduce();
+    } else if (e.key === "z" && e.metaKey) {
+      actionId = undo()[1]?.id;
+      bigreduce();
+    } else if (discrim(e)) {
+      pushHistory({ key: e.key, id: focusId, caretPos });
+      bigreduce();
+    }
   });
 </script>
 
 TODO: <br />
-- nested caret nav: caretope<br />
 - selection<br />
 - copy&paste<br />
-- mouse picking<br /><br />
+- mouse picking<br />
+- bug: delete at start of empty editor<br />
+- bug: carrot position after redo<br /><br />
 
 good things so far:<br />
-- having knowledge over the positions of characters during history replay<br />
 - mapping str -> lines -> draws is pretty easy to think about<br />
 - basic history is out of the way<br />

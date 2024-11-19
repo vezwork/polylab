@@ -3,12 +3,20 @@
   body {
     position: relative;
     margin: 0;
+    font-size: 18px;
+    font-family: "fira code";
   }
-  div {
-    padding: 4px 8px;
-    min-width: 14px;
+  .editor {
+    padding: 4px 8px 4px 4px;
+    min-width: 8px;
     border: 1px solid black;
     vertical-align: middle;
+    user-select: none;
+    border-radius: 4px;
+  }
+  .selected {
+    background: rgba(255, 112, 143, 0.4);
+    border-radius: 4px;
   }
 </style>
 <script type="module">
@@ -23,6 +31,26 @@
   caretEl.style.width = "2px";
   caretEl.style.height = "100px";
   caretEl.style.background = "black";
+  caretEl.style.pointerEvents = "none";
+
+  //   const anchorEl = document.createElement("span");
+  const anchorEl = new DOMParser().parseFromString(
+    `<span style="
+  display:block;
+  position: absolute;
+  width: 2px;
+  height: 100px;
+  background: rgb(187, 107, 120);
+  pointer-events: none;
+  "></span>`,
+    "text/html"
+  ).body.firstChild;
+  //   anchorEl.style.display = "block";
+  document.body.prepend(anchorEl);
+  //   anchorEl.style.position = "absolute";
+  //   anchorEl.style.width = "2px";
+  //   anchorEl.style.height = "100px";
+  //   anchorEl.style.background = "rgb(187, 107, 120)";
 
   const insertAt = (str, i, char) => str.toSpliced(i, 0, char);
   const deleteAt = (str, i) => str.toSpliced(i, 1);
@@ -41,90 +69,185 @@
     return [inlineIndex, lineIndex];
   };
 
+  const dist = ([x1, y1], [x2, y2]) =>
+    Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  const distMouseEventToEl = (e, el) => {
+    const rect = el.getBoundingClientRect();
+    return dist([e.clientX, e.clientY], [rect.right, rect.top]);
+  };
+  const elTopAndBottom = (el) => {
+    const rect = el.getBoundingClientRect();
+    return [rect.top, rect.bottom];
+  };
+  const vertDistPointToLineEl = (e, lineEl) => {
+    const [t, b] = elTopAndBottom(lineEl);
+    const p = e.clientY;
+    return p >= t && p <= b ? 0 : p <= t ? t - p : p - b;
+  };
+
   const { pushHistory, undo, redo, mainline } = history();
 
-  let focusId = "init";
+  let caretId = "init";
   let caretPos = 0;
   let elFromFocusId = {};
 
   let carryPos = -1;
   let carryId = null;
 
-  const editor = (id = Math.random() + "", parent) => {
+  let anchorPos = caretPos;
+  let anchorId = caretId;
+
+  let selection = [];
+  let processedSelection = [];
+
+  const editor = (id = Math.random() + "", parentContainerSink) => {
     const wrapEl = document.createElement("div");
+    wrapEl.className = "editor";
     elFromFocusId[id] = wrapEl;
     wrapEl.style.display = "inline-block";
     wrapEl.tabIndex = 0;
-    wrapEl.addEventListener("click", (e) => {
+    const mousePick = (shouldMoveAnchor) => (e) => {
       e.stopPropagation();
-      focusId = id;
-      caretPos = 0;
+
+      selectionSinks().forEach((c) => {
+        c.charEl.isSelected = false;
+        c.charEl.classList.remove("selected");
+        if (c.charEl.isEditorStart)
+          elFromFocusId[c.charEl.parentId].isStartSelected = false;
+      });
+
+      const closestLineEl = wrapEl.lineEls.sort(
+        (el1, el2) =>
+          vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2)
+      )[0];
+      const picked = [...closestLineEl.children].sort(
+        (el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2)
+      )[0];
+      caretId = id;
+      caretPos = picked.pos;
+
+      if (shouldMoveAnchor) {
+        anchorId = id;
+        anchorPos = picked.pos;
+        renderAnchor();
+      }
       renderCaret();
+
+      calcSelection();
+    };
+    wrapEl.addEventListener("mousedown", mousePick(true));
+    wrapEl.addEventListener("mousemove", (e) => {
+      if (e.buttons === 1) mousePick(false)(e);
     });
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
-    wrapEl.sink.parent = parent ?? null;
+    wrapEl.sink.parent = parentContainerSink ?? null;
 
     let str = [];
     let lines = [[]];
-    let els = [[]];
 
     function reset() {
       str = [];
       lines = [[]];
-      els = [[]];
 
       wrapEl.innerHTML = "";
     }
 
-    function act(e) {
-      if (e.id !== id) return;
-      focusId = e.id;
-      caretPos = e.caretPos;
+    function myDeleteAt(pos) {
+      str = deleteAt(str, pos - 1);
+      wrapEl.str = str;
+    }
+    function myInsertAt(pos, char) {
+      str = insertAt(str, pos, char);
+      wrapEl.str = str;
+    }
+    wrapEl.myDeleteAt = myDeleteAt;
+    wrapEl.myInsertAt = myInsertAt;
 
+    function act(e) {
+      if (e.caretId !== id) return;
+      caretId = e.caretId;
+      caretPos = e.caretPos;
+      processedSelection = e.processedSelection;
+
+      if (processedSelection.length > 0) {
+        // deletion works here because processedSelection is always ordered left to right,
+        // selectionSinks handles that.
+        for (const [sid, spos] of processedSelection.toReversed()) {
+          elFromFocusId[sid]?.myDeleteAt(spos);
+          elFromFocusId[sid]?.calcLines();
+        }
+        if (e.comp !== 1) {
+          caretPos = e.caretPos;
+          caretId = e.caretId;
+        } else {
+          caretPos = e.anchorPos;
+          caretId = e.anchorId;
+        }
+      }
+      // Note: its gross that we have to clear processedSelection here.
+      // This should always be calc'd from caret and anchor pos, not manually set.
+      processedSelection = [];
       if (e.newId) {
         const newE = editor(e.newId, wrapEl.sink);
         newE.render();
-        str = insertAt(str, caretPos, newE);
+        elFromFocusId[caretId]?.myInsertAt(caretPos, newE);
+        elFromFocusId[caretId]?.calcLines();
 
         caretPos = 0;
-        focusId = newE.id;
+        caretId = newE.id;
       } else if (e.key.length === 1) {
-        str = insertAt(str, caretPos, e.key);
+        elFromFocusId[caretId]?.myInsertAt(caretPos, e.key);
+        elFromFocusId[caretId]?.calcLines();
 
         caretPos++;
       }
       if (e.key === "Enter") {
-        str = insertAt(str, caretPos, "\n");
+        elFromFocusId[caretId]?.myInsertAt(caretPos, "\n");
+        elFromFocusId[caretId]?.calcLines();
         caretPos++;
       }
       if (e.key === "Backspace") {
-        if (caretPos > 0) {
+        if (e.processedSelection.length > 0) {
+        } else if (caretPos > 0) {
           str = deleteAt(str, caretPos - 1);
           caretPos--;
         } else {
           // TODO
           //   caretPos = wrapEl.pos - 1;
-          //   focusId = wrapEl.parentId;
+          //   caretId = wrapEl.parentId;
           console.log(wrapEl.parentId === undefined);
         }
       }
+      anchorPos = caretPos;
+      anchorId = caretId;
 
+      wrapEl.str = str;
+      calcLines();
+    }
+
+    function calcLines() {
       lines = [[]];
       for (const charOrEditor of str) {
         if (charOrEditor === "\n") lines.push([]);
         else lines.at(-1).push(charOrEditor);
       }
-      wrapEl.str = str;
       wrapEl.lines = lines;
     }
+    wrapEl.calcLines = calcLines;
 
     function render() {
+      wrapEl.innerHTML = "";
       let pos = 0;
+      wrapEl.lineEls = [];
       return lines.map((line, y) => {
-        const startCaretSink = document.createElement("span");
-        wrapEl.append(startCaretSink);
-        startCaretSink.pos = pos;
-        startCaretSink.parentId = id;
+        const lineStartEl = document.createElement("span");
+        lineStartEl.style.height = "1.3em";
+        lineStartEl.style.width = "4px";
+        lineStartEl.style.display = "inline-block";
+        lineStartEl.style.verticalAlign = "middle";
+        lineStartEl.pos = pos;
+        lineStartEl.parentId = id;
+        if (y === 0) lineStartEl.isEditorStart = true;
         pos++;
         let els = line.map((char, x) => {
           let charEl;
@@ -140,16 +263,20 @@
             charEl = document.createElement("span");
             charEl.innerText = char;
           }
-          wrapEl.append(charEl);
 
+          if (y === lines.length - 1 && x === line.length - 1)
+            charEl.isEditorEnd = true;
           charEl.pos = pos;
           charEl.parentId = id;
           pos++;
           return charEl;
         });
-        els = [startCaretSink, ...els];
-        const brEl = document.createElement("br");
-        wrapEl.append(brEl);
+        els = [lineStartEl, ...els];
+        const lineEl = document.createElement("div");
+        lineEl.style.minHeight = "16px";
+        lineEl.append(...els);
+        wrapEl.lineEls.push(lineEl);
+        wrapEl.append(lineEl);
         return els;
       });
     }
@@ -160,6 +287,13 @@
 
       caretEl.style.height = rect.height;
       caretEl.style.transform = `translate(${rect.right}px, ${rect.y}px)`;
+    }
+    function renderAnchor() {
+      const [x, y] = linePos(str, anchorPos);
+      const rect = wrapEl.els[y][x].getBoundingClientRect();
+
+      anchorEl.style.height = rect.height;
+      anchorEl.style.transform = `translate(${rect.right}px, ${rect.y}px)`;
     }
     function getCaretopeSink(pos) {
       const [x, y] = linePos(str, pos);
@@ -173,6 +307,7 @@
     wrapEl.lines = lines;
     wrapEl.str = str;
     wrapEl.renderCaret = renderCaret;
+    wrapEl.renderAnchor = renderAnchor;
     wrapEl.render = render;
     wrapEl.reset = reset;
     wrapEl.act = act;
@@ -181,7 +316,7 @@
   };
 
   const e1 = editor("init");
-  document.body.append(e1);
+  document.getElementById("outer").append(e1);
 
   function discrim(e) {
     if (e.key.length === 1) return true;
@@ -190,8 +325,9 @@
   }
   function bigreduce() {
     for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
+    window.mainline = mainline();
     for (const e of mainline()) {
-      const el = elFromFocusId[e.id];
+      const el = elFromFocusId[e.caretId];
       el.act(e);
     }
     for (const [id, el] of Object.entries(elFromFocusId)) {
@@ -200,10 +336,19 @@
         line.flatMap((charEl) => {
           if (charEl.isEditor) {
             const containerSink = charEl.sink;
-            const sink = new CaretSink(() => charEl.getBoundingClientRect());
+            const sink = new CaretSink(() => {
+              const rect = charEl.getBoundingClientRect();
+              return {
+                left: rect.right + 0.1,
+                right: rect.right + 0.2,
+                top: rect.top,
+                bottom: rect.bottom,
+              };
+            });
+            sink.isAfterEditorSink = true;
             sink.parent = el.sink;
             sink.charEl = charEl;
-            containerSink.parent = el.sink;
+            containerSink.parentContainerSink = el.sink;
             containerSink.charEl = charEl;
             return [containerSink, sink];
           } else {
@@ -215,101 +360,224 @@
         })
       );
     }
-    const focusedEl = elFromFocusId[focusId];
+    const focusedEl = elFromFocusId[caretId];
     focusedEl.renderCaret();
+    elFromFocusId[anchorId]?.renderAnchor();
   }
   bigreduce();
+
+  const editorLineage = (el) => {
+    let lineageStack = [];
+    let cur = el;
+    while (cur.pos) {
+      lineageStack.push(cur);
+      cur = elFromFocusId[cur.parentId];
+    }
+    return lineageStack;
+  };
+  const caretTreePos = ([id, pos]) => [
+    ...editorLineage(elFromFocusId[id])
+      .toReversed()
+      .map((ed) => ed.pos),
+    pos,
+  ];
+  const comp = (rep1, rep2) => {
+    const a = caretTreePos(rep1);
+    const b = caretTreePos(rep2);
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      if (a[i] > b[i]) return 1;
+      if (a[i] < b[i]) return -1;
+    }
+    if (a.length > b.length) return -1;
+    if (a.length < b.length) return 1;
+    return 0;
+  };
+  const minAndMax = (a, b) => (comp(a, b) === 1 ? [b, a] : [a, b]);
+  const getSink = ([id, pos]) => elFromFocusId[id]?.getCaretopeSink(pos);
+  const getCaret = (a) => new Caret(getSink(a));
+  const selectionSinks = () => {
+    const result = [];
+
+    const anchorSink = getSink([anchorId, anchorPos]);
+    if (!anchorSink || !getSink([caretId, caretPos])) return [];
+    const [min, max] = minAndMax([caretId, caretPos], [anchorId, anchorPos]);
+    const selC = getCaret(min);
+    const maxSink = getSink(max);
+    while (selC.caretSink && selC.caretSink !== maxSink) {
+      selC.moveRight();
+      result.push(selC.caretSink);
+    }
+    return result;
+  };
+  e1.focus();
   document.body.addEventListener("keydown", (e) => {
-    let actionId = focusId;
+    if (e.key === "Backspace") e.preventDefault();
+    if (e.key.startsWith("Arrow")) {
+      e.preventDefault();
+      if (e.key === "ArrowDown") moveCaret("down", e.shiftKey, e.metaKey);
+      if (e.key === "ArrowUp") moveCaret("up", e.shiftKey, e.metaKey);
+      if (e.key === "ArrowLeft") moveCaret("left", e.shiftKey, e.metaKey);
+      if (e.key === "ArrowRight") moveCaret("right", e.shiftKey, e.metaKey);
 
-    if (elFromFocusId[focusId]) {
-      if (e.key === "ArrowDown") {
-        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
-        if (carryId)
-          c.carrySink = elFromFocusId[carryId].getCaretopeSink(carryPos);
-        c.moveDown();
-        focusId = c.caretSink.charEl.parentId;
-        caretPos = c.caretSink.charEl.pos;
-        if (c.carrySink) {
-          carryPos = c.carrySink.charEl.pos;
-          carryId = c.carrySink.charEl.parentId;
-        } else {
-          carryId = null;
-        }
-      }
-      if (e.key === "ArrowUp") {
-        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
-        if (carryId)
-          c.carrySink = elFromFocusId[carryId].getCaretopeSink(carryPos);
-        c.moveUp();
-        focusId = c.caretSink.charEl.parentId;
-        caretPos = c.caretSink.charEl.pos;
-        if (c.carrySink) {
-          carryPos = c.carrySink.charEl.pos;
-          carryId = c.carrySink.charEl.parentId;
-        } else {
-          carryId = null;
-        }
-      }
-      if (e.key === "ArrowLeft") {
-        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
-        c.moveLeft();
-        focusId = c.caretSink.charEl.parentId;
-        caretPos = c.caretSink.charEl.pos;
-        if (c.carrySink) {
-          carryPos = c.carrySink.charEl.pos;
-          carryId = c.carrySink.charEl.parentId;
-        } else {
-          carryId = null;
-        }
-      }
-      if (e.key === "ArrowRight") {
-        const c = new Caret(elFromFocusId[focusId].getCaretopeSink(caretPos));
-        c.moveRight();
-        focusId = c.caretSink.charEl.parentId;
-        caretPos = c.caretSink.charEl.pos;
-        if (c.carrySink) {
-          carryPos = c.carrySink.charEl.pos;
-          carryId = c.carrySink.charEl.parentId;
-        } else {
-          carryId = null;
-        }
-      }
-
-      if (e.key.startsWith("Arrow")) {
-        elFromFocusId[focusId]?.renderCaret();
-        return;
-      }
+      return;
+    }
+    if (e.key === "a" && e.metaKey) {
+      e.preventDefault();
+      moveCaret("up", false, true);
+      moveCaret("down", true, true);
+      return;
     }
 
     if (e.key === "b" && e.metaKey) {
       pushHistory({
         key: e.key,
-        id: focusId,
+        caretId,
         newId: Math.random() + "",
         caretPos,
+        processedSelection,
+        anchorId,
+        anchorPos,
+        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
       });
       bigreduce();
     } else if (e.key === "z" && e.metaKey && e.shiftKey) {
-      actionId = redo()[0]?.id;
+      redo();
       bigreduce();
     } else if (e.key === "z" && e.metaKey) {
-      actionId = undo()[1]?.id;
+      const res = undo();
+
       bigreduce();
+      // add back selection on undo
+      if (res[1]?.processedSelection) {
+        anchorId = res[1].anchorId;
+        anchorPos = res[1].anchorPos;
+        caretPos = res[1].caretPos;
+        caretId = res[1].caretId;
+        elFromFocusId[caretId]?.renderCaret();
+        elFromFocusId[anchorId]?.renderAnchor();
+
+        calcSelection();
+      }
     } else if (discrim(e)) {
-      pushHistory({ key: e.key, id: focusId, caretPos });
+      pushHistory({
+        key: e.key,
+        caretId,
+        caretPos,
+        processedSelection,
+        anchorId,
+        anchorPos,
+        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+      });
       bigreduce();
     }
   });
+
+  function moveCaret(dir, isSelecting, isJumping) {
+    selectionSinks().forEach((c) => {
+      c.charEl.isSelected = false;
+      c.charEl.classList.remove("selected");
+      if (c.charEl.isEditorStart)
+        elFromFocusId[c.charEl.parentId].isStartSelected = false;
+    });
+
+    const c = new Caret(elFromFocusId[caretId].getCaretopeSink(caretPos));
+    if (carryId) c.carrySink = elFromFocusId[carryId].getCaretopeSink(carryPos);
+    if (isJumping) {
+      if (dir === "down") c.moveToRootEnd();
+      if (dir === "up") c.moveToRootStart();
+      if (dir === "left") c.moveToStartOfRootLine();
+      if (dir === "right") c.moveToEndOfRootLine();
+    } else {
+      if (isSelecting) {
+        if (dir === "down" || dir === "right") {
+          if (dir === "down") c.moveDown();
+          if (dir === "right") c.moveRight();
+          let prev;
+          while (
+            prev !== c.caretSink &&
+            (c.caretSink.charEl.isEditorEnd || c.caretSink.charEl.isEditorStart)
+          ) {
+            prev = c.caretSink;
+            c.moveRight();
+          }
+        } else {
+          if (dir === "up") c.moveUp();
+          if (dir === "left") c.moveLeft();
+          let prev;
+          while (
+            prev !== c.caretSink &&
+            (c.caretSink.charEl.isEditorEnd || c.caretSink.charEl.isEditorStart)
+          ) {
+            prev = c.caretSink;
+            c.moveLeft();
+          }
+        }
+      } else {
+        if (dir === "down") c.moveDown();
+        if (dir === "up") c.moveUp();
+        if (dir === "left") c.moveLeft();
+        if (dir === "right") c.moveRight();
+      }
+    }
+    caretId = c.caretSink.charEl.parentId;
+    caretPos = c.caretSink.charEl.pos;
+    if (!isSelecting) {
+      anchorId = caretId;
+      anchorPos = caretPos;
+    }
+    if (c.carrySink) {
+      carryPos = c.carrySink.charEl.pos;
+      carryId = c.carrySink.charEl.parentId;
+    } else {
+      carryId = null;
+    }
+    elFromFocusId[caretId]?.renderCaret();
+    elFromFocusId[anchorId]?.renderAnchor();
+
+    calcSelection();
+
+    // WIP COPY PASTE
+    const commonPrefixLength = (bla) => {
+      const upperBound = Math.min(...bla.map((l) => l.length));
+      for (let i = 0; i < upperBound; i++) {
+        const values = new Set(bla.map((l) => l[i]));
+
+        if (values.size !== 1) return i;
+      }
+      return upperBound;
+    };
+    const m = processedSelection.map(caretTreePos);
+    const p = commonPrefixLength(processedSelection.map(caretTreePos));
+    const mp = m.map((l) => l.slice(p));
+    console.log(mp);
+  }
+  function calcSelection() {
+    selection = selectionSinks();
+    processedSelection = [];
+    selection.forEach((c) => {
+      if (c.charEl.isEditorStart) {
+        elFromFocusId[c.charEl.parentId].isStartSelected = true;
+      }
+      if (
+        !c.charEl.isEditor ||
+        (c.charEl.isEditor && c.charEl.isStartSelected)
+      ) {
+        c.charEl.classList.add("selected");
+        if (!c.charEl.isEditorStart) {
+          processedSelection.push([c.charEl.parentId, c.charEl.pos]);
+          c.charEl.isSelected = true;
+        }
+      }
+    });
+  }
 </script>
 
 TODO: <br />
-- selection<br />
-- copy&paste<br />
-- mouse picking<br />
-- bug: delete at start of empty editor<br />
-- bug: carrot position after redo<br /><br />
+- copy&paste<br /><br />
 
 good things so far:<br />
 - mapping str -> lines -> draws is pretty easy to think about<br />
 - basic history is out of the way<br />
+<br />
+
+<div id="outer" style="padding: 40px"></div>

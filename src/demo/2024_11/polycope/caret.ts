@@ -37,7 +37,37 @@ export class Caret {
     const next = recurseUpMoveDown(this.caretSink, this.carrySink ?? undefined);
     if (next !== null) return (this.caretSink = next);
   }
+
+  moveToStartOfRootLine() {
+    if (!this.caretSink) return;
+    if (this.isVerticalLinear) this.carrySink = null;
+    this.caretSink =
+      recurseUpToChildOfRoot(this.caretSink)?.leftmostSibling() ?? undefined;
+  }
+  moveToEndOfRootLine() {
+    if (!this.caretSink) return;
+    if (this.isVerticalLinear) this.carrySink = null;
+    this.caretSink =
+      recurseUpToChildOfRoot(this.caretSink)?.rightmostSibling() ?? undefined;
+  }
+
+  moveToRootStart() {
+    if (!this.caretSink) return;
+    if (this.isVerticalLinear) this.carrySink = null;
+    this.caretSink = recurseUpToRoot(this.caretSink)?.lines[0][0] ?? undefined;
+  }
+  moveToRootEnd() {
+    if (!this.caretSink) return;
+    if (this.isVerticalLinear) this.carrySink = null;
+    this.caretSink =
+      recurseUpToRoot(this.caretSink)?.lines.at(-1)?.at(-1) ?? undefined;
+  }
 }
+
+const recurseUpToRoot = (sink: Sink): ContainerSink | null =>
+  sink.parent ? recurseUpToRoot(sink.parent) : (sink as ContainerSink);
+const recurseUpToChildOfRoot = (sink: Sink): Sink | null =>
+  sink.parent?.parent ? recurseUpToChildOfRoot(sink.parent) : sink;
 
 // moves to the left up and down the sink tree until a CaretSink is reached
 const recurseUpMoveLeft = (sink: Sink, from: Sink = sink): Sink | null => {

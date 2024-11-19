@@ -35,6 +35,7 @@ export function makeCaretFunctions<CaretHost>({
 
   const { mergeAndSort } = make2DLineFunctions<YInterval<CaretHost>>({
     dist,
+    toVec2: ({ n, interval: [t, b] }) => [n, t],
     // wish these could be editors/polygons that get deconstructed, projected, then reconstructed somehow
     xProj:
       ([p1, p2]) =>

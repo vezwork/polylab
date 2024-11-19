@@ -10,6 +10,7 @@ export function makeCaretFunctions({ getBounds, }) {
     });
     const { mergeAndSort } = make2DLineFunctions({
         dist,
+        toVec2: ({ n, interval: [t, b] }) => [n, t],
         // wish these could be editors/polygons that get deconstructed, projected, then reconstructed somehow
         xProj: ([p1, p2]) => (p) => yIntervalFromTop(segXProj([top(p1), top(p2)])(top(p))),
         isPointLeft: (p1) => (p2) => p1.n < p2.n,

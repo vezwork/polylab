@@ -1,5 +1,4 @@
 import { makeNestedCaretFunctions } from "../../lib/caret/nestedCaret.js";
-import { YInterval } from "../../lib/caret/caret.js";
 import {
   centerBesideD,
   centerOverD,

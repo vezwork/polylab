@@ -187,7 +187,32 @@
       // Note: its gross that we have to clear processedSelection here.
       // This should always be calc'd from caret and anchor pos, not manually set.
       processedSelection = [];
-      if (e.newId) {
+
+      if (e.paste) {
+        if (e.paste.id) {
+          act({ ...e, paste: undefined, newId: e.paste.id });
+          elFromFocusId[caretId]?.act({
+            ...e,
+            paste: e.paste.data,
+            caretId,
+            caretPos,
+          });
+        } else if (Array.isArray(e.paste)) {
+          let initCaretPos = e.caretPos;
+          let initId = e.caretId;
+          for (const entry of e.paste) {
+            act({
+              ...e,
+              paste: entry,
+              caretId: initId,
+              caretPos: initCaretPos,
+            });
+            initCaretPos++;
+          }
+        } else {
+          act({ ...e, paste: undefined, key: e.paste });
+        }
+      } else if (e.newId) {
         const newE = editor(e.newId, wrapEl.sink);
         newE.render();
         elFromFocusId[caretId]?.myInsertAt(caretPos, newE);
@@ -303,6 +328,7 @@
     }
     wrapEl.getCaretopeSink = getCaretopeSink;
 
+    wrapEl.act = act;
     wrapEl.id = id;
     wrapEl.lines = lines;
     wrapEl.str = str;
@@ -410,6 +436,53 @@
     return result;
   };
   e1.focus();
+  const copy = (e) => {
+    if (processedSelection.length === 0) return;
+    const output = calcSelectionString(processedSelection);
+
+    e.clipboardData.setData("text/plain", output);
+    e.preventDefault();
+    console.log("copied!", output);
+
+    if (e.type === "cut") {
+      pushHistory({
+        key: "Backspace",
+        caretId,
+        caretPos,
+        processedSelection,
+        anchorId,
+        anchorPos,
+        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+      });
+      bigreduce();
+    }
+  };
+  document.addEventListener("copy", copy);
+  document.addEventListener("cut", copy);
+  document.addEventListener("paste", (e) => {
+    let paste = e.clipboardData.getData("text");
+
+    if (paste) {
+      const output = pSelectionString(paste).parse;
+      const go = (v) =>
+        Array.isArray(v)
+          ? {
+              id: Math.random() + "",
+              data: v.map(go),
+            }
+          : v;
+      pushHistory({
+        caretId,
+        paste: output.map(go),
+        caretPos,
+        processedSelection,
+        anchorId,
+        anchorPos,
+        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+      });
+      bigreduce();
+    }
+  });
   document.body.addEventListener("keydown", (e) => {
     if (e.key === "Backspace") e.preventDefault();
     if (e.key.startsWith("Arrow")) {
@@ -440,6 +513,17 @@
         comp: comp([caretId, caretPos], [anchorId, anchorPos]),
       });
       bigreduce();
+    } else if (e.key === "c" && e.metaKey) {
+      calcSelectionString(processedSelection);
+      //clipboard API
+    } else if (e.key === "x" && e.metaKey) {
+      calcSelectionString(processedSelection);
+      //clipboard API
+      //pushHistory delete
+    } else if (e.key === "v" && e.metaKey) {
+      // pSelectionString
+      // gotta create a bunch of newIds
+      // pushhistory insert all of that!! in one go!?
     } else if (e.key === "z" && e.metaKey && e.shiftKey) {
       redo();
       bigreduce();
@@ -535,7 +619,9 @@
     elFromFocusId[anchorId]?.renderAnchor();
 
     calcSelection();
-
+  }
+  // uggh this is disgusting
+  function calcSelectionString(processedSelection) {
     // WIP COPY PASTE
     const commonPrefixLength = (bla) => {
       const upperBound = Math.min(...bla.map((l) => l.length));
@@ -546,11 +632,68 @@
       }
       return upperBound;
     };
-    const m = processedSelection.map(caretTreePos);
+
+    const mm = processedSelection
+      .map((v) => [caretTreePos(v), getSink(v)])
+      .filter(([_, s]) => !s.isAfterEditorSink)
+      .map(([v, s]) => [v, s.charEl.innerText ? s.charEl.innerText : " "]);
+    const m = mm.map((v) => v[0]);
     const p = commonPrefixLength(processedSelection.map(caretTreePos));
     const mp = m.map((l) => l.slice(p));
-    console.log(mp);
+
+    const root = {};
+    let i = 0;
+    for (const lis of mp) {
+      let cur = root;
+      for (const entry of lis) {
+        if (!cur[entry]) cur[entry] = {};
+        cur = cur[entry];
+      }
+      cur.data = mm[i][1];
+      i++;
+    }
+
+    const serial = (tre) =>
+      Object.values(tre).flatMap((v) =>
+        v.data ? v.data : ["(>", ...serial(v), "<)"]
+      );
+
+    return m.length === 1 ? root.data : serial(root).join("");
   }
+  const pNest = (initStr) => {
+    if (!initStr.startsWith("(>")) return { parse: "", str: initStr };
+    let str = initStr.slice(2);
+
+    const res = ((str) => pSelectionString(str))(str);
+    if (!res.str.startsWith("<)")) return { parse: "", str: initStr };
+    return { parse: [res.parse], str: res.str.slice(2) };
+  };
+  const pOr = (p1) => (p2) => (str) => {
+    const res = p1(str);
+    if (res.parse !== "") return res;
+    return p2(str);
+  };
+  const pValue = (str) => {
+    let parse = [];
+    for (let i = 0; i < str.length; i++) {
+      const thing = str.slice(i, i + 2);
+      if (thing === "(>" || thing === "<)") break;
+      parse.push(str[i]);
+    }
+    return { parse, str: str.slice(parse.length) };
+  };
+  const pRepeat = (p) => (str) => {
+    let res = [];
+    while (true) {
+      const par = p(str);
+      if (par.str === str) {
+        return { parse: res, str };
+      }
+      res = res.concat(par.parse);
+      str = par.str;
+    }
+  };
+  const pSelectionString = pRepeat(pOr(pNest)(pValue));
   function calcSelection() {
     selection = selectionSinks();
     processedSelection = [];
@@ -571,10 +714,6 @@
     });
   }
 </script>
-
-TODO: <br />
-- copy&paste<br /><br />
-
 good things so far:<br />
 - mapping str -> lines -> draws is pretty easy to think about<br />
 - basic history is out of the way<br />

@@ -15,7 +15,7 @@
     border-radius: 4px;
   }
   .selected {
-    background: rgba(255, 112, 143, 0.4);
+    background-color: rgba(255, 112, 143, 0.4);
     border-radius: 4px;
   }
 </style>
@@ -85,7 +85,14 @@
     return p >= t && p <= b ? 0 : p <= t ? t - p : p - b;
   };
 
-  const { pushHistory, undo, redo, mainline } = history();
+  const {
+    removeLastThat,
+    pushHistory,
+    undo,
+    redo,
+    mainline,
+    restoreFirstThat,
+  } = history();
 
   let caretId = "init";
   let caretPos = 0;
@@ -273,6 +280,7 @@
         lineStartEl.pos = pos;
         lineStartEl.parentId = id;
         if (y === 0) lineStartEl.isEditorStart = true;
+        else lineStartEl.isNewLine = true;
         pos++;
         let els = line.map((char, x) => {
           let charEl;
@@ -311,14 +319,18 @@
       const rect = wrapEl.els[y][x].getBoundingClientRect();
 
       caretEl.style.height = rect.height;
-      caretEl.style.transform = `translate(${rect.right}px, ${rect.y}px)`;
+      caretEl.style.transform = `translate(${
+        rect.right + window.pageXOffset
+      }px, ${rect.y + window.pageYOffset}px)`;
     }
     function renderAnchor() {
       const [x, y] = linePos(str, anchorPos);
       const rect = wrapEl.els[y][x].getBoundingClientRect();
 
       anchorEl.style.height = rect.height;
-      anchorEl.style.transform = `translate(${rect.right}px, ${rect.y}px)`;
+      anchorEl.style.transform = `translate(${
+        rect.right + window.pageXOffset
+      }px, ${rect.y + window.pageYOffset}px)`;
     }
     function getCaretopeSink(pos) {
       const [x, y] = linePos(str, pos);
@@ -401,6 +413,10 @@
     }
     return lineageStack;
   };
+  const ancestorIds = (id) =>
+    editorLineage(elFromFocusId[id])
+      .map((el) => el.id)
+      .concat(["init"]);
   const caretTreePos = ([id, pos]) => [
     ...editorLineage(elFromFocusId[id])
       .toReversed()
@@ -483,6 +499,7 @@
       bigreduce();
     }
   });
+  let localUndoBase = null;
   document.body.addEventListener("keydown", (e) => {
     if (e.key === "Backspace") e.preventDefault();
     if (e.key.startsWith("Arrow")) {
@@ -514,16 +531,42 @@
       });
       bigreduce();
     } else if (e.key === "c" && e.metaKey) {
-      calcSelectionString(processedSelection);
-      //clipboard API
     } else if (e.key === "x" && e.metaKey) {
-      calcSelectionString(processedSelection);
-      //clipboard API
-      //pushHistory delete
     } else if (e.key === "v" && e.metaKey) {
-      // pSelectionString
-      // gotta create a bunch of newIds
-      // pushhistory insert all of that!! in one go!?
+    } else if (e.key === "p" && e.metaKey && e.shiftKey) {
+      const restoredAction = restoreFirstThat((d) =>
+        ancestorIds(d.caretId).includes(localUndoBase)
+      );
+      e.preventDefault();
+      bigreduce();
+      // TODO: BUGFIX: I need to set these to the values after acting on the restored action
+      // so I need a way to access those...
+      // I could make bigreduce an iterable and detect when that history item appears
+      if (restoredAction) {
+        bigreduce();
+        anchorId = restoredAction.anchorId;
+        anchorPos = restoredAction.anchorPos;
+        caretPos = restoredAction.caretPos;
+        caretId = restoredAction.caretId;
+        elFromFocusId[caretId]?.renderCaret();
+        elFromFocusId[anchorId]?.renderAnchor();
+      }
+    } else if (e.key === "p" && e.metaKey) {
+      localUndoBase = localUndoBase ?? caretId;
+      const removedAction = removeLastThat((d) =>
+        ancestorIds(d.caretId).includes(localUndoBase)
+      );
+      e.preventDefault();
+
+      if (removedAction) {
+        bigreduce();
+        anchorId = removedAction.anchorId;
+        anchorPos = removedAction.anchorPos;
+        caretPos = removedAction.caretPos;
+        caretId = removedAction.caretId;
+        elFromFocusId[caretId]?.renderCaret();
+        elFromFocusId[anchorId]?.renderAnchor();
+      }
     } else if (e.key === "z" && e.metaKey && e.shiftKey) {
       redo();
       bigreduce();
@@ -633,10 +676,18 @@
       return upperBound;
     };
 
+    console.log(processedSelection.map((v) => [caretTreePos(v), getSink(v)]));
     const mm = processedSelection
       .map((v) => [caretTreePos(v), getSink(v)])
       .filter(([_, s]) => !s.isAfterEditorSink)
-      .map(([v, s]) => [v, s.charEl.innerText ? s.charEl.innerText : " "]);
+      .map(([v, s]) => [
+        v,
+        s.charEl.isNewLine
+          ? "\n"
+          : s.charEl.innerText
+          ? s.charEl.innerText
+          : " ",
+      ]);
     const m = mm.map((v) => v[0]);
     const p = commonPrefixLength(processedSelection.map(caretTreePos));
     const mp = m.map((l) => l.slice(p));

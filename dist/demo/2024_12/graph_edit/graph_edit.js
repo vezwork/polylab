@@ -114,11 +114,13 @@ export class Arrow {
 
 export let pointer = [0, 0];
 let dragging = null;
+let dragOffset = null;
 let arrowing = null;
 c.addEventListener("pointerdown", (e) => {
   const close = Point.all.find(({ p }) => distance(p, pointer) < 28);
   if (close) {
     dragging = close;
+    dragOffset = sub(dragging.p, pointer);
     console.log("dragging", dragging);
     c.style.cursor = "grabbing";
   } else new Point(v(...pointer), "·");
@@ -130,7 +132,7 @@ c.addEventListener("pointermove", (e) => {
   const close = Point.all.find(({ p }) => distance(p, pointer) < 28);
 
   if (dragging) {
-    assign(dragging.p)(pointer);
+    assign(dragging.p)(add(dragOffset, pointer));
     lastEditedPoint = dragging;
   } else if (close) c.style.cursor = "grab";
   else c.style.cursor = "auto";

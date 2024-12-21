@@ -44,6 +44,24 @@ const nextsAndPrevs = (p) => [
   ...nexts(p),
   ...prevs(p).map((ar) => ({ reverse: ar })),
 ];
+function ancestors(p) {
+  if (!p) return [];
+  const visited = new Set([p]);
+  const queue = [p];
+  const res = [];
+  while (queue.length > 0) {
+    const cur = queue.pop();
+
+    for (const ar of prevs(cur)) {
+      if (!visited.has(ar)) {
+        queue.push(ar.p1);
+        res.push(ar);
+        visited.add(ar);
+      }
+    }
+  }
+  return res;
+}
 function descendants(p) {
   if (!p) return [];
   const visited = new Set([p]);
@@ -89,6 +107,94 @@ function biTraverse(f, p) {
   }
   return res;
 }
+const total = (...array) => array.reduce((a, b) => a + b, 0);
+const average = (...array) => total(...array) / array.length;
+
+function onChangeH(p, visited = new Set([p])) {
+  if (!p) return;
+  for (const { p2: sib } of nextSib(p)) {
+    // descendants(p).r = descendants(p1).l
+    const otherGroupR = Math.max(
+      ...descendants(p).map(({ p1, p2 }) => p2.p[0]),
+      p.p[0]
+    );
+    const myGroupLRep = [
+      ...descendants(sib).map(({ p1, p2 }) => [p2, p2.p[0]]),
+      [sib, sib.p[0]],
+    ]
+      .toSorted((a, b) => a[1] - b[1])
+      .at(0)[0];
+    // note: this works because it assumes there is only one leftmost point in the group
+    if (visited.has(myGroupLRep)) continue;
+    visited.add(myGroupLRep);
+    myGroupLRep.p[0] = otherGroupR + 120;
+    onChangeH(myGroupLRep, visited);
+  }
+  for (const { p2: sib } of prevSib(p)) {
+    // descendants(p).r = descendants(p1).l
+    const otherGroupL = Math.min(
+      ...descendants(p).map(({ p1, p2 }) => p2.p[0]),
+      p.p[0]
+    );
+    const myGroupRRep = [
+      ...descendants(sib).map(({ p1, p2 }) => [p2, p2.p[0]]),
+      [sib, sib.p[0]],
+    ]
+      .toSorted((a, b) => a[1] - b[1])
+      .at(-1)[0];
+    // note: this works because it assumes there is only one rightmost point in the group
+    if (visited.has(myGroupRRep)) continue;
+    visited.add(myGroupRRep);
+    myGroupRRep.p[0] = otherGroupL - 120;
+    onChangeH(myGroupRRep, visited);
+  }
+  // const descWidths = nexts(p).map(({ p2 }) => {
+  //   const descXs = descendants(p2).map(({ p1, p2 }) => p2.p[0]);
+  //   const groupL = Math.min(...descXs, p2.p[0]);
+  //   const groupR = Math.max(...descXs, p2.p[0]);
+  //   return groupR - groupL;
+  // });
+
+  // const totalWidthOfDescs =
+  //   total(...descWidths) + (descWidths.length - 1) * 120;
+  // const startX = p.p[0] - totalWidthOfDescs / 2;
+  // let curX = startX;
+  // nexts(p).forEach(({ p2 }, i) => {
+  //   if (!visited.has(p2)) {
+  //     visited.add(p2);
+
+  //     p2.p[0] = curX + descWidths[i] / 2;
+  //   }
+  //   curX += descWidths[i] + 120;
+  //   // do groups have roots? can I use the root to set the position of the group?
+  //   if (!visited.has(p2)) onChangeH(p2, visited);
+  // });
+  ancestors(p).forEach(({ p1 }) => {
+    if (visited.has(p1)) return;
+    visited.add(p1);
+
+    p1.p[0] = average(...nexts(p1).map(({ p2 }) => p2.p[0]));
+
+    onChangeH(p1, visited);
+  });
+}
+function onChangeV(p, visited = new Set([p])) {
+  for (const { p2: child } of nexts(p)) {
+    if (visited.has(child)) continue;
+    visited.add(child);
+
+    // idea: can also clamp child.p[1] between p.p[1]+100 and p.p[1]+200 or something
+    child.p[1] = p.p[1] + 100;
+    onChangeV(child, visited);
+  }
+  for (const { p1: parent } of prevs(p)) {
+    if (visited.has(parent)) continue;
+    visited.add(parent);
+
+    parent.p[1] = p.p[1] - 100;
+    onChangeV(parent, visited);
+  }
+}
 
 let t = 0;
 function draw() {
@@ -96,61 +202,8 @@ function draw() {
 
   ctx.clearRect(0, 0, c.width, c.height);
 
-  // console.log(nextSib(lastEditedPoint));
-  for (const ar of biTraverse(nextSib, lastEditedPoint)) {
-    const { p2: p, p1 } = ar;
-    //h
-    // p.p[0] = p1.p[0] + 100;
-
-    // descendants(p).l = descendants(p1).r
-    const groupR = Math.max(
-      ...descendants(p1).map(({ p1, p2 }) => p2.p[0]),
-      p1.p[0]
-    );
-    p.p[0] = groupR + 120;
-  }
-  for (const ar of biTraverse(prevSib, lastEditedPoint)) {
-    const { p2: p, p1 } = ar;
-    //h
-    // p.p[0] = p1.p[0] - 100;
-
-    // descendants(p).r = descendants(p1).l
-    const otherGroupL = Math.min(
-      ...descendants(p1).map(({ p1, p2 }) => p2.p[0]),
-      p1.p[0]
-    );
-    const myGroupRRep = [
-      ...descendants(p).map(({ p1, p2 }) => [p2, p2.p[0]]),
-      [p, p.p[0]],
-    ]
-      .toSorted((a, b) => a[1] - b[1])
-      .at(-1)[0];
-    // note: this works because it assumes there is only one rightmost point in the group
-    myGroupRRep.p[0] = otherGroupL - 120;
-  }
-  for (const ar of biTraverse(nextsAndPrevs, lastEditedPoint)) {
-    if (ar.reverse) {
-      const { p2: p, p1 } = ar.reverse;
-      //v
-      p1.p[1] = p.p[1] - 100;
-      //h
-      // const d = descendents(p1).map(({ p1, p2 }) => p2.p);
-      // const max = Math.max(...d.map(([x, y]) => x));
-      // const min = Math.min(...d.map(([x, y]) => x));
-      // if (min !== Infinity && max !== -Infinity)
-      //   p1.p[0] = (max - min) / 2 + min;
-    } else {
-      const { p2: p, p1 } = ar;
-      //v
-      p.p[1] = p1.p[1] + 100;
-      //h
-      // const d = descendents(p1).map(({ p1, p2 }) => p2.p);
-      // const max = Math.max(...d.map(([x, y]) => x));
-      // const min = Math.min(...d.map(([x, y]) => x));
-      // if (min !== Infinity && max !== -Infinity)
-      //   p1.p[0] = (max - min) / 2 + min;
-    }
-  }
+  onChangeV(lastEditedPoint);
+  onChangeH(lastEditedPoint);
 
   drawGraph();
 

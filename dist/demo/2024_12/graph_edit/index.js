@@ -23,8 +23,6 @@ import {
 } from "./graph_edit.js";
 import { concat } from "../../../lib/structure/Iterable.js";
 
-const p1 = new Point([100, 100], "·");
-
 const nexts = (p) => Arrow.all.filter(({ p1, p2 }) => p1 === p && p2.char);
 const prevs = (p) => Arrow.all.filter(({ p1, p2 }) => p2 === p && p1.char);
 const sibs = (p) => prevs(p).flatMap(({ p1, p2 }) => nexts(p1));
@@ -112,6 +110,38 @@ const average = (...array) => total(...array) / array.length;
 
 function onChangeH(p, visited = new Set([p])) {
   if (!p) return;
+  ctx.fillStyle = "black";
+  ctx.fillText(visited.size, p.p[0] + 50, p.p[1]);
+
+  const descWidths = nexts(p).map(({ p2 }) => {
+    const descXs = descendants(p2).map(({ p1, p2 }) => p2.p[0]);
+    const groupL = Math.min(...descXs, p2.p[0]);
+    const groupR = Math.max(...descXs, p2.p[0]);
+    return groupR - groupL;
+  });
+
+  const totalWidthOfDescs =
+    total(...descWidths) + (descWidths.length - 1) * 120;
+  const startX = p.p[0] - totalWidthOfDescs / 2;
+  let curX = startX;
+  nexts(p).forEach(({ p2 }, i) => {
+    const groupLRep = [
+      ...descendants(p2).map(({ p1, p2 }) => [p2, p2.p[0]]),
+      [p2, p2.p[0]],
+    ]
+      .toSorted((a, b) => a[1] - b[1])
+      .at(0)[0];
+    if (!visited.has(groupLRep)) {
+      groupLRep.p[0] = curX;
+    }
+    curX += descWidths[i] + 120;
+    if (!visited.has(groupLRep)) {
+      visited.add(groupLRep);
+      onChangeH(groupLRep, visited);
+    }
+    ctx.fillStyle = "rgba(0,0,255,0.1)";
+    ctx.fillRect(...groupLRep.p, 50, 50);
+  });
   for (const { p2: sib } of nextSib(p)) {
     // descendants(p).r = descendants(p1).l
     const otherGroupR = Math.max(
@@ -147,36 +177,22 @@ function onChangeH(p, visited = new Set([p])) {
     visited.add(myGroupRRep);
     myGroupRRep.p[0] = otherGroupL - 120;
     onChangeH(myGroupRRep, visited);
+    ctx.fillStyle = "rgba(0,255,0,0.1)";
+    ctx.fillRect(...myGroupRRep.p, 50, 50);
   }
-  // const descWidths = nexts(p).map(({ p2 }) => {
-  //   const descXs = descendants(p2).map(({ p1, p2 }) => p2.p[0]);
-  //   const groupL = Math.min(...descXs, p2.p[0]);
-  //   const groupR = Math.max(...descXs, p2.p[0]);
-  //   return groupR - groupL;
-  // });
 
-  // const totalWidthOfDescs =
-  //   total(...descWidths) + (descWidths.length - 1) * 120;
-  // const startX = p.p[0] - totalWidthOfDescs / 2;
-  // let curX = startX;
-  // nexts(p).forEach(({ p2 }, i) => {
-  //   if (!visited.has(p2)) {
-  //     visited.add(p2);
+  for (const { p1: parent } of prevs(p)) {
+    if (visited.has(parent)) return;
+    visited.add(parent);
 
-  //     p2.p[0] = curX + descWidths[i] / 2;
-  //   }
-  //   curX += descWidths[i] + 120;
-  //   // do groups have roots? can I use the root to set the position of the group?
-  //   if (!visited.has(p2)) onChangeH(p2, visited);
-  // });
-  ancestors(p).forEach(({ p1 }) => {
-    if (visited.has(p1)) return;
-    visited.add(p1);
-
-    p1.p[0] = average(...nexts(p1).map(({ p2 }) => p2.p[0]));
-
-    onChangeH(p1, visited);
-  });
+    const descXs = descendants(parent).map(({ p1, p2 }) => p2.p[0]);
+    const groupL = Math.min(...descXs);
+    const groupR = Math.max(...descXs);
+    parent.p[0] = groupL + (groupR - groupL) / 2;
+    ctx.fillStyle = "rgba(255,0,0,0.1)";
+    ctx.fillRect(...parent.p, 50, 50);
+    onChangeH(parent, visited);
+  }
 }
 function onChangeV(p, visited = new Set([p])) {
   for (const { p2: child } of nexts(p)) {
@@ -195,6 +211,29 @@ function onChangeV(p, visited = new Set([p])) {
     onChangeV(parent, visited);
   }
 }
+
+(JSON.parse(localStorage.getItem("pData")) ?? []).forEach(
+  (p) => new Point(p.p, p.char)
+);
+(JSON.parse(localStorage.getItem("arData")) ?? []).forEach(
+  ([i1, i2]) => new Arrow(Point.all[i1], Point.all[i2], "")
+);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "s") {
+    localStorage.setItem("pData", JSON.stringify(Point.all));
+    localStorage.setItem(
+      "arData",
+      JSON.stringify(
+        Arrow.all.map(({ p1, p2 }) => [
+          Point.all.indexOf(p1),
+          Point.all.indexOf(p2),
+        ])
+      )
+    );
+  }
+  if (e.key === "c") localStorage.clear();
+  if (e.key === "Backspace") Point.all.at(-1).remove();
+});
 
 let t = 0;
 function draw() {

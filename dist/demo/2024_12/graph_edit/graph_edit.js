@@ -73,6 +73,10 @@ export class Point {
     ctx.fillStyle = "#F2F2F2";
     ctx.fill();
   }
+  remove() {
+    Point.all = Point.all.filter((p) => p !== this);
+    Arrow.all = Arrow.all.filter(({ p1, p2 }) => p1 !== this && p2 !== this);
+  }
 }
 export class Arrow {
   static all = [];
@@ -109,6 +113,9 @@ export class Arrow {
     ctx.strokeText(label, ...lerp([this.p1.p, this.p2.p])(0.5));
     ctx.fillStyle = "black";
     ctx.fillText(label, ...lerp([this.p1.p, this.p2.p])(0.5));
+  }
+  remove() {
+    Arrow.all = Arrow.all.filter((ar) => ar !== this);
   }
 }
 

@@ -111,7 +111,9 @@ const average = (...array) => total(...array) / array.length;
 function onChangeH(p, visited = new Set([p])) {
   if (!p) return;
   ctx.fillStyle = "black";
+  const vs = visited.size;
   ctx.fillText(visited.size, p.p[0] + 50, p.p[1]);
+  ctx.fillRect(...p.p, 25, 25);
 
   const descWidths = nexts(p).map(({ p2 }) => {
     const descXs = descendants(p2).map(({ p1, p2 }) => p2.p[0]);
@@ -159,6 +161,8 @@ function onChangeH(p, visited = new Set([p])) {
     visited.add(myGroupLRep);
     myGroupLRep.p[0] = otherGroupR + 120;
     onChangeH(myGroupLRep, visited);
+    ctx.fillStyle = "rgba(0,255,0,0.1)";
+    ctx.fillRect(...myGroupLRep.p, 50, 50);
   }
   for (const { p2: sib } of prevSib(p)) {
     // descendants(p).r = descendants(p1).l
@@ -182,7 +186,7 @@ function onChangeH(p, visited = new Set([p])) {
   }
 
   for (const { p1: parent } of prevs(p)) {
-    if (visited.has(parent)) return;
+    if (visited.has(parent)) continue;
     visited.add(parent);
 
     const descXs = descendants(parent).map(({ p1, p2 }) => p2.p[0]);

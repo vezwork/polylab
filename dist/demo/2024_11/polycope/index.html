@@ -23,6 +23,7 @@
   import { history } from "./history.js";
   import { Caret } from "./caret.js";
   import { CaretSink, ContainerSink } from "./caretsink.js";
+  import { pSelectionString } from "./parse.js";
 
   const caretEl = document.createElement("span");
   caretEl.style.display = "block";
@@ -170,7 +171,7 @@
     wrapEl.myDeleteAt = myDeleteAt;
     wrapEl.myInsertAt = myInsertAt;
 
-    function act(e) {
+    function act(e, shouldCalcLines = true) {
       if (e.caretId !== id) return;
       caretId = e.caretId;
       caretPos = e.caretPos;
@@ -197,45 +198,52 @@
 
       if (e.paste) {
         if (e.paste.id) {
-          act({ ...e, paste: undefined, newId: e.paste.id });
-          elFromFocusId[caretId]?.act({
-            ...e,
-            paste: e.paste.data,
-            caretId,
-            caretPos,
-          });
+          act({ ...e, paste: undefined, newId: e.paste.id }, false);
+          elFromFocusId[caretId]?.act(
+            {
+              ...e,
+              paste: e.paste.data,
+              caretId,
+              caretPos,
+            },
+            false
+          );
         } else if (Array.isArray(e.paste)) {
           let initCaretPos = e.caretPos;
           let initId = e.caretId;
           for (const entry of e.paste) {
-            act({
-              ...e,
-              paste: entry,
-              caretId: initId,
-              caretPos: initCaretPos,
-            });
+            act(
+              {
+                ...e,
+                paste: entry,
+                caretId: initId,
+                caretPos: initCaretPos,
+              },
+              false
+            );
             initCaretPos++;
           }
         } else {
-          act({ ...e, paste: undefined, key: e.paste });
+          // when does this happen!?
+          act({ ...e, paste: undefined, key: e.paste }, false);
         }
       } else if (e.newId) {
         const newE = editor(e.newId, wrapEl.sink);
         newE.render();
         elFromFocusId[caretId]?.myInsertAt(caretPos, newE);
-        elFromFocusId[caretId]?.calcLines();
+        if (shouldCalcLines) [caretId]?.calcLines();
 
         caretPos = 0;
         caretId = newE.id;
       } else if (e.key.length === 1) {
         elFromFocusId[caretId]?.myInsertAt(caretPos, e.key);
-        elFromFocusId[caretId]?.calcLines();
+        if (shouldCalcLines) elFromFocusId[caretId]?.calcLines();
 
         caretPos++;
       }
       if (e.key === "Enter") {
         elFromFocusId[caretId]?.myInsertAt(caretPos, "\n");
-        elFromFocusId[caretId]?.calcLines();
+        if (shouldCalcLines) elFromFocusId[caretId]?.calcLines();
         caretPos++;
       }
       if (e.key === "Backspace") {
@@ -254,14 +262,17 @@
       anchorId = caretId;
 
       wrapEl.str = str;
-      calcLines();
+      if (shouldCalcLines) calcLines();
     }
 
     function calcLines() {
-      lines = [[]];
+      let curLine = [];
+      lines = [curLine];
       for (const charOrEditor of str) {
-        if (charOrEditor === "\n") lines.push([]);
-        else lines.at(-1).push(charOrEditor);
+        if ("\n" === charOrEditor) {
+          curLine = [];
+          lines.push(curLine);
+        } else curLine.push(charOrEditor);
       }
       wrapEl.lines = lines;
     }
@@ -366,9 +377,10 @@
     window.mainline = mainline();
     for (const e of mainline()) {
       const el = elFromFocusId[e.caretId];
-      el.act(e);
+      el.act(e, false);
     }
     for (const [id, el] of Object.entries(elFromFocusId)) {
+      el.calcLines();
       el.els = el.render();
       el.sink.lines = el.els.map((line) =>
         line.flatMap((charEl) => {
@@ -502,6 +514,7 @@
   let localUndoBase = null;
   document.body.addEventListener("keydown", (e) => {
     if (e.key === "Backspace") e.preventDefault();
+    if (e.key === " ") e.preventDefault();
     if (e.key.startsWith("Arrow")) {
       e.preventDefault();
       if (e.key === "ArrowDown") moveCaret("down", e.shiftKey, e.metaKey);
@@ -509,6 +522,31 @@
       if (e.key === "ArrowLeft") moveCaret("left", e.shiftKey, e.metaKey);
       if (e.key === "ArrowRight") moveCaret("right", e.shiftKey, e.metaKey);
 
+      return;
+    }
+    if (e.key === "s" && e.metaKey) {
+      // eval
+      e.preventDefault();
+      const toEval = e1.str.join("");
+      console.log("evaling", toEval);
+      localStorage.setItem("eval", toEval);
+      eval(toEval);
+      return;
+    }
+    if (e.key === "l" && e.metaKey) {
+      e.preventDefault();
+      pushHistory({
+        caretId,
+        paste: localStorage.getItem("eval").split(""),
+        caretPos,
+        processedSelection,
+        anchorId,
+        anchorPos,
+        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+      });
+      bigreduce();
+      const toEval = e1.str.join("");
+      eval(toEval);
       return;
     }
     if (e.key === "a" && e.metaKey) {
@@ -711,40 +749,7 @@
 
     return m.length === 1 ? root.data : serial(root).join("");
   }
-  const pNest = (initStr) => {
-    if (!initStr.startsWith("(>")) return { parse: "", str: initStr };
-    let str = initStr.slice(2);
 
-    const res = ((str) => pSelectionString(str))(str);
-    if (!res.str.startsWith("<)")) return { parse: "", str: initStr };
-    return { parse: [res.parse], str: res.str.slice(2) };
-  };
-  const pOr = (p1) => (p2) => (str) => {
-    const res = p1(str);
-    if (res.parse !== "") return res;
-    return p2(str);
-  };
-  const pValue = (str) => {
-    let parse = [];
-    for (let i = 0; i < str.length; i++) {
-      const thing = str.slice(i, i + 2);
-      if (thing === "(>" || thing === "<)") break;
-      parse.push(str[i]);
-    }
-    return { parse, str: str.slice(parse.length) };
-  };
-  const pRepeat = (p) => (str) => {
-    let res = [];
-    while (true) {
-      const par = p(str);
-      if (par.str === str) {
-        return { parse: res, str };
-      }
-      res = res.concat(par.parse);
-      str = par.str;
-    }
-  };
-  const pSelectionString = pRepeat(pOr(pNest)(pValue));
   function calcSelection() {
     selection = selectionSinks();
     processedSelection = [];
@@ -765,9 +770,18 @@
     });
   }
 </script>
-good things so far:<br />
-- mapping str -> lines -> draws is pretty easy to think about<br />
-- basic history is out of the way<br />
-<br />
 
-<div id="outer" style="padding: 40px"></div>
+<div id="outer" style="padding: 40px">
+  <canvas
+    id="c"
+    height="700"
+    width="700"
+    style="
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      border: 1px solid black;
+      border-radius: 4px;
+    "
+  ></canvas>
+</div>

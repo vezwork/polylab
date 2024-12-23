@@ -23,7 +23,10 @@ import {
 } from "./graph_edit.js";
 import { concat } from "../../../lib/structure/Iterable.js";
 
-const nexts = (p) => Arrow.all.filter(({ p1, p2 }) => p1 === p && p2.char);
+const nexts = (p) =>
+  Arrow.all
+    .filter(({ p1, p2 }) => p1 === p && p2.char)
+    .toSorted(({ p2: a }, { p2: b }) => a.p[0] - b.p[0]);
 const prevs = (p) => Arrow.all.filter(({ p1, p2 }) => p2 === p && p1.char);
 const sibs = (p) => prevs(p).flatMap(({ p1, p2 }) => nexts(p1));
 const nextSib = (p) => {

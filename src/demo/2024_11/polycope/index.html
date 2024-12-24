@@ -24,6 +24,15 @@
   import { Caret } from "./caret.js";
   import { CaretSink, ContainerSink } from "./caretsink.js";
   import { pSelectionString } from "./parse.js";
+  import {
+    insertAt,
+    deleteAt,
+    linePos,
+    dist,
+    distMouseEventToEl,
+    elTopAndBottom,
+    vertDistPointToLineEl,
+  } from "./helpers.js";
 
   const caretEl = document.createElement("span");
   caretEl.style.display = "block";
@@ -34,7 +43,6 @@
   caretEl.style.background = "black";
   caretEl.style.pointerEvents = "none";
 
-  //   const anchorEl = document.createElement("span");
   const anchorEl = new DOMParser().parseFromString(
     `<span style="
   display:block;
@@ -46,47 +54,11 @@
   "></span>`,
     "text/html"
   ).body.firstChild;
-  //   anchorEl.style.display = "block";
   document.body.prepend(anchorEl);
-  //   anchorEl.style.position = "absolute";
-  //   anchorEl.style.width = "2px";
-  //   anchorEl.style.height = "100px";
-  //   anchorEl.style.background = "rgb(187, 107, 120)";
-
-  const insertAt = (str, i, char) => str.toSpliced(i, 0, char);
-  const deleteAt = (str, i) => str.toSpliced(i, 1);
-  const linePos = (str, curPos) => {
-    let lineIndex = 0;
-    let inlineIndex = 0;
-    for (let i = 0; i < str.length; i++) {
-      if (i < curPos) {
-        inlineIndex++;
-        if (str[i] === "\n") {
-          lineIndex++;
-          inlineIndex = 0;
-        }
-      }
-    }
-    return [inlineIndex, lineIndex];
-  };
-
-  const dist = ([x1, y1], [x2, y2]) =>
-    Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-  const distMouseEventToEl = (e, el) => {
-    const rect = el.getBoundingClientRect();
-    return dist([e.clientX, e.clientY], [rect.right, rect.top]);
-  };
-  const elTopAndBottom = (el) => {
-    const rect = el.getBoundingClientRect();
-    return [rect.top, rect.bottom];
-  };
-  const vertDistPointToLineEl = (e, lineEl) => {
-    const [t, b] = elTopAndBottom(lineEl);
-    const p = e.clientY;
-    return p >= t && p <= b ? 0 : p <= t ? t - p : p - b;
-  };
 
   const {
+    getHistoryHead,
+    setHistoryHead,
     removeLastThat,
     pushHistory,
     undo,
@@ -144,7 +116,7 @@
       calcSelection();
     };
     wrapEl.addEventListener("mousedown", mousePick(true));
-    wrapEl.addEventListener("mousemove", (e) => {
+    document.addEventListener("mousemove", (e) => {
       if (e.buttons === 1) mousePick(false)(e);
     });
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
@@ -195,6 +167,7 @@
       // Note: its gross that we have to clear processedSelection here.
       // This should always be calc'd from caret and anchor pos, not manually set.
       processedSelection = [];
+      e.processedSelection = [];
 
       if (e.paste) {
         if (e.paste.id) {
@@ -511,6 +484,47 @@
       bigreduce();
     }
   });
+
+  function loadFromLocalStorage() {
+    pushHistory({
+      caretId,
+      paste: localStorage.getItem("eval").split(""),
+      caretPos,
+      processedSelection,
+      anchorId,
+      anchorPos,
+      comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+    });
+    bigreduce();
+    const toEval = e1.str.join("");
+    eval(toEval);
+  }
+  const CHECKPOINT_THUMB_SIZE = 70;
+  function createHistoryCheckpoint() {
+    const newC = document.createElement("canvas");
+    newC.width = CHECKPOINT_THUMB_SIZE;
+    newC.height = CHECKPOINT_THUMB_SIZE;
+    const newCtx = newC.getContext("2d");
+    newCtx.drawImage(c, 0, 0, CHECKPOINT_THUMB_SIZE, CHECKPOINT_THUMB_SIZE);
+
+    const image = new Image();
+    image.style.border = "1px solid black";
+    image.style.borderRadius = "4px";
+    image.style.display = "block";
+    image.style.margin = "10px 0";
+    image.src = newC.toDataURL();
+    const historyNode = getHistoryHead();
+    image.addEventListener("click", (e) => {
+      setHistoryHead(historyNode);
+      bigreduce();
+      const toEval = e1.str.join("");
+      eval(toEval);
+    });
+    document.getElementById("outer").appendChild(image);
+  }
+  loadFromLocalStorage();
+  createHistoryCheckpoint();
+
   let localUndoBase = null;
   document.body.addEventListener("keydown", (e) => {
     if (e.key === "Backspace") e.preventDefault();
@@ -531,22 +545,9 @@
       console.log("evaling", toEval);
       localStorage.setItem("eval", toEval);
       eval(toEval);
-      return;
-    }
-    if (e.key === "l" && e.metaKey) {
-      e.preventDefault();
-      pushHistory({
-        caretId,
-        paste: localStorage.getItem("eval").split(""),
-        caretPos,
-        processedSelection,
-        anchorId,
-        anchorPos,
-        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-      });
-      bigreduce();
-      const toEval = e1.str.join("");
-      eval(toEval);
+
+      createHistoryCheckpoint();
+
       return;
     }
     if (e.key === "a" && e.metaKey) {

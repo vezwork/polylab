@@ -1,6 +1,10 @@
 export const history = () => {
     const historyRoot = { next: [] };
     let historyHead = historyRoot;
+    const getHistoryHead = () => historyHead;
+    const setHistoryHead = (node) => {
+        historyHead = node;
+    };
     const addHistoryItemAtNode = (node) => (data) => {
         const newNode = {
             data,
@@ -67,6 +71,8 @@ export const history = () => {
         return result;
     };
     return {
+        getHistoryHead,
+        setHistoryHead,
         pushHistory,
         undo,
         redo,

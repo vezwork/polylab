@@ -143,7 +143,7 @@
     wrapEl.myDeleteAt = myDeleteAt;
     wrapEl.myInsertAt = myInsertAt;
 
-    function act(e, shouldCalcLines = true) {
+    function act(e) {
       if (e.caretId !== id) return;
       caretId = e.caretId;
       caretPos = e.caretPos;
@@ -154,7 +154,6 @@
         // selectionSinks handles that.
         for (const [sid, spos] of processedSelection.toReversed()) {
           elFromFocusId[sid]?.myDeleteAt(spos);
-          elFromFocusId[sid]?.calcLines();
         }
         if (e.comp !== 1) {
           caretPos = e.caretPos;
@@ -167,56 +166,47 @@
       // Note: its gross that we have to clear processedSelection here.
       // This should always be calc'd from caret and anchor pos, not manually set.
       processedSelection = [];
-      e.processedSelection = [];
+      e = { ...e, processedSelection: [] };
 
       if (e.paste) {
         if (e.paste.id) {
-          act({ ...e, paste: undefined, newId: e.paste.id }, false);
-          elFromFocusId[caretId]?.act(
-            {
-              ...e,
-              paste: e.paste.data,
-              caretId,
-              caretPos,
-            },
-            false
-          );
+          act({ ...e, paste: undefined, newId: e.paste.id });
+          elFromFocusId[caretId]?.act({
+            ...e,
+            paste: e.paste.data,
+            caretId,
+            caretPos,
+          });
         } else if (Array.isArray(e.paste)) {
           let initCaretPos = e.caretPos;
           let initId = e.caretId;
           for (const entry of e.paste) {
-            act(
-              {
-                ...e,
-                paste: entry,
-                caretId: initId,
-                caretPos: initCaretPos,
-              },
-              false
-            );
+            act({
+              ...e,
+              paste: entry,
+              caretId: initId,
+              caretPos: initCaretPos,
+            });
             initCaretPos++;
           }
         } else {
           // when does this happen!?
-          act({ ...e, paste: undefined, key: e.paste }, false);
+          act({ ...e, paste: undefined, key: e.paste });
         }
       } else if (e.newId) {
         const newE = editor(e.newId, wrapEl.sink);
         newE.render();
         elFromFocusId[caretId]?.myInsertAt(caretPos, newE);
-        if (shouldCalcLines) [caretId]?.calcLines();
 
         caretPos = 0;
         caretId = newE.id;
       } else if (e.key.length === 1) {
         elFromFocusId[caretId]?.myInsertAt(caretPos, e.key);
-        if (shouldCalcLines) elFromFocusId[caretId]?.calcLines();
 
         caretPos++;
       }
       if (e.key === "Enter") {
         elFromFocusId[caretId]?.myInsertAt(caretPos, "\n");
-        if (shouldCalcLines) elFromFocusId[caretId]?.calcLines();
         caretPos++;
       }
       if (e.key === "Backspace") {
@@ -225,7 +215,7 @@
           str = deleteAt(str, caretPos - 1);
           caretPos--;
         } else {
-          // TODO
+          // TODO?: delete at start of editor
           //   caretPos = wrapEl.pos - 1;
           //   caretId = wrapEl.parentId;
           console.log(wrapEl.parentId === undefined);
@@ -235,7 +225,6 @@
       anchorId = caretId;
 
       wrapEl.str = str;
-      if (shouldCalcLines) calcLines();
     }
 
     function calcLines() {
@@ -350,7 +339,7 @@
     window.mainline = mainline();
     for (const e of mainline()) {
       const el = elFromFocusId[e.caretId];
-      el.act(e, false);
+      el.act(e);
     }
     for (const [id, el] of Object.entries(elFromFocusId)) {
       el.calcLines();

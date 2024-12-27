@@ -453,18 +453,20 @@ document.addEventListener("paste", (e) => {
 });
 
 function loadFromLocalStorage() {
-  pushHistory({
-    caretId,
-    paste: localStorage.getItem("eval").split(""),
-    caretPos,
-    processedSelection,
-    anchorId,
-    anchorPos,
-    comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-  });
-  bigreduce();
-  const toEval = e1.str.join("");
-  sandboxedEval(toEval, true);
+  if (localStorage.getItem("eval")) {
+    pushHistory({
+      caretId,
+      paste: localStorage.getItem("eval").split(""),
+      caretPos,
+      processedSelection,
+      anchorId,
+      anchorPos,
+      comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+    });
+    bigreduce();
+    const toEval = e1.str.join("");
+    sandboxedEval(toEval, true);
+  }
 }
 const CHECKPOINT_THUMB_SIZE = 70;
 function createHistoryCheckpoint(c) {

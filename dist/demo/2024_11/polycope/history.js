@@ -60,17 +60,18 @@ export const history = () => {
     };
     const mainline = () => {
         const result = [];
-        let cur = historyRoot;
-        while (cur.next.at(-1)) {
-            if (cur === historyHead)
+        let cur = historyHead;
+        while (cur.parent) {
+            if (cur === historyRoot)
                 break;
-            cur = cur.next.at(-1);
             if (!cur.removed)
-                result.push(cur.data);
+                result.unshift(cur.data);
+            cur = cur.parent;
         }
         return result;
     };
     return {
+        historyRoot,
         getHistoryHead,
         setHistoryHead,
         pushHistory,

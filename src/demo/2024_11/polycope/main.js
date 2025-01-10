@@ -35,6 +35,7 @@ const anchorEl = new DOMParser().parseFromString(
 document.body.prepend(anchorEl);
 
 const {
+  historyRoot,
   getHistoryHead,
   setHistoryHead,
   removeLastThat,
@@ -245,6 +246,10 @@ const editor = (id = Math.random() + "", parentContainerSink) => {
           charEl.style.height = "16px";
         } else {
           charEl = document.createElement("span");
+          if (char === "(" || char === ")" || char === "[" || char === "]")
+            charEl.style.color = "red";
+          if (!isNaN(char) && !isNaN(parseInt(char)))
+            charEl.style.color = "blue";
           charEl.innerText = char;
         }
 
@@ -468,6 +473,7 @@ function loadFromLocalStorage() {
     sandboxedEval(toEval, true);
   }
 }
+const historyCheckpoints = new Map();
 const CHECKPOINT_THUMB_SIZE = 70;
 function createHistoryCheckpoint(c) {
   const newC = document.createElement("canvas");
@@ -489,7 +495,8 @@ function createHistoryCheckpoint(c) {
     const toEval = e1.str.join("");
     sandboxedEval(toEval);
   });
-  document.getElementById("outer").appendChild(image);
+  historyCheckpoints.set(historyNode, { image, node: historyNode });
+  // document.getElementById("outer").appendChild(image);
 }
 
 function sandboxedEval(toEval, shouldCreateHistoryCheckpoint = false) {
@@ -498,6 +505,7 @@ function sandboxedEval(toEval, shouldCreateHistoryCheckpoint = false) {
     html, body {
       margin: 0;
       padding: 0;
+      overflow:hidden;
     }
   </style>
   <canvas
@@ -506,10 +514,11 @@ function sandboxedEval(toEval, shouldCreateHistoryCheckpoint = false) {
     width="700"
   ></canvas>
   <script type="module">
+    const ctx = c.getContext('2d');
     ${toEval}
   </script>
   `;
-  document.getElementById("myIframe")?.remove();
+  const prevIframe = document.getElementById("myIframe");
   const iframe = document.createElement("iframe");
   iframe.srcdoc = htmlString;
   iframe.onload = function () {
@@ -526,7 +535,9 @@ function sandboxedEval(toEval, shouldCreateHistoryCheckpoint = false) {
   iframe.style.right = "40px";
   iframe.style.border = "1px solid black";
   iframe.style.borderRadius = "4px";
+  iframe;
   document.getElementById("outer").append(iframe);
+  setTimeout(() => prevIframe?.remove(), 100); // try to prevent flicker
 }
 loadFromLocalStorage();
 // createHistoryCheckpoint();
@@ -768,3 +779,153 @@ function calcSelection() {
     }
   });
 }
+
+// HISTORY TREE STUFF
+const filteredNexts = (node, f) => {
+  let todo = [node];
+  let done = [];
+
+  while (todo.length > 0) {
+    const cur = todo.pop();
+    for (const next of cur.next) {
+      if (f(next)) done.push(next);
+      else todo.push(next);
+    }
+  }
+  return done;
+};
+import { SetMap } from "../../../lib/structure/data.js";
+const c = document.createElement("canvas");
+c.width = 1800;
+c.height = 400;
+document.body.append(c);
+const ctx = c.getContext("2d");
+
+const square = (w, h, img) => {
+  const obj = { w, h };
+  obj.draw = (x, y, ctx) => {
+    obj.x = x;
+    obj.y = y;
+    // ctx.fillRect(x, y, w, h);
+    if (img) {
+      const pattern = ctx.createPattern(img, "no-repeat");
+      pattern.setTransform({
+        a: w / CHECKPOINT_THUMB_SIZE,
+        b: 0,
+        c: 0,
+        d: h / CHECKPOINT_THUMB_SIZE,
+        e: x,
+        f: y,
+      });
+      ctx.fillStyle = pattern;
+      ctx.roundRect(x, y, w, h, 5);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  };
+  return obj;
+};
+
+const centerX = (...ds) => {
+  const w = Math.max(...ds.map((d) => d.w));
+  const h = Math.max(...ds.map((d) => d.h));
+  const obj = { w, h };
+
+  const draw = (x, y, ctx) => {
+    obj.x = x;
+    obj.y = y;
+    const cw = x + w / 2;
+    for (const d of ds) {
+      const dHalfW = d.w / 2;
+      d.draw(cw - dHalfW, y, ctx);
+    }
+  };
+  obj.draw = draw;
+  return obj;
+};
+const juxtH = (pad, ...ds) => {
+  const w = ds.reduce((prev, cur) => prev + cur.w, 0) + pad * (ds.length - 1);
+  const h = Math.max(...ds.map((d) => d.h));
+  const obj = { w, h };
+
+  const draw = (x, y, ctx) => {
+    obj.x = x;
+    obj.y = y;
+    let curX = x;
+    for (const d of ds) {
+      d.draw(curX, y, ctx);
+      curX += d.w + pad;
+    }
+  };
+  obj.draw = draw;
+  return obj;
+};
+const juxtV = (pad, ...ds) => {
+  const h = ds.reduce((prev, cur) => prev + cur.h, 0) + pad * (ds.length - 1);
+  const w = Math.max(...ds.map((d) => d.w));
+  const obj = { w, h };
+
+  const draw = (x, y, ctx) => {
+    obj.x = x;
+    obj.y = y;
+    let curY = y;
+    for (const d of ds) {
+      d.draw(x, curY, ctx);
+      curY += d.h + pad;
+    }
+  };
+  return { w, h, draw };
+};
+const rels = new SetMap();
+const nodes = new Map();
+const t = (hnode, ...ds) => {
+  const root = square(50, 50, hnode?.image);
+  nodes.set(root, hnode);
+  for (const [r] of ds) rels.add(root, r);
+  return [root, juxtH(12, root, juxtV(16, ...ds.map((d) => d[1])))];
+};
+
+const historyToTree = (hNode) =>
+  t(
+    historyCheckpoints.get(hNode),
+    ...filteredNexts(hNode, (n) => historyCheckpoints.get(n)).map(historyToTree)
+  );
+
+function draw() {
+  requestAnimationFrame(draw);
+  ctx.clearRect(0, 0, c.width, c.height);
+  rels.clear();
+  nodes.clear();
+  historyToTree(historyRoot)[1].draw(0, 0, ctx);
+  for (const [p, cs] of rels) {
+    for (const c of cs) {
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const s = [p.x + p.w, p.y + p.h / 2];
+      const e = [c.x, c.y + c.w / 2];
+      ctx.moveTo(...s);
+      ctx.lineTo(s[0] + (e[0] - s[0]) / 2, s[1]);
+      ctx.lineTo(s[0] + (e[0] - s[0]) / 2, e[1]);
+      ctx.lineTo(...e);
+      ctx.stroke();
+    }
+  }
+}
+requestAnimationFrame(draw);
+
+c.addEventListener("click", (e) => {
+  const x = e.offsetX;
+  const y = e.offsetY;
+  for (const [n, h] of nodes) {
+    if (x > n.x && x < n.x + n.w && y > n.y && y < n.y + n.h) {
+      console.log(x, y, n);
+      setHistoryHead(h.node);
+      bigreduce();
+      const toEval = e1.str.join("");
+      sandboxedEval(toEval);
+      return;
+    }
+  }
+});

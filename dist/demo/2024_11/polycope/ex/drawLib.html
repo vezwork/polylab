@@ -1,0 +1,64 @@
+<style>
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+</style>
+<canvas id="c" height="700" width="700"></canvas>
+<script type="module">
+  const ctx = c.getContext("2d");
+
+  const square = (w, h) => ({
+    w,
+    h,
+    draw: (x, y, ctx) => ctx.fillRect(x, y, w, h),
+  });
+  const sqr = square(20, 20);
+  const sqr2 = square(60, 40);
+  const sqr3 = square(5, 240);
+
+  const centerX = (...ds) => {
+    const w = Math.max(...ds.map((d) => d.w));
+    const h = Math.max(...ds.map((d) => d.h));
+
+    const draw = (x, y, ctx) => {
+      const cw = x + w / 2;
+      for (const d of ds) {
+        const dHalfW = d.w / 2;
+        d.draw(cw - dHalfW, y, ctx);
+      }
+    };
+    return { w, h, draw };
+  };
+  const juxtH = (pad, ...ds) => {
+    const w = ds.reduce((prev, cur) => prev + cur.w, 0) + pad * (ds.length - 1);
+    const h = Math.max(...ds.map((d) => d.h));
+    const draw = (x, y, ctx) => {
+      let curX = x;
+      for (const d of ds) {
+        d.draw(curX, y, ctx);
+        curX += d.w + pad;
+      }
+    };
+    return { w, h, draw };
+  };
+  const juxtV = (pad, ...ds) => {
+    const h = ds.reduce((prev, cur) => prev + cur.h, 0) + pad * (ds.length - 1);
+    const w = Math.max(...ds.map((d) => d.w));
+    const draw = (x, y, ctx) => {
+      let curY = y;
+      for (const d of ds) {
+        d.draw(x, curY, ctx);
+        curY += d.h + pad;
+      }
+    };
+    return { w, h, draw };
+  };
+  const tree = (...ds) => {
+    const root = sqr2;
+    return juxtV(20, root, juxtH(20, ...ds));
+  };
+
+  tree(tree(), tree(tree(), tree())).draw(20, 30, ctx);
+</script>

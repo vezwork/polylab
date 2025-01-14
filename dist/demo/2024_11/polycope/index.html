@@ -6,6 +6,16 @@
     font-size: 18px;
     font-family: "fira code";
   }
+  html {
+    scroll-snap-type: y proximity;
+  }
+  .editor-wrapper {
+    padding: 40px;
+    scroll-snap-align: start;
+  }
+  canvas {
+    scroll-snap-align: start;
+  }
   .editor {
     padding: 4px 8px 4px 4px;
     min-width: 8px;
@@ -22,5 +32,3 @@
 <script type="module">
   import * as a from "./main.js";
 </script>
-
-<div id="outer" style="padding: 40px"></div>

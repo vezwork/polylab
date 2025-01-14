@@ -1,9 +1,19 @@
 export const history = () => {
-  const historyRoot = { next: [] };
+  let historyRoot = { next: [] };
   let historyHead = historyRoot;
+  const getHistoryRoot = () => historyRoot;
   const getHistoryHead = () => historyHead;
   const setHistoryHead = (node) => {
     historyHead = node;
+  };
+  const getEnd = () => {
+    let cur = historyRoot;
+    while (cur.next.at(0)) cur = cur.next.at(0)!;
+    return cur;
+  };
+  const setHistory = (root, head) => {
+    historyRoot = root;
+    historyHead = head ?? getEnd();
   };
 
   const addHistoryItemAtNode = (node) => (data) => {
@@ -69,9 +79,18 @@ export const history = () => {
     }
     return result;
   };
+  const lastCheckpoint = () => {
+    let cur = historyHead;
+    while (true) {
+      if (cur.checkpoint) return cur;
+      cur = cur.parent;
+      if (!cur) return;
+    }
+  };
 
   return {
-    historyRoot,
+    getHistoryRoot,
+    setHistory,
     getHistoryHead,
     setHistoryHead,
     pushHistory,
@@ -80,5 +99,6 @@ export const history = () => {
     mainline,
     removeLastThat,
     restoreFirstThat,
+    lastCheckpoint,
   };
 };

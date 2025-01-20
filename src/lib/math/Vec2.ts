@@ -44,6 +44,7 @@ export const distance = (v1: Vec2, v2: Vec2): number => length(sub(v1, v2));
 export const round = (v: Vec2) => v.map(Math.round);
 
 // name ref: https://twitter.com/FreyaHolmer/status/1587900959891472384
+// same as coLerp, but at the origin
 export const basisProj = (base: Vec2) => (v: Vec2) =>
   dot(v, base) / dot(base, base);
 // ==: `dot(v, base) / length(base)`
@@ -51,6 +52,10 @@ export const basisProj = (base: Vec2) => (v: Vec2) =>
 export const proj = (base: Vec2) => (v: Vec2) =>
   mul(dot(v, base) / dot(base, base), base);
 // ==: `mul(dot(v, normalize(base)), normalize(base))` and `mul(basisProj(base)(v), base)
+export const reject =
+  (base: Vec2) =>
+  (p: Vec2): Vec2 =>
+    sub(p, proj(base)(p));
 
 // reference: https://en.wikipedia.org/wiki/Rotation_matrix
 export const rotate = (v: Vec2, theta: number): Vec2 => [
@@ -80,3 +85,12 @@ export const assign = (v1: Vec2) => (v2: Vec2) => {
   v1[0] = v2[0];
   v1[1] = v2[1];
 };
+
+export const lerp = (start: Vec2, end: Vec2, t: number): Vec2 =>
+  add(start, mul(t, sub(end, start)));
+export const coLerp = (start: Vec2, end: Vec2, p: Vec2): number =>
+  basisProj(sub(end, start))(sub(p, start));
+export const rejecta = (start: Vec2, end: Vec2, p: Vec2): Vec2 =>
+  reject(sub(end, start))(sub(p, start));
+export const projecta = (start: Vec2, end: Vec2, v: Vec2) =>
+  proj(sub(end, start))(sub(v, start));

@@ -146,6 +146,7 @@ const editor = (id = Math.random() + "", parentContainerSink) => {
     }
     // Note: its gross that we have to clear processedSelection here.
     // This should always be calc'd from caret and anchor pos, not manually set.
+    let didHaveProcessedSelection = processedSelection.length > 0;
     processedSelection = [];
     e = { ...e, processedSelection: [] };
 
@@ -191,7 +192,7 @@ const editor = (id = Math.random() + "", parentContainerSink) => {
       caretPos++;
     }
     if (e.key === "Backspace") {
-      if (e.processedSelection.length > 0) {
+      if (didHaveProcessedSelection) {
       } else if (caretPos > 0) {
         str = deleteAt(str, caretPos - 1);
         caretPos--;
@@ -199,7 +200,7 @@ const editor = (id = Math.random() + "", parentContainerSink) => {
         // TODO?: delete at start of editor
         //   caretPos = wrapEl.pos - 1;
         //   caretId = wrapEl.parentId;
-        console.log(wrapEl.parentId === undefined);
+        // console.log(wrapEl.parentId === undefined);
       }
     }
     anchorPos = caretPos;
@@ -236,6 +237,8 @@ const editor = (id = Math.random() + "", parentContainerSink) => {
       if (y === 0) lineStartEl.isEditorStart = true;
       else lineStartEl.isNewLine = true;
       pos++;
+      let isInCommentBlock = false;
+      let isInString = false;
       let els = line.map((char, x) => {
         let charEl;
         if (char.isEditor) {
@@ -248,10 +251,20 @@ const editor = (id = Math.random() + "", parentContainerSink) => {
           charEl.style.height = "16px";
         } else {
           charEl = document.createElement("span");
+          if (char === "/" && line[x + 1] === "/") {
+            isInCommentBlock = true;
+          }
+          if (isInString) charEl.style.color = "orangered";
+          if (char === "'") {
+            isInString = !isInString;
+          }
+          if (isInString) charEl.style.color = "orangered";
           if (char === "(" || char === ")" || char === "[" || char === "]")
             charEl.style.color = "violet";
           if (!isNaN(char) && !isNaN(parseInt(char)))
             charEl.style.color = "purple";
+          if (isInCommentBlock) charEl.style.color = "crimson";
+
           charEl.innerText = char;
         }
 
@@ -511,7 +524,7 @@ function loadFromLocalStorage() {
     setHistory(root);
     bigreduce();
     const toEval = e1.str.join("");
-    sandboxedEval(toEval);
+    sandboxedEval(toEval, () => drawHistoryTree());
   }
 }
 // const historyCheckpoints = new Map();
@@ -580,9 +593,9 @@ function sandboxedEval(toEval, callback = () => {}) {
 
   const iframeDiv = document.createElement("div");
   iframeDiv.style.position = "absolute";
-  iframeDiv.style.top = "290px";
+  iframeDiv.style.top = "790px";
   iframeDiv.style.right = "40px";
-  iframeDiv.style.height = "110%";
+  iframeDiv.style.height = "calc(100% - 40px)";
   iframeDiv.style.width = "700px";
   iframeDiv.style.display = "flex";
   iframeDiv.style.flexDirection = "row-reverse";
@@ -615,6 +628,7 @@ document.body.addEventListener("keydown", (e) => {
     sandboxedEval(toEval, (iframeDoc) => {
       createHistoryCheckpoint(iframeDoc.getElementById("c"));
       localStorage.setItem("history", serializeHistory(getHistoryRoot()));
+      drawHistoryTree();
     });
 
     return;
@@ -694,7 +708,7 @@ document.body.addEventListener("keydown", (e) => {
       calcSelection();
     }
   } else if (discrim(e) && !e.metaKey) {
-    pushHistory({
+    const h = {
       key: e.key,
       caretId,
       caretPos,
@@ -702,7 +716,8 @@ document.body.addEventListener("keydown", (e) => {
       anchorId,
       anchorPos,
       comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-    });
+    };
+    pushHistory(h);
     bigreduce();
   }
 });
@@ -855,9 +870,9 @@ const ctx = c.getContext("2d");
 // Handle dpr
 const dpr = window.devicePixelRatio;
 c.width = (window.innerWidth - 20) * dpr;
-c.height = 250 * dpr;
+c.height = 750 * dpr;
 c.style.width = window.innerWidth - 20 + "px";
-c.style.height = 250 + "px";
+c.style.height = 750 + "px";
 ctx.scale(dpr, dpr);
 
 const square = (w, h, img, isLastCheckpoint) => {
@@ -867,15 +882,17 @@ const square = (w, h, img, isLastCheckpoint) => {
     obj.y = y;
     if (img) {
       const pattern = ctx.createPattern(img, "no-repeat");
-      pattern.setTransform({
-        a: w / CHECKPOINT_THUMB_SIZE,
-        b: 0,
-        c: 0,
-        d: h / CHECKPOINT_THUMB_SIZE,
-        e: x,
-        f: y,
-      });
-      ctx.fillStyle = pattern;
+      if (pattern) {
+        pattern.setTransform({
+          a: w / CHECKPOINT_THUMB_SIZE,
+          b: 0,
+          c: 0,
+          d: h / CHECKPOINT_THUMB_SIZE,
+          e: x,
+          f: y,
+        });
+        ctx.fillStyle = pattern;
+      }
       ctx.beginPath();
       ctx.roundRect(x, y, w, h, 5);
       ctx.fill();
@@ -965,8 +982,9 @@ const historyToTree = (hNode) =>
 
 let origin = [-50, 20];
 
-function draw() {
-  requestAnimationFrame(draw);
+drawHistoryTree();
+function drawHistoryTree() {
+  //requestAnimationFrame(draw);
   ctx.clearRect(0, 0, c.width, c.height);
   rels.clear();
   checkpoints.clear();
@@ -986,19 +1004,20 @@ function draw() {
     }
   }
 }
-requestAnimationFrame(draw);
+requestAnimationFrame(drawHistoryTree);
 
 let mouseDown = false;
 c.addEventListener("mousedown", (e) => {
   mouseDown = true;
 });
-c.addEventListener("mouseup", (e) => {
+document.addEventListener("mouseup", (e) => {
   mouseDown = false;
 });
-c.addEventListener("mousemove", (e) => {
+document.addEventListener("mousemove", (e) => {
   if (mouseDown) {
     origin[0] += e.movementX;
     origin[1] += e.movementY;
+    drawHistoryTree();
   }
 });
 c.addEventListener("click", (e) => {
@@ -1009,7 +1028,7 @@ c.addEventListener("click", (e) => {
       setHistoryHead(h.node);
       bigreduce();
       const toEval = e1.str.join("");
-      sandboxedEval(toEval);
+      sandboxedEval(toEval, () => drawHistoryTree());
       return;
     }
   }

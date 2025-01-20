@@ -24,10 +24,12 @@ export const angleBetween = (v1, v2) => angleOf(sub(v2, v1));
 export const distance = (v1, v2) => length(sub(v1, v2));
 export const round = (v) => v.map(Math.round);
 // name ref: https://twitter.com/FreyaHolmer/status/1587900959891472384
+// same as coLerp, but at the origin
 export const basisProj = (base) => (v) => dot(v, base) / dot(base, base);
 // ==: `dot(v, base) / length(base)`
 export const proj = (base) => (v) => mul(dot(v, base) / dot(base, base), base);
 // ==: `mul(dot(v, normalize(base)), normalize(base))` and `mul(basisProj(base)(v), base)
+export const reject = (base) => (p) => sub(p, proj(base)(p));
 // reference: https://en.wikipedia.org/wiki/Rotation_matrix
 export const rotate = (v, theta) => [
     Math.cos(theta) * v[0] - Math.sin(theta) * v[1],
@@ -50,3 +52,7 @@ export const assign = (v1) => (v2) => {
     v1[0] = v2[0];
     v1[1] = v2[1];
 };
+export const lerp = (start, end, t) => add(start, mul(t, sub(end, start)));
+export const coLerp = (start, end, p) => basisProj(sub(end, start))(sub(p, start));
+export const rejecta = (start, end, p) => reject(sub(end, start))(sub(p, start));
+export const projecta = (start, end, v) => proj(sub(end, start))(sub(v, start));

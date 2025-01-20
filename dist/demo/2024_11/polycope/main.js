@@ -11,6 +11,7 @@ import {
   elTopAndBottom,
   vertDistPointToLineEl,
 } from "./helpers.js";
+import { editor } from "./editor.js";
 
 const caretEl = document.createElement("span");
 caretEl.style.display = "block";
@@ -61,278 +62,34 @@ let anchorId = caretId;
 let selection = [];
 let processedSelection = [];
 
-const editor = (id = Math.random() + "", parentContainerSink) => {
-  const wrapEl = document.createElement("div");
-  wrapEl.className = "editor";
-  elFromFocusId[id] = wrapEl;
-  wrapEl.style.display = "inline-block";
-  wrapEl.tabIndex = 0;
-  const mousePick = (shouldMoveAnchor) => (e) => {
-    e.stopPropagation();
+function renderCaret() {
+  const [x, y] = linePos(elFromFocusId[caretId].str, caretPos);
 
-    selectionSinks().forEach((c) => {
-      c.charEl.isSelected = false;
-      c.charEl.classList.remove("selected");
-      if (c.charEl.isEditorStart)
-        elFromFocusId[c.charEl.parentId].isStartSelected = false;
-    });
+  const caretContainerRect = e1.getBoundingClientRect();
+  const rect = elFromFocusId[caretId].els[y][x].getBoundingClientRect();
 
-    const closestLineEl = wrapEl.lineEls.sort(
-      (el1, el2) =>
-        vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2)
-    )[0];
-    const picked = [...closestLineEl.children].sort(
-      (el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2)
-    )[0];
-    caretId = id;
-    caretPos = picked.pos;
+  caretEl.style.height = rect.height;
+  caretEl.style.transform = `translate(${
+    rect.right - caretContainerRect.x
+  }px, ${rect.y - caretContainerRect.y}px)`;
+}
+function renderAnchor() {
+  const [x, y] = linePos(elFromFocusId[anchorId].str, anchorPos);
 
-    if (shouldMoveAnchor) {
-      anchorId = id;
-      anchorPos = picked.pos;
-      renderAnchor();
-    }
-    renderCaret();
+  const caretContainerRect = e1.getBoundingClientRect();
+  const rect = elFromFocusId[anchorId].els[y][x].getBoundingClientRect();
 
-    calcSelection();
-  };
-  wrapEl.addEventListener("mousedown", mousePick(true));
-  wrapEl.addEventListener("mousemove", (e) => {
-    if (e.buttons === 1) mousePick(false)(e);
-  });
-  wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
-  wrapEl.sink.parent = parentContainerSink ?? null;
-
-  let str = [];
-  let lines = [[]];
-
-  function reset() {
-    str = [];
-    lines = [[]];
-
-    wrapEl.innerHTML = "";
-  }
-
-  function myDeleteAt(pos) {
-    str = deleteAt(str, pos - 1);
-    wrapEl.str = str;
-  }
-  function myInsertAt(pos, char) {
-    str = insertAt(str, pos, char);
-    wrapEl.str = str;
-  }
-  wrapEl.myDeleteAt = myDeleteAt;
-  wrapEl.myInsertAt = myInsertAt;
-
-  function act(e) {
-    if (e.caretId !== id) return;
-    caretId = e.caretId;
-    caretPos = e.caretPos;
-    processedSelection = e.processedSelection;
-
-    if (processedSelection.length > 0) {
-      // deletion works here because processedSelection is always ordered left to right,
-      // selectionSinks handles that.
-      for (const [sid, spos] of processedSelection.toReversed()) {
-        elFromFocusId[sid]?.myDeleteAt(spos);
-      }
-      if (e.comp !== 1) {
-        caretPos = e.caretPos;
-        caretId = e.caretId;
-      } else {
-        caretPos = e.anchorPos;
-        caretId = e.anchorId;
-      }
-    }
-    // Note: its gross that we have to clear processedSelection here.
-    // This should always be calc'd from caret and anchor pos, not manually set.
-    let didHaveProcessedSelection = processedSelection.length > 0;
-    processedSelection = [];
-    e = { ...e, processedSelection: [] };
-
-    if (e.paste) {
-      if (e.paste.id) {
-        act({ ...e, paste: undefined, newId: e.paste.id });
-        elFromFocusId[caretId]?.act({
-          ...e,
-          paste: e.paste.data,
-          caretId,
-          caretPos,
-        });
-      } else if (Array.isArray(e.paste)) {
-        let initCaretPos = e.caretPos;
-        let initId = e.caretId;
-        for (const entry of e.paste) {
-          act({
-            ...e,
-            paste: entry,
-            caretId: initId,
-            caretPos: initCaretPos,
-          });
-          initCaretPos++;
-        }
-      } else {
-        // when does this happen!?
-        act({ ...e, paste: undefined, key: e.paste });
-      }
-    } else if (e.newId) {
-      const newE = editor(e.newId, wrapEl.sink);
-      newE.render();
-      elFromFocusId[caretId]?.myInsertAt(caretPos, newE);
-
-      caretPos = 0;
-      caretId = newE.id;
-    } else if (e.key.length === 1) {
-      elFromFocusId[caretId]?.myInsertAt(caretPos, e.key);
-
-      caretPos++;
-    }
-    if (e.key === "Enter") {
-      elFromFocusId[caretId]?.myInsertAt(caretPos, "\n");
-      caretPos++;
-    }
-    if (e.key === "Backspace") {
-      if (didHaveProcessedSelection) {
-      } else if (caretPos > 0) {
-        str = deleteAt(str, caretPos - 1);
-        caretPos--;
-      } else {
-        // TODO?: delete at start of editor
-        //   caretPos = wrapEl.pos - 1;
-        //   caretId = wrapEl.parentId;
-        // console.log(wrapEl.parentId === undefined);
-      }
-    }
-    anchorPos = caretPos;
-    anchorId = caretId;
-
-    wrapEl.str = str;
-  }
-
-  function calcLines() {
-    let curLine = [];
-    lines = [curLine];
-    for (const charOrEditor of str) {
-      if ("\n" === charOrEditor) {
-        curLine = [];
-        lines.push(curLine);
-      } else curLine.push(charOrEditor);
-    }
-    wrapEl.lines = lines;
-  }
-  wrapEl.calcLines = calcLines;
-
-  function render() {
-    wrapEl.innerHTML = "";
-    let pos = 0;
-    wrapEl.lineEls = [];
-    return lines.map((line, y) => {
-      const lineStartEl = document.createElement("span");
-      lineStartEl.style.height = "1.3em";
-      lineStartEl.style.width = "4px";
-      lineStartEl.style.display = "inline-block";
-      lineStartEl.style.verticalAlign = "middle";
-      lineStartEl.pos = pos;
-      lineStartEl.parentId = id;
-      if (y === 0) lineStartEl.isEditorStart = true;
-      else lineStartEl.isNewLine = true;
-      pos++;
-      let isInCommentBlock = false;
-      let isInString = false;
-      let els = line.map((char, x) => {
-        let charEl;
-        if (char.isEditor) {
-          charEl = char;
-        } else if (char === " ") {
-          charEl = document.createElement("span");
-          charEl.style.display = "inline-block";
-          charEl.style.verticalAlign = "middle";
-          charEl.style.width = "8px";
-          charEl.style.height = "16px";
-        } else {
-          charEl = document.createElement("span");
-          if (char === "/" && line[x + 1] === "/") {
-            isInCommentBlock = true;
-          }
-          if (isInString) charEl.style.color = "orangered";
-          if (char === "'") {
-            isInString = !isInString;
-          }
-          if (isInString) charEl.style.color = "orangered";
-          if (char === "(" || char === ")" || char === "[" || char === "]")
-            charEl.style.color = "violet";
-          if (!isNaN(char) && !isNaN(parseInt(char)))
-            charEl.style.color = "purple";
-          if (isInCommentBlock) charEl.style.color = "crimson";
-
-          charEl.innerText = char;
-        }
-
-        if (y === lines.length - 1 && x === line.length - 1)
-          charEl.isEditorEnd = true;
-        charEl.pos = pos;
-        charEl.parentId = id;
-        pos++;
-        return charEl;
-      });
-      els = [lineStartEl, ...els];
-      const lineEl = document.createElement("div");
-      lineEl.style.minHeight = "16px";
-      lineEl.append(...els);
-      wrapEl.lineEls.push(lineEl);
-      wrapEl.append(lineEl);
-      return els;
-    });
-  }
-
-  function renderCaret() {
-    const [x, y] = linePos(str, caretPos);
-
-    const caretContainerRect = e1.getBoundingClientRect();
-    const rect = wrapEl.els[y][x].getBoundingClientRect();
-
-    caretEl.style.height = rect.height;
-    caretEl.style.transform = `translate(${
-      rect.right - caretContainerRect.x
-    }px, ${rect.y - caretContainerRect.y}px)`;
-  }
-  function renderAnchor() {
-    const [x, y] = linePos(str, anchorPos);
-
-    const caretContainerRect = e1.getBoundingClientRect();
-    const rect = wrapEl.els[y][x].getBoundingClientRect();
-
-    anchorEl.style.height = rect.height;
-    anchorEl.style.transform = `translate(${
-      rect.right - caretContainerRect.x
-    }px, ${rect.y - caretContainerRect.y}px)`;
-  }
-  function getCaretopeSink(pos) {
-    const [x, y] = linePos(str, pos);
-    // remove container sinks so they don't throw off the indexing
-    const caretSinkLine = wrapEl.sink.lines[y].filter((s) => !s.lines);
-    return caretSinkLine[x];
-  }
-  wrapEl.getCaretopeSink = getCaretopeSink;
-
-  wrapEl.act = act;
-  wrapEl.id = id;
-  wrapEl.lines = lines;
-  wrapEl.str = str;
-  wrapEl.renderCaret = renderCaret;
-  wrapEl.renderAnchor = renderAnchor;
-  wrapEl.render = render;
-  wrapEl.reset = reset;
-  wrapEl.act = act;
-  wrapEl.isEditor = true;
-  return wrapEl;
-};
-
-const e1Wrap = document.createElement("div");
-e1Wrap.classList.add("editor-wrapper");
-const e1 = editor("init");
-e1Wrap.append(e1);
-document.body.append(e1Wrap);
+  anchorEl.style.height = rect.height;
+  anchorEl.style.transform = `translate(${
+    rect.right - caretContainerRect.x
+  }px, ${rect.y - caretContainerRect.y}px)`;
+}
+function getCaretopeSink(id, pos) {
+  const [x, y] = linePos(elFromFocusId[id].str, pos);
+  // remove container sinks so they don't throw off the indexing
+  const caretSinkLine = elFromFocusId[id].sink.lines[y].filter((s) => !s.lines);
+  return caretSinkLine[x];
+}
 
 function discrim(e) {
   if (e.key.length === 1) return true;
@@ -342,10 +99,8 @@ function discrim(e) {
 function bigreduce() {
   for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
   window.mainline = mainline();
-  for (const e of mainline()) {
-    const el = elFromFocusId[e.caretId];
-    el.act(e);
-  }
+  for (const e of mainline()) elFromFocusId[e.caretId].act(e);
+
   for (const [id, el] of Object.entries(elFromFocusId)) {
     el.calcLines();
     el.els = el.render();
@@ -377,11 +132,10 @@ function bigreduce() {
       })
     );
   }
-  const focusedEl = elFromFocusId[caretId];
-  focusedEl.renderCaret();
-  elFromFocusId[anchorId]?.renderAnchor();
+
+  renderCaret();
+  renderAnchor();
 }
-bigreduce();
 
 const editorLineage = (el) => {
   let lineageStack = [];
@@ -414,7 +168,7 @@ const comp = (rep1, rep2) => {
   return 0;
 };
 const minAndMax = (a, b) => (comp(a, b) === 1 ? [b, a] : [a, b]);
-const getSink = ([id, pos]) => elFromFocusId[id]?.getCaretopeSink(pos);
+const getSink = ([id, pos]) => getCaretopeSink(id, pos);
 const getCaret = (a) => new Caret(getSink(a));
 const selectionSinks = () => {
   const result = [];
@@ -430,7 +184,46 @@ const selectionSinks = () => {
   }
   return result;
 };
+const e1Wrap = document.createElement("div");
+e1Wrap.classList.add("editor-wrapper");
+const e1 = editor("init", undefined, {
+  elFromFocusId,
+  selectionSinks,
+  calcSelection,
+  vertDistPointToLineEl,
+  distMouseEventToEl,
+  deleteAt,
+  insertAt,
+  linePos,
+  renderCaret,
+  renderAnchor,
+  getCaretId: () => caretId,
+  setCaretId: (id) => {
+    caretId = id;
+  },
+  getCaretPos: () => caretPos,
+  setCaretPos: (p) => {
+    caretPos = p;
+  },
+  getAnchorId: () => anchorId,
+  setAnchorId: (id) => {
+    anchorId = id;
+  },
+  getAnchorPos: () => anchorPos,
+  setAnchorPos: (p) => {
+    anchorPos = p;
+  },
+  getProcessedSelection: () => processedSelection,
+  setProcessedSelection: (ps) => {
+    processedSelection = ps;
+  },
+});
+e1Wrap.append(e1);
+document.body.append(e1Wrap);
 e1.focus();
+e1.render();
+bigreduce();
+
 const copy = (e) => {
   if (processedSelection.length === 0) return;
   const output = calcSelectionString(processedSelection);
@@ -537,23 +330,16 @@ function createHistoryCheckpoint(c) {
   newCtx.drawImage(c, 0, 0, CHECKPOINT_THUMB_SIZE, CHECKPOINT_THUMB_SIZE);
 
   const image = new Image();
-  // image.style.border = "1px solid black";
-  // image.style.borderRadius = "4px";
-  // image.style.display = "block";
-  // image.style.margin = "10px 0";
   image.src = newC.toDataURL();
   const historyNode = getHistoryHead();
-  // image.addEventListener("click", (e) => {
-  //   setHistoryHead(historyNode);
-  //   bigreduce();
-  //   const toEval = e1.str.join("");
-  //   sandboxedEval(toEval);
-  // });
   historyNode.checkpoint = {
     image,
     node: historyNode,
     src: image.src,
   };
+  return new Promise((resolve) =>
+    image.addEventListener("load", () => resolve(image))
+  );
 }
 
 function sandboxedEval(toEval, callback = () => {}) {
@@ -626,9 +412,10 @@ document.body.addEventListener("keydown", (e) => {
 
     const toEval = e1.str.join("");
     sandboxedEval(toEval, (iframeDoc) => {
-      createHistoryCheckpoint(iframeDoc.getElementById("c"));
-      localStorage.setItem("history", serializeHistory(getHistoryRoot()));
-      drawHistoryTree();
+      createHistoryCheckpoint(iframeDoc.getElementById("c")).then(() => {
+        localStorage.setItem("history", serializeHistory(getHistoryRoot()));
+        drawHistoryTree();
+      });
     });
 
     return;
@@ -670,8 +457,8 @@ document.body.addEventListener("keydown", (e) => {
       anchorPos = restoredAction.anchorPos;
       caretPos = restoredAction.caretPos;
       caretId = restoredAction.caretId;
-      elFromFocusId[caretId]?.renderCaret();
-      elFromFocusId[anchorId]?.renderAnchor();
+      renderCaret();
+      renderAnchor();
     }
   } else if (e.key === "p" && e.metaKey) {
     localUndoBase = localUndoBase ?? caretId;
@@ -686,8 +473,8 @@ document.body.addEventListener("keydown", (e) => {
       anchorPos = removedAction.anchorPos;
       caretPos = removedAction.caretPos;
       caretId = removedAction.caretId;
-      elFromFocusId[caretId]?.renderCaret();
-      elFromFocusId[anchorId]?.renderAnchor();
+      renderCaret();
+      renderAnchor();
     }
   } else if (e.key === "z" && e.metaKey && e.shiftKey) {
     redo();
@@ -702,8 +489,8 @@ document.body.addEventListener("keydown", (e) => {
       anchorPos = res[1].anchorPos;
       caretPos = res[1].caretPos;
       caretId = res[1].caretId;
-      elFromFocusId[caretId]?.renderCaret();
-      elFromFocusId[anchorId]?.renderAnchor();
+      renderCaret();
+      renderAnchor();
 
       calcSelection();
     }
@@ -730,8 +517,8 @@ function moveCaret(dir, isSelecting, isJumping) {
       elFromFocusId[c.charEl.parentId].isStartSelected = false;
   });
 
-  const c = new Caret(elFromFocusId[caretId].getCaretopeSink(caretPos));
-  if (carryId) c.carrySink = elFromFocusId[carryId].getCaretopeSink(carryPos);
+  const c = new Caret(getCaretopeSink(caretId, caretPos));
+  if (carryId) c.carrySink = getCaretopeSink(caretId, carryPos);
   if (isJumping) {
     if (dir === "down") c.moveToRootEnd();
     if (dir === "up") c.moveToRootStart();
@@ -781,8 +568,8 @@ function moveCaret(dir, isSelecting, isJumping) {
   } else {
     carryId = null;
   }
-  elFromFocusId[caretId]?.renderCaret();
-  elFromFocusId[anchorId]?.renderAnchor();
+  renderCaret();
+  renderAnchor();
 
   calcSelection();
 }
@@ -848,191 +635,16 @@ function calcSelection() {
   });
 }
 
-// HISTORY TREE STUFF
-const filteredNexts = (node, f) => {
-  let todo = [node];
-  let done = [];
-
-  while (todo.length > 0) {
-    const cur = todo.pop();
-    for (const next of cur.next.toReversed()) {
-      if (f(next)) done.push(next);
-      else todo.push(next);
-    }
-  }
-  return done;
-};
-import { SetMap } from "../../../lib/structure/data.js";
-const c = document.createElement("canvas");
+import { createHistoryTreeVis } from "./historyRender.js";
+const { c, drawHistoryTree } = createHistoryTreeVis(
+  setHistoryHead,
+  bigreduce,
+  sandboxedEval,
+  lastCheckpoint,
+  getHistoryRoot,
+  CHECKPOINT_THUMB_SIZE,
+  e1
+);
 document.body.prepend(c);
-const ctx = c.getContext("2d");
-
-// Handle dpr
-const dpr = window.devicePixelRatio;
-c.width = (window.innerWidth - 20) * dpr;
-c.height = 750 * dpr;
-c.style.width = window.innerWidth - 20 + "px";
-c.style.height = 750 + "px";
-ctx.scale(dpr, dpr);
-
-const square = (w, h, img, isLastCheckpoint) => {
-  const obj = { w, h };
-  obj.draw = (x, y, ctx) => {
-    obj.x = x;
-    obj.y = y;
-    if (img) {
-      const pattern = ctx.createPattern(img, "no-repeat");
-      if (pattern) {
-        pattern.setTransform({
-          a: w / CHECKPOINT_THUMB_SIZE,
-          b: 0,
-          c: 0,
-          d: h / CHECKPOINT_THUMB_SIZE,
-          e: x,
-          f: y,
-        });
-        ctx.fillStyle = pattern;
-      }
-      ctx.beginPath();
-      ctx.roundRect(x, y, w, h, 5);
-      ctx.fill();
-      if (isLastCheckpoint) {
-        ctx.fillStyle = "violet";
-        ctx.fillRect(x + w / 2 - 2.5, y + h, 5, 5);
-        ctx.strokeStyle = "violet";
-      } else {
-        ctx.strokeStyle = "black";
-      }
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-  };
-  return obj;
-};
-
-const centerX = (...ds) => {
-  const w = Math.max(...ds.map((d) => d.w));
-  const h = Math.max(...ds.map((d) => d.h));
-  const obj = { w, h };
-
-  const draw = (x, y, ctx) => {
-    obj.x = x;
-    obj.y = y;
-    const cw = x + w / 2;
-    for (const d of ds) {
-      const dHalfW = d.w / 2;
-      d.draw(cw - dHalfW, y, ctx);
-    }
-  };
-  obj.draw = draw;
-  return obj;
-};
-const juxtH = (pad, ...ds) => {
-  const w = ds.reduce((prev, cur) => prev + cur.w, 0) + pad * (ds.length - 1);
-  const h = Math.max(...ds.map((d) => d.h));
-  const obj = { w, h };
-
-  const draw = (x, y, ctx) => {
-    obj.x = x;
-    obj.y = y;
-    let curX = x;
-    for (const d of ds) {
-      d.draw(curX, y, ctx);
-      curX += d.w + pad;
-    }
-  };
-  obj.draw = draw;
-  return obj;
-};
-const juxtV = (pad, ...ds) => {
-  const h = ds.reduce((prev, cur) => prev + cur.h, 0) + pad * (ds.length - 1);
-  const w = Math.max(...ds.map((d) => d.w));
-  const obj = { w, h };
-
-  const draw = (x, y, ctx) => {
-    obj.x = x;
-    obj.y = y;
-    let curY = y;
-    for (const d of ds) {
-      d.draw(x, curY, ctx);
-      curY += d.h + pad;
-    }
-  };
-  return { w, h, draw };
-};
-const rels = new SetMap();
-const checkpoints = new Map();
-const t = (checkpoint, ...ds) => {
-  const root = square(
-    50,
-    50,
-    checkpoint?.image,
-    checkpoint === lastCheckpoint()?.checkpoint
-  );
-  checkpoints.set(root, checkpoint);
-  for (const [r] of ds) rels.add(root, r);
-  return [root, juxtH(12, root, juxtV(16, ...ds.map((d) => d[1])))];
-};
-
-const historyToTree = (hNode) =>
-  t(
-    hNode.checkpoint,
-    ...filteredNexts(hNode, (n) => n.checkpoint).map(historyToTree)
-  );
-
-let origin = [-50, 20];
-
-drawHistoryTree();
-function drawHistoryTree() {
-  //requestAnimationFrame(draw);
-  ctx.clearRect(0, 0, c.width, c.height);
-  rels.clear();
-  checkpoints.clear();
-  historyToTree(getHistoryRoot())[1].draw(...origin, ctx);
-  for (const [p, cs] of rels) {
-    for (const c of cs) {
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      const s = [p.x + p.w, p.y + p.h / 2];
-      const e = [c.x, c.y + c.w / 2];
-      ctx.moveTo(...s);
-      ctx.lineTo(s[0] + (e[0] - s[0]) / 2, s[1]);
-      ctx.lineTo(s[0] + (e[0] - s[0]) / 2, e[1]);
-      ctx.lineTo(...e);
-      ctx.stroke();
-    }
-  }
-}
-requestAnimationFrame(drawHistoryTree);
-
-let mouseDown = false;
-c.addEventListener("mousedown", (e) => {
-  mouseDown = true;
-});
-document.addEventListener("mouseup", (e) => {
-  mouseDown = false;
-});
-document.addEventListener("mousemove", (e) => {
-  if (mouseDown) {
-    origin[0] += e.movementX;
-    origin[1] += e.movementY;
-    drawHistoryTree();
-  }
-});
-c.addEventListener("click", (e) => {
-  const x = e.offsetX;
-  const y = e.offsetY;
-  for (const [n, h] of checkpoints) {
-    if (x > n.x && x < n.x + n.w && y > n.y && y < n.y + n.h) {
-      setHistoryHead(h.node);
-      bigreduce();
-      const toEval = e1.str.join("");
-      sandboxedEval(toEval, () => drawHistoryTree());
-      return;
-    }
-  }
-});
-
 e1Wrap.prepend(anchorEl);
 e1Wrap.prepend(caretEl);

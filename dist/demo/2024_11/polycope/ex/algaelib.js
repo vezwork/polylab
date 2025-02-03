@@ -9,9 +9,10 @@ export const set = (ob) => (v) => {
   ob.v = v;
   for (const f of getOnSet(ob)) f(v, oldV);
 };
+const SET_Z = -1;
 export const put = (ob) => (v) => {
-  if (ob.z === -1) throw "setting determined ob";
-  ob.z = -1;
+  if (ob.z === SET_Z) throw "setting determined ob";
+  ob.z = SET_Z;
   set(ob)(v);
 };
 
@@ -149,27 +150,27 @@ export const group = (...obs) => {
   g.yi = yi.p;
   g.h = yi.w;
 
-  g.tx = Ob();
-  g.ty = Ob();
-  const xmin = min(...obs.map((ob) => ob.x));
-  //   const xmax = max(...obs.map((ob) => ob.x2))
+  //   g.tx = Ob();
+  //   g.ty = Ob();
+  //   const xmin = min(...obs.map((ob) => ob.x));
+  //   //   const xmax = max(...obs.map((ob) => ob.x2))
+  //   for (const ob of obs) {
+  //     toEq(ob.tx, sub(0, xmin));
+  //   }
+
+  rel((v, oldV) => g.x.v + (v - oldV))(g.x2, g.x);
+  rel((v, oldV) => g.x2.v + (v - oldV))(g.x, g.x2);
   for (const ob of obs) {
-    toEq(ob.tx, sub(0, xmin));
+    rel((v, oldV) => ob.x.v + (v - oldV))(g.x, ob.x);
+    rel((v, oldV) => ob.x2.v + (v - oldV))(g.x, ob.x2);
   }
 
-  //   rel((v, oldV) => g.x.v + (v - oldV))(g.x2, g.x);
-  //   rel((v, oldV) => g.x2.v + (v - oldV))(g.x, g.x2);
-  //   for (const ob of obs) {
-  //     rel((v, oldV) => ob.x.v + (v - oldV))(g.x, ob.x);
-  //     rel((v, oldV) => ob.x2.v + (v - oldV))(g.x, ob.x2);
-  //   }
-
-  //   rel((v, oldV) => g.y.v + (v - oldV))(g.y2, g.y);
-  //   rel((v, oldV) => g.y2.v + (v - oldV))(g.y, g.y2);
-  //   for (const ob of obs) {
-  //     rel((v, oldV) => ob.y.v + (v - oldV))(g.y, ob.y);
-  //     rel((v, oldV) => ob.y2.v + (v - oldV))(g.y, ob.y2);
-  //   }
+  rel((v, oldV) => g.y.v + (v - oldV))(g.y2, g.y);
+  rel((v, oldV) => g.y2.v + (v - oldV))(g.y, g.y2);
+  for (const ob of obs) {
+    rel((v, oldV) => ob.y.v + (v - oldV))(g.y, ob.y);
+    rel((v, oldV) => ob.y2.v + (v - oldV))(g.y, ob.y2);
+  }
   return g;
 };
 
@@ -190,8 +191,8 @@ export const d = (draw) => {
   res.yi = yi.p;
   res.h = yi.w;
 
-  res.tx = Ob();
-  res.ty = Ob();
+  //   res.tx = Ob();
+  //   res.ty = Ob();
 
   return res;
 };

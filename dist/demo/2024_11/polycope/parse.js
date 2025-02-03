@@ -1,11 +1,11 @@
-const pNest = (initStr) => {
-    if (!initStr.startsWith("(>"))
+const pInside = (l, innerP, r) => (initStr) => {
+    if (!initStr.startsWith(l))
         return { parse: "", str: initStr };
-    let str = initStr.slice(2);
-    const res = ((str) => pSelectionString(str))(str);
-    if (!res.str.startsWith("<)"))
+    let str = initStr.slice(l.length);
+    const res = innerP(str);
+    if (!res.str.startsWith(r))
         return { parse: "", str: initStr };
-    return { parse: [res.parse], str: res.str.slice(2) };
+    return { parse: [res.parse], str: res.str.slice(r.length) };
 };
 const pOr = (p1) => (p2) => (str) => {
     const res = p1(str);
@@ -34,4 +34,5 @@ const pRepeat = (p) => (str) => {
         str = par.str;
     }
 };
+const pNest = pInside("(>", (str) => pSelectionString(str), "<)");
 export const pSelectionString = pRepeat(pOr(pNest)(pValue));

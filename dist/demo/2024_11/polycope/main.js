@@ -6,6 +6,8 @@ import {
   insertAt,
   deleteAt,
   linePos,
+  posFromLinePos,
+  getLine,
   dist,
   distMouseEventToEl,
   elTopAndBottom,
@@ -19,7 +21,7 @@ document.body.prepend(caretEl);
 caretEl.style.position = "absolute";
 caretEl.style.width = "2px";
 caretEl.style.height = "100px";
-caretEl.style.background = "black";
+caretEl.style.background = "rgb(187, 107, 120)";
 caretEl.style.pointerEvents = "none";
 
 const anchorEl = new DOMParser().parseFromString(
@@ -28,7 +30,7 @@ const anchorEl = new DOMParser().parseFromString(
   position: absolute;
   width: 2px;
   height: 100px;
-  background: rgb(187, 107, 120);
+  background: rgb(227, 137, 150);
   pointer-events: none;
   "></span>`,
   "text/html"
@@ -62,11 +64,13 @@ let anchorId = caretId;
 let selection = [];
 let processedSelection = [];
 
+function getElFromPos(id, pos) {
+  const [x, y] = linePos(elFromFocusId[id].str, pos);
+  return elFromFocusId[id].els[y][x];
+}
 function renderCaret() {
-  const [x, y] = linePos(elFromFocusId[caretId].str, caretPos);
-
   const caretContainerRect = e1.getBoundingClientRect();
-  const rect = elFromFocusId[caretId].els[y][x].getBoundingClientRect();
+  const rect = getElFromPos(caretId, caretPos).getBoundingClientRect();
 
   caretEl.style.height = rect.height;
   caretEl.style.transform = `translate(${
@@ -74,10 +78,8 @@ function renderCaret() {
   }px, ${rect.y - caretContainerRect.y}px)`;
 }
 function renderAnchor() {
-  const [x, y] = linePos(elFromFocusId[anchorId].str, anchorPos);
-
   const caretContainerRect = e1.getBoundingClientRect();
-  const rect = elFromFocusId[anchorId].els[y][x].getBoundingClientRect();
+  const rect = getElFromPos(anchorId, anchorPos).getBoundingClientRect();
 
   anchorEl.style.height = rect.height;
   anchorEl.style.transform = `translate(${
@@ -98,8 +100,110 @@ function discrim(e) {
 }
 function bigreduce() {
   for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
-  window.mainline = mainline();
-  for (const e of mainline()) elFromFocusId[e.caretId].act(e);
+  for (const e of mainline()) {
+    caretId = e.caretId;
+    caretPos = e.caretPos;
+    anchorId = e.anchorId;
+    anchorPos = e.anchorPos;
+
+    if (e.commentify) {
+      const [x, y] = linePos(elFromFocusId[e.caretId].str, e.caretPos);
+      const lineIndexes = new Set([
+        y,
+        ...e.processedSelection.map(
+          ([sid, spos]) => linePos(elFromFocusId[sid].str, spos)[1]
+        ),
+      ]);
+      let prevCaretPos = caretPos;
+      let prevAnchorPos = anchorPos;
+      for (const y of lineIndexes) {
+        const pos = posFromLinePos(elFromFocusId[e.caretId].str, [0, y]);
+        const line = getLine(elFromFocusId[e.caretId].str, pos);
+        if (line.startsWith("//")) {
+          caretPos = posFromLinePos(elFromFocusId[e.caretId].str, [2, y]);
+          elFromFocusId[e.caretId].act({ key: "Backspace" });
+          elFromFocusId[e.caretId].act({ key: "Backspace" });
+          // Math.max is used so the caret won't get pushed to the previous line
+          if (prevCaretPos > caretPos)
+            prevCaretPos = Math.max(prevCaretPos - 2, caretPos);
+          if (prevAnchorPos > caretPos)
+            prevAnchorPos = Math.max(prevAnchorPos - 2, caretPos);
+        } else {
+          caretPos = posFromLinePos(elFromFocusId[e.caretId].str, [0, y]);
+          elFromFocusId[e.caretId].act({ key: "/" });
+          elFromFocusId[e.caretId].act({ key: "/" });
+          if (prevCaretPos > caretPos - 2) prevCaretPos += 2;
+          if (prevAnchorPos > caretPos - 2) prevAnchorPos += 2;
+        }
+      }
+      caretPos = prevCaretPos;
+      anchorPos = prevAnchorPos;
+      continue;
+    }
+    if (e.spacify || e.despacify) {
+      const [x, y] = linePos(elFromFocusId[e.caretId].str, e.caretPos);
+      const lineIndexes = new Set([
+        y,
+        ...e.processedSelection.map(
+          ([sid, spos]) => linePos(elFromFocusId[sid].str, spos)[1]
+        ),
+      ]);
+      let prevCaretPos = caretPos;
+      let prevAnchorPos = anchorPos;
+      if (e.spacify) {
+        for (const y of lineIndexes) {
+          caretPos = posFromLinePos(elFromFocusId[e.caretId].str, [0, y]);
+          elFromFocusId[e.caretId].act({ key: " " });
+          elFromFocusId[e.caretId].act({ key: " " });
+          if (prevCaretPos > caretPos - 2) prevCaretPos += 2;
+          if (prevAnchorPos > caretPos - 2) prevAnchorPos += 2;
+        }
+      }
+      if (e.despacify) {
+        for (const y of lineIndexes) {
+          const pos = posFromLinePos(elFromFocusId[e.caretId].str, [2, y]);
+          const line = getLine(elFromFocusId[e.caretId].str, pos);
+          if (!line.startsWith("  ")) continue;
+          caretPos = pos;
+          elFromFocusId[e.caretId].act({ key: "Backspace" });
+          elFromFocusId[e.caretId].act({ key: "Backspace" });
+          // Math.max is used so the caret won't get pushed to the previous line
+          if (prevCaretPos > caretPos)
+            prevCaretPos = Math.max(prevCaretPos - 2, caretPos);
+          if (prevAnchorPos > caretPos)
+            prevAnchorPos = Math.max(prevAnchorPos - 2, caretPos);
+        }
+      }
+      caretPos = prevCaretPos;
+      anchorPos = prevAnchorPos;
+      continue;
+    }
+
+    let newE = { ...e };
+    if (newE.processedSelection.length > 0) {
+      for (const [sid, spos] of newE.processedSelection.toReversed()) {
+        // each individual delete action in the selection is delegated
+        caretPos = spos;
+        caretId = sid;
+        elFromFocusId[sid].act({
+          key: "Backspace",
+        });
+      }
+      // caret properties are set inside `act`, but the event's caret properties
+      // are not, so we need to manually update them
+      newE.caretId = caretId;
+      newE.caretPos = caretPos;
+      newE.anchorId = caretId;
+      newE.anchorPos = caretPos;
+      anchorId = caretId;
+      anchorPos = caretPos;
+      processedSelection = [];
+      if (newE.key === "Backspace") continue;
+    }
+    elFromFocusId[newE.caretId].act(newE);
+    anchorId = caretId;
+    anchorPos = caretPos;
+  }
 
   for (const [id, el] of Object.entries(elFromFocusId)) {
     el.calcLines();
@@ -190,32 +294,27 @@ const e1 = editor("init", undefined, {
   elFromFocusId,
   selectionSinks,
   calcSelection,
-  vertDistPointToLineEl,
-  distMouseEventToEl,
-  deleteAt,
-  insertAt,
-  linePos,
   renderCaret,
+  pushHistory: (h) => {
+    pushHistory(h);
+    bigreduce();
+  },
   renderAnchor,
   getCaretId: () => caretId,
   setCaretId: (id) => {
     caretId = id;
+    carryId = id;
   },
   getCaretPos: () => caretPos,
   setCaretPos: (p) => {
     caretPos = p;
+    carryPos = p;
   },
-  getAnchorId: () => anchorId,
   setAnchorId: (id) => {
     anchorId = id;
   },
-  getAnchorPos: () => anchorPos,
   setAnchorPos: (p) => {
     anchorPos = p;
-  },
-  getProcessedSelection: () => processedSelection,
-  setProcessedSelection: (ps) => {
-    processedSelection = ps;
   },
 });
 e1Wrap.append(e1);
@@ -230,7 +329,6 @@ const copy = (e) => {
 
   e.clipboardData.setData("text/plain", output);
   e.preventDefault();
-  console.log("copied!", output);
 
   if (e.type === "cut") {
     pushHistory({
@@ -251,7 +349,11 @@ document.addEventListener("paste", (e) => {
   let paste = e.clipboardData.getData("text");
 
   if (paste) {
-    const output = pSelectionString(paste).parse;
+    // WARNING: COMMENT DISABLING PASTING EDITORS FOR NOW!!!!
+    //const output = pSelectionString(paste).parse;
+    const output = paste.split("");
+
+    //when will we receive info about renewal?
     const go = (v) =>
       Array.isArray(v)
         ? {
@@ -395,6 +497,7 @@ loadFromLocalStorage();
 
 let localUndoBase = null;
 document.body.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") e.preventDefault();
   if (e.key === "Backspace") e.preventDefault();
   if (e.key === " ") e.preventDefault();
   if (e.key.startsWith("Arrow")) {
@@ -442,6 +545,42 @@ document.body.addEventListener("keydown", (e) => {
   } else if (e.key === "c" && e.metaKey) {
   } else if (e.key === "x" && e.metaKey) {
   } else if (e.key === "v" && e.metaKey) {
+  } else if (e.key === "Tab" && e.shiftKey) {
+    pushHistory({
+      despacify: true,
+      caretId,
+      caretPos,
+      processedSelection,
+      anchorId,
+      anchorPos,
+      comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+    });
+    bigreduce();
+    calcSelection();
+  } else if (e.key === "Tab") {
+    pushHistory({
+      spacify: true,
+      caretId,
+      caretPos,
+      processedSelection,
+      anchorId,
+      anchorPos,
+      comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+    });
+    bigreduce();
+    calcSelection();
+  } else if (e.key === "/" && e.metaKey) {
+    pushHistory({
+      commentify: true,
+      caretId,
+      caretPos,
+      processedSelection,
+      anchorId,
+      anchorPos,
+      comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+    });
+    bigreduce();
+    calcSelection();
   } else if (e.key === "p" && e.metaKey && e.shiftKey) {
     const restoredAction = restoreFirstThat((d) =>
       ancestorIds(d.caretId).includes(localUndoBase)
@@ -483,8 +622,8 @@ document.body.addEventListener("keydown", (e) => {
     const res = undo();
 
     bigreduce();
-    // add back selection on undo
-    if (res[1]?.processedSelection) {
+    // add back selection/carets on undo
+    if (res[1]?.processedSelection?.length > 0) {
       anchorId = res[1].anchorId;
       anchorPos = res[1].anchorPos;
       caretPos = res[1].caretPos;
@@ -493,6 +632,13 @@ document.body.addEventListener("keydown", (e) => {
       renderAnchor();
 
       calcSelection();
+    } else {
+      anchorId = res[1].caretId;
+      anchorPos = res[1].caretPos;
+      caretPos = res[1].caretPos;
+      caretId = res[1].caretId;
+      renderCaret();
+      renderAnchor();
     }
   } else if (discrim(e) && !e.metaKey) {
     const h = {
@@ -586,7 +732,7 @@ function calcSelectionString(processedSelection) {
     return upperBound;
   };
 
-  console.log(processedSelection.map((v) => [caretTreePos(v), getSink(v)]));
+  // console.log(processedSelection.map((v) => [caretTreePos(v), getSink(v)]));
   const mm = processedSelection
     .map((v) => [caretTreePos(v), getSink(v)])
     .filter(([_, s]) => !s.isAfterEditorSink)
@@ -646,5 +792,5 @@ const { c, drawHistoryTree } = createHistoryTreeVis(
   e1
 );
 document.body.prepend(c);
-e1Wrap.prepend(anchorEl);
 e1Wrap.prepend(caretEl);
+e1Wrap.prepend(anchorEl);

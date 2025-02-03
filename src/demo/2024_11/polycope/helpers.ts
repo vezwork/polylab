@@ -14,6 +14,27 @@ export const linePos = (str, curPos) => {
   }
   return [inlineIndex, lineIndex];
 };
+export const getLine = (str, pos) => {
+  let line = "";
+  for (let i = pos; i < str.length; i++) {
+    if (str[i] === "\n") break;
+    line += str[i];
+  }
+  for (let i = pos - 1; i >= 0; i--) {
+    if (str[i] === "\n") break;
+    line = str[i] + line;
+  }
+  return line;
+};
+export const posFromLinePos = (str, [x, y]) => {
+  let pos = 0;
+  let curY = 0;
+  while (curY < y) {
+    if (str[pos] === "\n") curY++;
+    pos++;
+  }
+  return pos + x;
+};
 
 export const dist = ([x1, y1], [x2, y2]) =>
   Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);

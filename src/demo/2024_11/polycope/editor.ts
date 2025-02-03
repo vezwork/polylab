@@ -1,10 +1,18 @@
 import { ContainerSink } from "./caretsink.js";
+import { emptyEditor } from "./emptyEditor.js";
+import {
+  insertAt,
+  deleteAt,
+  linePos,
+  dist,
+  distMouseEventToEl,
+  elTopAndBottom,
+  vertDistPointToLineEl,
+} from "./helpers.js";
 
 type WrapElType = HTMLDivElement & {
   lineEls: any[];
   sink: any;
-  myDeleteAt: Function;
-  myInsertAt: Function;
   render: Function;
   lines: any[];
   calcLines: Function;
@@ -24,24 +32,16 @@ export const editor = (
     elFromFocusId,
     selectionSinks,
     calcSelection,
-    vertDistPointToLineEl,
-    distMouseEventToEl,
-    deleteAt,
-    insertAt,
     renderCaret,
     renderAnchor,
     getCaretId,
     setCaretId,
     getCaretPos,
     setCaretPos,
-    getAnchorId,
     setAnchorId,
-    getAnchorPos,
     setAnchorPos,
-    getProcessedSelection,
-    setProcessedSelection,
   } = eContext;
-  //TODO:caretPos, caretId, anchorPos,anchorId,processedSelection
+
   const wrapEl = document.createElement("div") as WrapElType;
   wrapEl.className = "editor";
   elFromFocusId[id] = wrapEl;
@@ -76,9 +76,11 @@ export const editor = (
 
     calcSelection();
   };
-  wrapEl.addEventListener("mousedown", mousePick(true));
+  wrapEl.addEventListener("mousedown", (e) =>
+    requestAnimationFrame(() => mousePick(true)(e))
+  );
   wrapEl.addEventListener("mousemove", (e) => {
-    if (e.buttons === 1) mousePick(false)(e);
+    if (e.buttons === 1) requestAnimationFrame(() => mousePick(false)(e));
   });
   wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
   wrapEl.sink.parent = parentContainerSink ?? null;
@@ -95,44 +97,12 @@ export const editor = (
     wrapEl.innerHTML = "";
   }
 
-  function myDeleteAt(pos) {
-    str = deleteAt(str, pos - 1);
-    wrapEl.str = str;
-  }
   function myInsertAt(pos, char) {
     str = insertAt(str, pos, char);
     wrapEl.str = str;
   }
-  wrapEl.myDeleteAt = myDeleteAt;
-  wrapEl.myInsertAt = myInsertAt;
 
   function act(e) {
-    if (e.caretId !== id) return;
-    setCaretId(e.caretId);
-    setCaretPos(e.caretPos);
-    setProcessedSelection(e.processedSelection);
-
-    if (getProcessedSelection().length > 0) {
-      // deletion works here because processedSelection is always ordered left to right,
-      // selectionSinks handles that.
-      for (const [sid, spos] of getProcessedSelection().toReversed()) {
-        // TODO: fix deleting an extra char at start
-        elFromFocusId[sid]?.myDeleteAt(spos);
-      }
-      if (e.comp !== 1) {
-        setCaretId(e.caretId);
-        setCaretPos(e.caretPos);
-      } else {
-        setCaretId(e.anchorId);
-        setCaretPos(e.anchorPos);
-      }
-    }
-    // Note: its gross that we have to clear processedSelection here.
-    // This should always be calc'd from caret and anchor pos, not manually set.
-    let didHaveProcessedSelection = getProcessedSelection().length > 0;
-    setProcessedSelection([]);
-    e = { ...e, processedSelection: [] };
-
     if (e.paste) {
       if (e.paste.id) {
         act({ ...e, paste: undefined, newId: e.paste.id });
@@ -143,51 +113,32 @@ export const editor = (
           caretPos: getCaretPos(),
         });
       } else if (Array.isArray(e.paste)) {
-        let initCaretPos = e.caretPos;
-        let initId = e.caretId;
         for (const entry of e.paste) {
-          act({
-            ...e,
-            paste: entry,
-            caretId: initId,
-            caretPos: initCaretPos,
-          });
-          initCaretPos++;
+          act({ ...e, paste: undefined, key: entry });
         }
-      } else {
-        // when does this happen!?
-        act({ ...e, paste: undefined, key: e.paste });
       }
     } else if (e.newId) {
-      const newE = editor(e.newId, wrapEl.sink, eContext);
+      const newE = emptyEditor(e.newId, wrapEl.sink, eContext);
       newE.render();
-      elFromFocusId[getCaretId()]?.myInsertAt(getCaretPos(), newE);
-
+      myInsertAt(getCaretPos(), newE);
       setCaretPos(0);
       setCaretId(newE.id);
     } else if (e.key.length === 1) {
-      elFromFocusId[getCaretId()]?.myInsertAt(getCaretPos(), e.key);
-
+      myInsertAt(getCaretPos(), e.key);
       setCaretPos(getCaretPos() + 1);
     }
     if (e.key === "Enter") {
-      elFromFocusId[getCaretId()]?.myInsertAt(getCaretPos(), "\n");
+      myInsertAt(getCaretPos(), "\n");
       setCaretPos(getCaretPos() + 1);
     }
     if (e.key === "Backspace") {
-      if (didHaveProcessedSelection) {
-      } else if (getCaretPos() > 0) {
+      if (getCaretPos() > 0) {
         str = deleteAt(str, getCaretPos() - 1);
         setCaretPos(getCaretPos() - 1);
       } else {
         // TODO?: delete at start of editor
-        //   caretPos = wrapEl.pos - 1;
-        //   caretId = wrapEl.parentId;
-        // console.log(wrapEl.parentId === undefined);
       }
     }
-    setAnchorPos(getCaretPos());
-    setAnchorId(getCaretId());
 
     wrapEl.str = str;
   }
@@ -227,6 +178,7 @@ export const editor = (
       pos++;
       let isInCommentBlock = false;
       let isInString = false;
+      let isInDoubleString = false;
       let els = line.map((char: WrapElType | string, x) => {
         let charEl;
         // @ts-ignore:
@@ -234,6 +186,7 @@ export const editor = (
           charEl = char;
         } else if (char === " ") {
           charEl = document.createElement("span");
+          charEl.innerText = " ";
           charEl.style.display = "inline-block";
           charEl.style.verticalAlign = "middle";
           charEl.style.width = "8px";
@@ -243,15 +196,31 @@ export const editor = (
           if (char === "/" && line[x + 1] === "/") {
             isInCommentBlock = true;
           }
-          if (isInString) charEl.style.color = "orangered";
+          if (isInString || isInDoubleString) charEl.style.color = "orangered";
           if (char === "'") {
             isInString = !isInString;
           }
-          if (isInString) charEl.style.color = "orangered";
-          if (char === "(" || char === ")" || char === "[" || char === "]")
+          if (char === `"`) {
+            isInDoubleString = !isInDoubleString;
+          }
+          if (isInString || isInDoubleString) charEl.style.color = "orangered";
+          if (
+            (char === "(" || char === ")" || char === "[" || char === "]") &&
+            !isInCommentBlock &&
+            !isInString &&
+            !isInDoubleString
+          )
             charEl.style.color = "violet";
-          // @ts-ignore:
-          if (!isNaN(char) && !isNaN(parseInt(char)))
+
+          if (
+            // @ts-ignore:
+            !isNaN(char) &&
+            // @ts-ignore:
+            !isNaN(parseInt(char)) &&
+            !isInCommentBlock &&
+            !isInString &&
+            !isInDoubleString
+          )
             charEl.style.color = "purple";
           if (isInCommentBlock) charEl.style.color = "crimson";
 

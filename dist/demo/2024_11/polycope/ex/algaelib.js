@@ -7,6 +7,7 @@ const getOnSet = (ob) => onSet.get(ob) ?? [];
 export const set = (ob) => (v) => {
   const oldV = ob.v;
   ob.v = v;
+  ob.h.push({ v, z: ob.z, H: true });
   for (const f of getOnSet(ob)) f(v, oldV);
 };
 const SET_Z = -1;
@@ -17,7 +18,12 @@ export const put = (ob) => (v) => {
 };
 
 let obZCounter = 0;
-export const Ob = (v = 0, z = obZCounter++) => ({ v, z });
+export const Ob = (v = 0, z = obZCounter++) => ({
+  v,
+  z,
+  h: [{ v, z, H: true }],
+});
+
 export const v = (val) => Ob(val, -Infinity);
 
 // want z = -Infinity to not set other z
@@ -79,7 +85,7 @@ export const map =
 export const reduce = (f, v) => map((...xs) => xs.reduce(f, v));
 
 export const eq = (a, b) => {
-  if (a.z === b.z) console.error("loop in rels! z=" + a.z);
+  if (a.z === b.z && a.z !== -Infinity) console.error("loop in rels! z=" + a.z);
   rel((v) => v)(a, b);
   rel((v) => v)(b, a);
 };
@@ -134,13 +140,51 @@ export const interval = (x, x2) => {
 // the obs inside the group are layed out relative to eachother first -
 // before the group coordinates are set.
 export const group = (...obs) => {
-  const g = {
-    x: min(...obs.map((ob) => ob.x)), //TODO: no
-    x2: max(...obs.map((ob) => ob.x2)),
-    y: min(...obs.map((ob) => ob.y)),
-    y2: max(...obs.map((ob) => ob.y2)),
-    obs,
+  const g = {};
+
+  g.x = Ob();
+  const minX = min(...obs.map((ob) => ob.x));
+  const funcX = (v) => {
+    if (minX.z === Infinity) return;
+    if (obs[0].x.z !== minX.z) return;
+    if (minX.z < g.x.z) {
+      g.x.z = minX.z;
+      set(g.x)(minX.v);
+    } else if (minX.z > g.x.z) {
+      const minOb = obs.find((ob) => ob.x.v === minX.v);
+      minOb.x.z = g.x.z;
+      set(minOb.x)(g.x.v);
+    }
   };
+  funcX();
+  addOnSet(minX, funcX);
+  addOnSet(g.x, funcX);
+
+  g.x2 = max(...obs.map((ob) => ob.x2));
+
+  g.y = Ob();
+  const minY = min(...obs.map((ob) => ob.y));
+  const funcY = (v) => {
+    if (minX.z === Infinity) return;
+    if (obs[0].y.z !== minY.z) return;
+    if (minY.z < g.y.z) {
+      g.y.z = minY.z;
+      set(g.y)(minY.v);
+    } else if (minY.z > g.y.z) {
+      const minOb = obs.find((ob) => ob.y.v === minY.v);
+      minOb.y.z = g.y.z;
+      set(minOb.y)(g.y.v);
+    }
+  };
+  funcY();
+  addOnSet(minY, funcY);
+  addOnSet(g.y, funcY);
+
+  g.y2 = max(...obs.map((ob) => ob.y2));
+  g.DEBUGy2 = obs.map((ob) => ob.y2);
+
+  g.obs = obs;
+
   const xi = interval(g.x, g.x2);
   g.xc = xi.p(0.5);
   g.xi = xi.p;
@@ -150,27 +194,6 @@ export const group = (...obs) => {
   g.yi = yi.p;
   g.h = yi.w;
 
-  //   g.tx = Ob();
-  //   g.ty = Ob();
-  //   const xmin = min(...obs.map((ob) => ob.x));
-  //   //   const xmax = max(...obs.map((ob) => ob.x2))
-  //   for (const ob of obs) {
-  //     toEq(ob.tx, sub(0, xmin));
-  //   }
-
-  rel((v, oldV) => g.x.v + (v - oldV))(g.x2, g.x);
-  rel((v, oldV) => g.x2.v + (v - oldV))(g.x, g.x2);
-  for (const ob of obs) {
-    rel((v, oldV) => ob.x.v + (v - oldV))(g.x, ob.x);
-    rel((v, oldV) => ob.x2.v + (v - oldV))(g.x, ob.x2);
-  }
-
-  rel((v, oldV) => g.y.v + (v - oldV))(g.y2, g.y);
-  rel((v, oldV) => g.y2.v + (v - oldV))(g.y, g.y2);
-  for (const ob of obs) {
-    rel((v, oldV) => ob.y.v + (v - oldV))(g.y, ob.y);
-    rel((v, oldV) => ob.y2.v + (v - oldV))(g.y, ob.y2);
-  }
   return g;
 };
 
@@ -179,6 +202,7 @@ export const d = (draw) => {
   let res = {};
   toDraw.push([res, draw]);
   res.x = Ob();
+
   res.x2 = Ob();
   const xi = interval(res.x, res.x2);
   res.xc = xi.p(0.5);
@@ -191,19 +215,14 @@ export const d = (draw) => {
   res.yi = yi.p;
   res.h = yi.w;
 
-  //   res.tx = Ob();
-  //   res.ty = Ob();
-
   return res;
 };
-
-export const draw = () =>
-  toDraw.map(([ob, draw]) => draw(ob.x.v, ob.x2.v, ob.y.v, ob.y2.v));
 
 export const above = (d1, d2) => eq(d1.y2, d2.y);
 export const beside = (d1, d2) => eq(d1.x2, d2.x);
 export const xAlign = (v) => (d1, d2) => eq(d1.xi(v), d2.xi(v));
 export const yAlign = (v) => (d1, d2) => eq(d1.yi(v), d2.yi(v));
+
 export const xCenter = xAlign(0.5);
 export const yCenter = yAlign(0.5);
 
@@ -221,6 +240,9 @@ export const yStack = (...ds) => {
   }
   return group(...ds);
 };
+
+export const draw = () =>
+  toDraw.map(([ob, draw]) => draw(ob.x.v, ob.x2.v, ob.y.v, ob.y2.v, ob));
 // END OF LIB CODE
 
 // TODO:
@@ -230,7 +252,7 @@ export const yStack = (...ds) => {
 // -[x] add centering
 
 // FOR LATER:
-// - diagrammar-like API
+// - [x] diagrammar-like API
 // - detect rel loops better?
 // - have array obs with all, add object obs
 // - add arrows

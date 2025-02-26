@@ -619,6 +619,7 @@ document.body.addEventListener("keydown", (e) => {
     redo();
     bigreduce();
   } else if (e.key === "z" && e.metaKey) {
+    e.preventDefault();
     const res = undo();
 
     bigreduce();

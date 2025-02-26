@@ -1,6 +1,4 @@
 import { ContainerSink } from "./caretsink.js";
-import { emptyEditor } from "./emptyEditor.js";
-import { drawEditor } from "./drawEditor.js";
 import {
   insertAt,
   deleteAt,
@@ -77,11 +75,15 @@ export const editor = (
 
     calcSelection();
   };
-  wrapEl.addEventListener("mousedown", (e) =>
-    requestAnimationFrame(() => mousePick(true)(e))
-  );
+  wrapEl.addEventListener("mousedown", (e) => {
+    requestAnimationFrame(() => mousePick(true)(e));
+    e.stopPropagation();
+  });
   wrapEl.addEventListener("mousemove", (e) => {
-    if (e.buttons === 1) requestAnimationFrame(() => mousePick(false)(e));
+    if (e.buttons === 1) {
+      requestAnimationFrame(() => mousePick(false)(e));
+      e.stopPropagation();
+    }
   });
   wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
   wrapEl.sink.parent = parentContainerSink ?? null;
@@ -119,7 +121,7 @@ export const editor = (
         }
       }
     } else if (e.newId) {
-      const newE = drawEditor(e.newId, wrapEl.sink, eContext);
+      const newE = editor(e.newId, wrapEl.sink, eContext);
       newE.render();
       myInsertAt(getCaretPos(), newE);
       setCaretPos(0);

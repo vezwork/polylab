@@ -1,5 +1,4 @@
 import { ContainerSink } from "./caretsink.js";
-import { drawEditor } from "./drawEditor.js";
 import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
     const { elFromFocusId, selectionSinks, calcSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, } = eContext;
@@ -28,10 +27,15 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         renderCaret();
         calcSelection();
     };
-    wrapEl.addEventListener("mousedown", (e) => requestAnimationFrame(() => mousePick(true)(e)));
+    wrapEl.addEventListener("mousedown", (e) => {
+        requestAnimationFrame(() => mousePick(true)(e));
+        e.stopPropagation();
+    });
     wrapEl.addEventListener("mousemove", (e) => {
-        if (e.buttons === 1)
+        if (e.buttons === 1) {
             requestAnimationFrame(() => mousePick(false)(e));
+            e.stopPropagation();
+        }
     });
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
     wrapEl.sink.parent = parentContainerSink ?? null;
@@ -66,7 +70,7 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             }
         }
         else if (e.newId) {
-            const newE = drawEditor(e.newId, wrapEl.sink, eContext);
+            const newE = editor(e.newId, wrapEl.sink, eContext);
             newE.render();
             myInsertAt(getCaretPos(), newE);
             setCaretPos(0);

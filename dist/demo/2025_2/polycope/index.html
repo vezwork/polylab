@@ -1,0 +1,33 @@
+<!-- <script src="./index.js" type="module"></script> -->
+<style>
+  body {
+    position: relative;
+    margin: 0;
+    font-size: 18px;
+    font-family: "fira code";
+  }
+  .editor-wrapper {
+    position: relative;
+    --z-index: 10;
+    margin: 40px;
+
+    scroll-snap-align: start;
+  }
+  .editor {
+    padding: 6px 6px 6px 2px;
+    width: 400px;
+    min-height: 200px;
+
+    border: 1px solid black;
+    vertical-align: middle;
+    user-select: none;
+    border-radius: 4px;
+  }
+  .selected {
+    background-color: rgba(193, 112, 255, 0.4);
+    border-radius: 4px;
+  }
+</style>
+<script type="module">
+  import * as a from "./main.js";
+</script>

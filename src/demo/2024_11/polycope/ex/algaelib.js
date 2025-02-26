@@ -139,8 +139,13 @@ export const interval = (x, x2) => {
 // NOTE: I think this currently works because I assume that
 // the obs inside the group are layed out relative to eachother first -
 // before the group coordinates are set.
+export const toDefault = [];
 export const group = (...obs) => {
   const g = {};
+
+  for (const ob of obs) {
+    toDefault.push(ob.x, ob.y, ob.x2, ob.y2);
+  }
 
   g.x = Ob();
   const minX = min(...obs.map((ob) => ob.x));
@@ -181,7 +186,6 @@ export const group = (...obs) => {
   addOnSet(g.y, funcY);
 
   g.y2 = max(...obs.map((ob) => ob.y2));
-  g.DEBUGy2 = obs.map((ob) => ob.y2);
 
   g.obs = obs;
 
@@ -241,8 +245,18 @@ export const yStack = (...ds) => {
   return group(...ds);
 };
 
-export const draw = () =>
-  toDraw.map(([ob, draw]) => draw(ob.x.v, ob.x2.v, ob.y.v, ob.y2.v, ob));
+export const draw = () => {
+  for (const todo of toDefault) {
+    if (todo.z >= 0) {
+      todo.z = -1;
+      set(todo)(todo.v);
+    }
+  }
+  toDefault.length = 0;
+  for (const [ob, draw] of toDraw) {
+    draw(ob.x.v, ob.x2.v, ob.y.v, ob.y2.v, ob);
+  }
+};
 // END OF LIB CODE
 
 // TODO:

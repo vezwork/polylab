@@ -34,7 +34,7 @@ export const createHistoryTreeVis = (
   c.height = 750 * dpr;
   c.style.width = window.innerWidth - 20 + "px";
   c.style.height = 750 + "px";
-  ctx.scale(dpr, dpr);
+  ctx.scale(dpr / 3, dpr / 3);
 
   const square = (w, h, img, isLastCheckpoint) => {
     const obj = { w, h };
@@ -148,7 +148,7 @@ export const createHistoryTreeVis = (
   drawHistoryTree();
   function drawHistoryTree() {
     //requestAnimationFrame(draw);
-    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.clearRect(0, 0, c.width * 3, c.height * 3);
     rels.clear();
     checkpoints.clear();
     historyToTree(getHistoryRoot())[1].draw(...origin, ctx);
@@ -178,14 +178,14 @@ export const createHistoryTreeVis = (
   });
   document.addEventListener("mousemove", (e) => {
     if (mouseDown) {
-      origin[0] += e.movementX;
-      origin[1] += e.movementY;
+      origin[0] += e.movementX * 3;
+      origin[1] += e.movementY * 3;
       drawHistoryTree();
     }
   });
   c.addEventListener("click", (e) => {
-    const x = e.offsetX;
-    const y = e.offsetY;
+    const x = e.offsetX * 3;
+    const y = e.offsetY * 3;
     for (const [n, h] of checkpoints) {
       if (x > n.x && x < n.x + n.w && y > n.y && y < n.y + n.h) {
         setHistoryHead(h.node);

@@ -233,6 +233,8 @@ export const createEditorEnv = () => {
     renderCaret();
     renderAnchor();
     e1.onReduce?.(e1.str.join(""));
+
+    elFromFocusId[caretId].focus();
   }
 
   const editorLineage = (el) => {

@@ -86,11 +86,6 @@ export const createEditorEnv = () => {
     return caretSinkLine[x];
   }
 
-  function discrim(e) {
-    if (e.key.length === 1) return true;
-    if (e.key === "Enter") return true;
-    if (e.key === "Backspace") return true;
-  }
   function bigreduce() {
     for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
     for (const e of mainline()) {
@@ -292,8 +287,17 @@ export const createEditorEnv = () => {
     calcSelection,
     renderCaret,
     pushHistory: (h) => {
-      pushHistory(h);
+      pushHistory({
+        ...h,
+        caretId,
+        caretPos,
+        processedSelection,
+        anchorId,
+        anchorPos,
+        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
+      });
       bigreduce();
+      calcSelection();
     },
     renderAnchor,
     getCaretId: () => caretId,
@@ -379,15 +383,18 @@ export const createEditorEnv = () => {
 
   let localUndoBase = null;
   e1Wrap.addEventListener("keydown", (e) => {
-    if (e.key === "Tab") e.preventDefault();
-    if (e.key === "Backspace") e.preventDefault();
-    if (e.key === " ") e.preventDefault();
     if (e.key.startsWith("Arrow")) {
       e.preventDefault();
       if (e.key === "ArrowDown") moveCaret("down", e.shiftKey, e.metaKey);
       if (e.key === "ArrowUp") moveCaret("up", e.shiftKey, e.metaKey);
       if (e.key === "ArrowLeft") moveCaret("left", e.shiftKey, e.metaKey);
       if (e.key === "ArrowRight") moveCaret("right", e.shiftKey, e.metaKey);
+      return;
+    }
+    if (e.key === "a" && e.metaKey) {
+      e.preventDefault();
+      moveCaret("up", false, true);
+      moveCaret("down", true, true);
       return;
     }
     if (e.key === "s" && e.metaKey) {
@@ -402,64 +409,10 @@ export const createEditorEnv = () => {
 
       return;
     }
-    if (e.key === "a" && e.metaKey) {
-      e.preventDefault();
-      moveCaret("up", false, true);
-      moveCaret("down", true, true);
-      return;
-    }
 
-    if (e.key === "b" && e.metaKey) {
-      pushHistory({
-        key: e.key,
-        caretId,
-        newId: Math.random() + "",
-        caretPos,
-        processedSelection,
-        anchorId,
-        anchorPos,
-        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-      });
-      bigreduce();
-    } else if (e.key === "c" && e.metaKey) {
+    if (e.key === "c" && e.metaKey) {
     } else if (e.key === "x" && e.metaKey) {
     } else if (e.key === "v" && e.metaKey) {
-    } else if (e.key === "Tab" && e.shiftKey) {
-      pushHistory({
-        despacify: true,
-        caretId,
-        caretPos,
-        processedSelection,
-        anchorId,
-        anchorPos,
-        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-      });
-      bigreduce();
-      calcSelection();
-    } else if (e.key === "Tab") {
-      pushHistory({
-        spacify: true,
-        caretId,
-        caretPos,
-        processedSelection,
-        anchorId,
-        anchorPos,
-        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-      });
-      bigreduce();
-      calcSelection();
-    } else if (e.key === "/" && e.metaKey) {
-      pushHistory({
-        commentify: true,
-        caretId,
-        caretPos,
-        processedSelection,
-        anchorId,
-        anchorPos,
-        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-      });
-      bigreduce();
-      calcSelection();
     } else if (e.key === "p" && e.metaKey && e.shiftKey) {
       const restoredAction = restoreFirstThat((d) =>
         ancestorIds(d.caretId).includes(localUndoBase)
@@ -520,18 +473,6 @@ export const createEditorEnv = () => {
         renderCaret();
         renderAnchor();
       }
-    } else if (discrim(e) && !e.metaKey) {
-      const h = {
-        key: e.key,
-        caretId,
-        caretPos,
-        processedSelection,
-        anchorId,
-        anchorPos,
-        comp: comp([caretId, caretPos], [anchorId, anchorPos]),
-      };
-      pushHistory(h);
-      bigreduce();
     }
   });
 
@@ -601,6 +542,7 @@ export const createEditorEnv = () => {
     renderAnchor();
 
     calcSelection();
+    elFromFocusId[caretId].focus();
   }
 
   function calcSelectionString(processedSelection) {

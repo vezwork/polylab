@@ -1,7 +1,7 @@
 import { ContainerSink } from "./caretsink.js";
 import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
-    const { elFromFocusId, selectionSinks, calcSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, } = eContext;
+    const { elFromFocusId, selectionSinks, calcSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, pushHistory, } = eContext;
     const wrapEl = new DOMParser().parseFromString(`<div style="
     padding: 6px 6px 6px 2px;
     border: 1px solid black;
@@ -37,6 +37,48 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         if (e.buttons === 1) {
             requestAnimationFrame(() => mousePick(false)(e));
             e.stopPropagation();
+        }
+    });
+    function discrim(e) {
+        if (e.key.length === 1)
+            return true;
+        if (e.key === "Enter")
+            return true;
+        if (e.key === "Backspace")
+            return true;
+    }
+    wrapEl.addEventListener("keydown", (e) => {
+        if (e.key === "Tab")
+            e.preventDefault();
+        if (e.key === "Backspace")
+            e.preventDefault();
+        if (e.key === " ")
+            e.preventDefault();
+        if (discrim(e) && !e.metaKey) {
+            pushHistory({
+                key: e.key,
+            });
+        }
+        else if (e.key === "b" && e.metaKey) {
+            pushHistory({
+                key: e.key,
+                newId: Math.random() + "",
+            });
+        }
+        else if (e.key === "Tab" && e.shiftKey) {
+            pushHistory({
+                despacify: true,
+            });
+        }
+        else if (e.key === "Tab") {
+            pushHistory({
+                spacify: true,
+            });
+        }
+        else if (e.key === "/" && e.metaKey) {
+            pushHistory({
+                commentify: true,
+            });
         }
     });
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());

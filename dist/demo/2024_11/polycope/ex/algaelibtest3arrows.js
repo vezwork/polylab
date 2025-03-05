@@ -13,9 +13,29 @@ import {
   eq,
   Ob,
   map,
+  set,
 } from "./ex/algaelib.js";
-import { drawArrow } from "../../2024_09/graph_edit/graph_edit.js";
-import { lerp } from "../../../lib/math/Vec2.js";
+import {
+  lerp,
+  angleOf,
+  sub as vsub,
+  fromPolar,
+} from "../../../lib/math/Vec2.js";
+
+//https://stackoverflow.com/a/6333775
+export function drawArrow(context, from, to) {
+  const headlen = 14; // length of head in pixels
+  const d = vsub(to, from);
+  const angle = angleOf(d);
+  context.lineJoin = "round";
+  context.beginPath();
+  context.moveTo(...from);
+  context.lineTo(...to);
+  context.lineTo(...vsub(to, fromPolar(headlen, angle - Math.PI / 6)));
+  context.moveTo(...to);
+  context.lineTo(...vsub(to, fromPolar(headlen, angle + Math.PI / 6)));
+  context.stroke();
+}
 
 const boxD = (color = "red", isGroup) => {
   const dd = d((x, x2, y, y2, ob) => {
@@ -129,6 +149,15 @@ const lineD = (...ps) => {
 
   return dd;
 };
+const arrowD = () =>
+  d((x, x2, y, y2) => {
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    const start = [x, y];
+    const end = [x2, y2];
+    drawArrow(ctx, lerp(start, end, 0.02), lerp(start, end, 0.98));
+  });
 
 const dd = boxD("orange");
 const dd3 = boxD("crimson");
@@ -152,46 +181,32 @@ xStack(dd3, cat);
 above(cat, captiond);
 eq(cat.x, captiond.x);
 
+// the defaulting of this is broken and as a result it is not layed out
+// properly.
+const gg = group(boxD("purple"), boxD("green"));
+xStack(cat, gg);
+
+console.log("g", gg);
+
 put(dd4.y)(200);
 put(dd4.x)(220);
 
-const arrow = d((x, x2, y, y2) => {
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 4;
-  ctx.lineCap = "round";
-  const start = [x, y];
-  const end = [x2, y2];
-  drawArrow(ctx, lerp(start, end, 0.02), lerp(start, end, 0.98));
-});
+const arrow = arrowD();
 eq(arrow.x, dd.x);
 eq(arrow.x2, dd4.x2);
 eq(arrow.y, dd.y);
 eq(arrow.y2, dd4.y2);
 
-const arrow2 = d((x, x2, y, y2) => {
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 4;
-  ctx.lineCap = "round";
-  const start = [x, y];
-  const end = [x2, y2];
-  drawArrow(ctx, lerp(start, end, 0.02), lerp(start, end, 0.95));
-});
+const arrow2 = arrowD();
 eq(arrow2.x, dd3.x);
 eq(arrow2.y, dd3.y2);
-toEq(arrow2.x2, map((x, x2) => x + (x2 - x) / 2)(arrow.x, arrow.x2));
-toEq(arrow2.y2, map((y, y2) => y + (y2 - y) / 2)(arrow.y, arrow.y2));
+toEq(arrow2.x2, arrow.xc);
+toEq(arrow2.y2, arrow.yc);
 
-const arrow3 = d((x, x2, y, y2) => {
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 4;
-  ctx.lineCap = "round";
-  const start = [x, y];
-  const end = [x2, y2];
-  drawArrow(ctx, lerp(start, end, 0.05), lerp(start, end, 0.95));
-});
-toEq(arrow3.x, map((x, x2) => x + (x2 - x) * 0.8)(arrow.x, arrow.x2));
-toEq(arrow3.y, map((y, y2) => y + (y2 - y) * 0.8)(arrow.y, arrow.y2));
-toEq(arrow3.x2, map((x, x2) => x + (x2 - x) / 2)(arrow2.x, arrow2.x2));
-toEq(arrow3.y2, map((y, y2) => y + (y2 - y) / 2)(arrow2.y, arrow2.y2));
+const arrow3 = arrowD();
+toEq(arrow3.x, arrow.xi(0.8));
+toEq(arrow3.y, arrow.yi(0.8));
+toEq(arrow3.x2, arrow2.xi(0.5));
+toEq(arrow3.y2, arrow2.yi(0.5));
 
 draw();

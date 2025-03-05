@@ -2,18 +2,20 @@ import { ContainerSink } from "./caretsink.js";
 import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
     const { elFromFocusId, selectionSinks, calcSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, } = eContext;
-    const wrapEl = document.createElement("div");
-    wrapEl.className = "editor";
+    const wrapEl = new DOMParser().parseFromString(`<div style="
+    padding: 6px 6px 6px 2px;
+    border: 1px solid black;
+    vertical-align: middle;
+    user-select: none;
+    border-radius: 4px;
+    display: inline-block;
+  " class="editor" tabIndex="0"></div>`, "text/html").body.firstChild;
     elFromFocusId[id] = wrapEl;
-    wrapEl.style.display = "inline-block";
-    wrapEl.tabIndex = 0;
     const mousePick = (shouldMoveAnchor) => (e) => {
         e.stopPropagation();
         selectionSinks().forEach((c) => {
             c.charEl.isSelected = false;
             c.charEl.classList.remove("selected");
-            if (c.charEl.isEditorStart)
-                elFromFocusId[c.charEl.parentId].isStartSelected = false;
         });
         const closestLineEl = wrapEl.lineEls.sort((el1, el2) => vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2))[0];
         const picked = [...closestLineEl.children].sort((el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2))[0];
@@ -121,10 +123,8 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             lineStartEl.style.verticalAlign = "middle";
             lineStartEl.pos = pos;
             lineStartEl.parentId = id;
-            if (y === 0)
-                lineStartEl.isEditorStart = true;
-            else
-                lineStartEl.isNewLine = true;
+            if (y !== 0)
+                lineStartEl.innerText = "\n";
             pos++;
             let isInCommentBlock = false;
             let isInString = false;
@@ -176,8 +176,6 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
                         charEl.style.color = "crimson";
                     charEl.innerText = char;
                 }
-                if (y === lines.length - 1 && x === line.length - 1)
-                    charEl.isEditorEnd = true;
                 charEl.pos = pos;
                 charEl.parentId = id;
                 pos++;

@@ -143,9 +143,7 @@ export const toDefault = [];
 export const group = (...obs) => {
   const g = {};
 
-  for (const ob of obs) {
-    toDefault.push(ob.x, ob.y, ob.x2, ob.y2);
-  }
+  toDefault.push(g);
 
   g.x = Ob();
   const minX = min(...obs.map((ob) => ob.x));
@@ -156,6 +154,7 @@ export const group = (...obs) => {
       g.x.z = minX.z;
       set(g.x)(minX.v);
     } else if (minX.z > g.x.z) {
+      // note: why find `minOb` and not use `minX`? I tried it and it broke
       const minOb = obs.find((ob) => ob.x.v === minX.v);
       minOb.x.z = g.x.z;
       set(minOb.x)(g.x.v);
@@ -201,7 +200,7 @@ export const group = (...obs) => {
   return g;
 };
 
-const toDraw = [];
+export const toDraw = [];
 export const d = (draw) => {
   let res = {};
   toDraw.push([res, draw]);
@@ -246,6 +245,7 @@ export const yStack = (...ds) => {
 };
 
 export const draw = () => {
+  // necessary so groups can be layed out (not totally working)
   for (const todo of toDefault) {
     if (todo.z >= 0) {
       todo.z = -1;
@@ -254,6 +254,13 @@ export const draw = () => {
   }
   toDefault.length = 0;
   for (const [ob, draw] of toDraw) {
+    // necessary so e.g. arrows between un-related part of the diagram work
+    for (const todo of [ob.x, ob.x2, ob.y, ob.y2]) {
+      if (todo.z >= 0) {
+        todo.z = -1;
+        set(todo)(todo.v);
+      }
+    }
     draw(ob.x.v, ob.x2.v, ob.y.v, ob.y2.v, ob);
   }
 };

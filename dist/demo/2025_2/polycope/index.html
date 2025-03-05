@@ -8,20 +8,11 @@
   }
   .editor-wrapper {
     position: relative;
-    --z-index: 10;
     margin: 40px;
-
-    scroll-snap-align: start;
   }
-  .editor {
-    padding: 6px 6px 6px 2px;
+  .editor-wrapper > .editor {
     width: 400px;
     min-height: 200px;
-
-    border: 1px solid black;
-    vertical-align: middle;
-    user-select: none;
-    border-radius: 4px;
   }
   .selected {
     background-color: rgba(193, 112, 255, 0.4);
@@ -29,5 +20,9 @@
   }
 </style>
 <script type="module">
-  import * as a from "./main.js";
+  import * as main from "./main.js";
+
+  const first = main.createEditorEnv();
+  // setInterval(() => console.log("1st", first.str.join("")), 2000);
+  main.createEditorEnv();
 </script>

@@ -5,7 +5,7 @@ import { pSelectionString } from "./parse.js";
 import { linePos, posFromLinePos, getLine } from "./helpers.js";
 import { editor } from "./editor.js";
 
-const createEditorEnv = () => {
+export const createEditorEnv = () => {
   const caretEl = document.createElement("span");
   caretEl.style.display = "block";
   document.body.prepend(caretEl);
@@ -148,8 +148,8 @@ const createEditorEnv = () => {
             caretPos = posFromLinePos(elFromFocusId[e.caretId].str, [0, y]);
             elFromFocusId[e.caretId].act({ key: " " });
             elFromFocusId[e.caretId].act({ key: " " });
-            if (prevCaretPos > caretPos - 2) prevCaretPos += 2;
-            if (prevAnchorPos > caretPos - 2) prevAnchorPos += 2;
+            if (prevCaretPos >= caretPos - 2) prevCaretPos += 2;
+            if (prevAnchorPos >= caretPos - 2) prevAnchorPos += 2;
           }
         }
         if (e.despacify) {
@@ -232,6 +232,7 @@ const createEditorEnv = () => {
 
     renderCaret();
     renderAnchor();
+    e1.onReduce?.(e1.str.join(""));
   }
 
   const editorLineage = (el) => {
@@ -391,13 +392,11 @@ const createEditorEnv = () => {
       // eval
       e.preventDefault();
 
-      const toEval = e1.str.join("");
-      sandboxedEval(toEval, (iframeDoc) => {
-        createHistoryCheckpoint(iframeDoc.getElementById("c")).then(() => {
-          localStorage.setItem("history", serializeHistory(getHistoryRoot()));
-          drawHistoryTree();
-        });
-      });
+      // const toEval = e1.str.join("");
+      e1.onSave?.(
+        e1.str.join(""),
+        selection.map((s) => s.charEl.innerText).join("")
+      );
 
       return;
     }
@@ -538,12 +537,21 @@ const createEditorEnv = () => {
     selectionSinks().forEach((c) => {
       c.charEl.isSelected = false;
       c.charEl.classList.remove("selected");
-      if (c.charEl.isEditorStart)
-        elFromFocusId[c.charEl.parentId].isStartSelected = false;
     });
 
     const c = new Caret(getCaretopeSink(caretId, caretPos));
-    if (carryId) c.carrySink = getCaretopeSink(caretId, carryPos);
+    if (dir === "left" || dir === "right") {
+      carryId = null;
+    }
+    if (dir === "up" || dir === "down") {
+      if (carryId === null) {
+        carryId = caretId;
+        carryPos = caretPos;
+      }
+    }
+    if (carryId) {
+      c.carrySink = getCaretopeSink(carryId, carryPos);
+    }
     if (isJumping) {
       if (dir === "down") c.moveToRootEnd();
       if (dir === "up") c.moveToRootStart();
@@ -557,7 +565,7 @@ const createEditorEnv = () => {
           let prev;
           while (
             prev !== c.caretSink &&
-            (c.caretSink.charEl.isEditorEnd || c.caretSink.charEl.isEditorStart)
+            (c.caretSink.isFirst() || c.caretSink.isLast())
           ) {
             prev = c.caretSink;
             c.moveRight();
@@ -568,7 +576,7 @@ const createEditorEnv = () => {
           let prev;
           while (
             prev !== c.caretSink &&
-            (c.caretSink.charEl.isEditorEnd || c.caretSink.charEl.isEditorStart)
+            (c.caretSink.isFirst() || c.caretSink.isLast())
           ) {
             prev = c.caretSink;
             c.moveLeft();
@@ -586,12 +594,6 @@ const createEditorEnv = () => {
     if (!isSelecting) {
       anchorId = caretId;
       anchorPos = caretPos;
-    }
-    if (c.carrySink) {
-      carryPos = c.carrySink.charEl.pos;
-      carryId = c.carrySink.charEl.parentId;
-    } else {
-      carryId = null;
     }
     renderCaret();
     renderAnchor();
@@ -615,14 +617,7 @@ const createEditorEnv = () => {
     const mm = processedSelection
       .map((v) => [caretTreePos(v), getSink(v)])
       .filter(([_, s]) => !s.isAfterEditorSink)
-      .map(([v, s]) => [
-        v,
-        s.charEl.isNewLine
-          ? "\n"
-          : s.charEl.innerText
-          ? s.charEl.innerText
-          : " ",
-      ]);
+      .map(([v, s]) => [v, s.charEl.innerText ?? " "]);
     const m = mm.map((v) => v[0]);
     const p = commonPrefixLength(processedSelection.map(caretTreePos));
     const mp = m.map((l) => l.slice(p));
@@ -651,13 +646,18 @@ const createEditorEnv = () => {
     selection = selectionSinks();
     processedSelection = [];
     selection.forEach((c) => {
-      if (c.charEl.isEditorStart) {
-        elFromFocusId[c.charEl.parentId].isStartSelected = true;
+      if (c.charEl.isEditor) {
+        const isEditorStartSelected =
+          c.charEl.sink.lines[0][0].charEl.classList.contains("selected");
+        if (isEditorStartSelected) {
+          c.charEl.classList.add("selected");
+          if (!c.charEl.isEditorStart) {
+            processedSelection.push([c.charEl.parentId, c.charEl.pos]);
+            c.charEl.isSelected = true;
+          }
+        }
       }
-      if (
-        !c.charEl.isEditor ||
-        (c.charEl.isEditor && c.charEl.isStartSelected)
-      ) {
+      if (!c.charEl.isEditor) {
         c.charEl.classList.add("selected");
         if (!c.charEl.isEditorStart) {
           processedSelection.push([c.charEl.parentId, c.charEl.pos]);
@@ -672,8 +672,3 @@ const createEditorEnv = () => {
 
   return e1;
 };
-
-const first = createEditorEnv();
-
-// setInterval(() => console.log("1st", first.str.join("")), 2000);
-createEditorEnv();

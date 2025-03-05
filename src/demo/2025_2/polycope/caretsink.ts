@@ -63,6 +63,15 @@ export abstract class Sink {
     if (this.parent === null) return [];
     return this.parent.lineOf(this);
   }
+
+  isFirst(): boolean | null {
+    if (this.parent === null) return null;
+    return this.parent.lines[0][0] === this;
+  }
+  isLast(): boolean | null {
+    if (this.parent === null) return null;
+    return this.parent.lines.at(-1)?.at(-1) === this;
+  }
 }
 
 export class ContainerSink extends Sink {

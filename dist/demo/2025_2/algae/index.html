@@ -56,28 +56,123 @@ Feb 25 2025<br />
   projects and write more about them!</span
 >
 
-<p>
-  This year I took a career break. The first couple months of the year I was
-  focused on working on my personal health and I avoided working on projects.
-  After that, I worked on a lot of projects related to Polytope! The last couple
-  of months I was working on a part-time contract where I added multiplayer
-  functionality to a new 3D design app.
-</p>
-<p>
-  In this note I want to try to document what projects I have been working on. I
-  originally wrote this as a list of articles I should write, but after thinking
-  about it I realized there are too many articles to write, and just putting
-  this all out there is a good first step. I intend to write in more depth about
-  these topics next year. Hopefully just seeing all of this gives some good
-  insight into what I’ve been working on and how it all fits together.
-  <br /><br />
-</p>
+<p>a</p>
 
 <hr />
-<h2>Polytope</h2>
+<h2>a</h2>
 
 <p>
   Let me know your thoughts on
   <a href="https://mathstodon.xyz/@vez">mastodon</a> or
   <a href="https://bsky.app/profile/elliot.website">bluesky</a>.
 </p>
+
+<script type="module">
+  import { createEditorEnv } from "../polycope/main.js";
+  const e = createEditorEnv();
+  // e.onReduce = (str) => console.log("onreduce", str);
+  e.onSave = (str, p) =>
+    console.log("onsave", p, document.body.append(eval(p)));
+</script>
+<style>
+  .selected {
+    background-color: rgba(193, 112, 255, 0.4);
+    border-radius: 4px;
+  }
+</style>
+
+<svg
+  id="mySvgEl"
+  style="position: absolute; top: 0; left: 0; z-index: -10"
+  xmlns="http://www.w3.org/2000/svg"
+  width="30"
+  height="30"
+  viewBox="17066.44 -2274.6295875956366 64.79 60.82"
+></svg>
+<script>
+  const mySvgEl = document.getElementById("mySvgEl");
+  mySvgEl.style.width = window.innerWidth;
+  mySvgEl.style.height = window.innerHeight;
+  mySvgEl.setAttribute(
+    "viewBox",
+    `0 0 ${window.innerWidth} ${window.innerHeight}`
+  );
+
+  //https://stackoverflow.com/a/37411738
+  function makeSvgNode(n, v) {
+    n = document.createElementNS("http://www.w3.org/2000/svg", n);
+    for (var p in v) n.setAttributeNS(null, p, v[p]);
+    return n;
+  }
+
+  const paths = [];
+  const redo = [];
+
+  const ps = [];
+
+  let isMouseDown = false;
+  let grabbing = null;
+  let curPath = null;
+  document.body.addEventListener("keydown", (e) => {
+    if (e.key === "z" && e.shiftKey) {
+      const path = redo.pop();
+
+      if (path) {
+        paths.push(path);
+        mySvgEl.append(path);
+      }
+      return;
+    }
+    if (e.key === "z") {
+      const path = paths.pop();
+      if (path) {
+        redo.push(path);
+        path.remove();
+      }
+      return;
+    }
+  });
+  mySvgEl.addEventListener("mouseup", (e) => {
+    isMouseDown = false;
+    grabbing = null;
+    curPath = null;
+    ps.length = 0;
+  });
+  mySvgEl.addEventListener("mousedown", (e) => {
+    isMouseDown = true;
+    t = 0;
+    if (curPath === null) {
+      const path = makeSvgNode("path", {
+        stroke: Math.random() < 0.5 ? "var(--main-color)" : "cornflowerblue",
+        "stroke-width": "12",
+        fill: "none",
+      });
+      curPath = path;
+      curPath.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+
+        grabbing = path;
+        if (!grabbing.t) grabbing.t = [0, 0];
+      });
+      paths.push(curPath);
+      redo.length = 0;
+      mySvgEl.append(curPath);
+    }
+  });
+  let t = 0;
+  mySvgEl.addEventListener("mousemove", (e) => {
+    const m = [e.offsetX, e.offsetY];
+    if (grabbing) {
+      grabbing.t = [grabbing.t[0] + e.movementX, grabbing.t[1] + e.movementY];
+      grabbing.style.transform = `translate(${grabbing.t[0]}px,${grabbing.t[1]}px)`;
+    }
+    if (isMouseDown && t % 3 === 0) {
+      ps.push(m);
+      curPath.setAttribute(
+        "d",
+        `M${ps[0][0]},${ps[0][1]}` + ps.map(([x, y]) => `L${x},${y}`).join(" ")
+      );
+    }
+    t++;
+  });
+</script>

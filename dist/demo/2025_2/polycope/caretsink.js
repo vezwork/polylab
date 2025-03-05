@@ -59,6 +59,16 @@ export class Sink {
             return [];
         return this.parent.lineOf(this);
     }
+    isFirst() {
+        if (this.parent === null)
+            return null;
+        return this.parent.lines[0][0] === this;
+    }
+    isLast() {
+        if (this.parent === null)
+            return null;
+        return this.parent.lines.at(-1)?.at(-1) === this;
+    }
 }
 export class ContainerSink extends Sink {
     isLinesWrapped = true;

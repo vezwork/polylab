@@ -12,20 +12,20 @@ export class Caret {
 
   moveLeft() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink = null;
+    //if (this.isVerticalLinear) this.carrySink = null;
     const next = recurseUpMoveLeft(this.caretSink);
     if (next !== null) this.caretSink = next;
   }
 
   moveRight() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink = null;
+    //if (this.isVerticalLinear) this.carrySink = null;
     const next = recurseUpMoveRight(this.caretSink);
     if (next !== null) this.caretSink = next;
   }
   moveUp() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink ??= this.caretSink;
+    //if (this.isVerticalLinear) this.carrySink ??= this.caretSink;
     const next = recurseUpMoveUp(this.caretSink, this.carrySink ?? undefined);
     if (next !== null) return (this.caretSink = next);
     const leftmost = leftmostSiblingRecursive(this.caretSink);
@@ -33,32 +33,32 @@ export class Caret {
   }
   moveDown() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink ??= this.caretSink;
+    //if (this.isVerticalLinear) this.carrySink ??= this.caretSink;
     const next = recurseUpMoveDown(this.caretSink, this.carrySink ?? undefined);
     if (next !== null) return (this.caretSink = next);
   }
 
   moveToStartOfRootLine() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink = null;
+    //if (this.isVerticalLinear) this.carrySink = null;
     this.caretSink =
       recurseUpToChildOfRoot(this.caretSink)?.leftmostSibling() ?? undefined;
   }
   moveToEndOfRootLine() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink = null;
+    //if (this.isVerticalLinear) this.carrySink = null;
     this.caretSink =
       recurseUpToChildOfRoot(this.caretSink)?.rightmostSibling() ?? undefined;
   }
 
   moveToRootStart() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink = null;
+    //if (this.isVerticalLinear) this.carrySink = null;
     this.caretSink = recurseUpToRoot(this.caretSink)?.lines[0][0] ?? undefined;
   }
   moveToRootEnd() {
     if (!this.caretSink) return;
-    if (this.isVerticalLinear) this.carrySink = null;
+    //if (this.isVerticalLinear) this.carrySink = null;
     this.caretSink =
       recurseUpToRoot(this.caretSink)?.lines.at(-1)?.at(-1) ?? undefined;
   }

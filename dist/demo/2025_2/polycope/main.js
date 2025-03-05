@@ -600,46 +600,23 @@ export const createEditorEnv = () => {
 
     calcSelection();
   }
-  // uggh this is disgusting
+
   function calcSelectionString(processedSelection) {
-    // WIP COPY PASTE
-    const commonPrefixLength = (bla) => {
-      const upperBound = Math.min(...bla.map((l) => l.length));
-      for (let i = 0; i < upperBound; i++) {
-        const values = new Set(bla.map((l) => l[i]));
-
-        if (values.size !== 1) return i;
-      }
-      return upperBound;
-    };
-
-    // console.log(processedSelection.map((v) => [caretTreePos(v), getSink(v)]));
-    const mm = processedSelection
-      .map((v) => [caretTreePos(v), getSink(v)])
-      .filter(([_, s]) => !s.isAfterEditorSink)
-      .map(([v, s]) => [v, s.charEl.innerText ?? " "]);
-    const m = mm.map((v) => v[0]);
-    const p = commonPrefixLength(processedSelection.map(caretTreePos));
-    const mp = m.map((l) => l.slice(p));
-
-    const root = {};
-    let i = 0;
-    for (const lis of mp) {
-      let cur = root;
-      for (const entry of lis) {
-        if (!cur[entry]) cur[entry] = {};
-        cur = cur[entry];
-      }
-      cur.data = mm[i][1];
-      i++;
-    }
-
-    const serial = (tre) =>
-      Object.values(tre).flatMap((v) =>
-        v.data ? v.data : ["(>", ...serial(v), "<)"]
-      );
-
-    return m.length === 1 ? root.data : serial(root).join("");
+    let balance = 0;
+    const inner = processedSelection
+      .map((v) => {
+        const s = getSink(v);
+        if (s.isFirst()) balance++;
+        if (s.isAfterEditorSink) {
+          balance--;
+          return "<)";
+        }
+        return s.isFirst() ? "(>" : "" + s.charEl.innerText;
+      })
+      .join("");
+    let prefix = balance < 0 ? "(>".repeat(Math.abs(balance)) : "";
+    let postfix = balance > 0 ? "<)".repeat(balance) : "";
+    return prefix + inner + postfix;
   }
 
   function calcSelection() {

@@ -39,14 +39,6 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             e.stopPropagation();
         }
     });
-    function discrim(e) {
-        if (e.key.length === 1)
-            return true;
-        if (e.key === "Enter")
-            return true;
-        if (e.key === "Backspace")
-            return true;
-    }
     wrapEl.addEventListener("keydown", (e) => {
         if (e.key === "Tab")
             e.preventDefault();
@@ -54,31 +46,37 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             e.preventDefault();
         if (e.key === " ")
             e.preventDefault();
-        if (discrim(e) && !e.metaKey) {
+        const discrim = e.key.length === 1 || e.key === "Enter" || e.key === "Backspace";
+        if (discrim && !e.metaKey) {
             pushHistory({
                 key: e.key,
             });
+            e.stopPropagation();
         }
         else if (e.key === "b" && e.metaKey) {
             pushHistory({
                 key: e.key,
                 newId: Math.random() + "",
             });
+            e.stopPropagation();
         }
         else if (e.key === "Tab" && e.shiftKey) {
             pushHistory({
                 despacify: true,
             });
+            e.stopPropagation();
         }
         else if (e.key === "Tab") {
             pushHistory({
                 spacify: true,
             });
+            e.stopPropagation();
         }
         else if (e.key === "/" && e.metaKey) {
             pushHistory({
                 commentify: true,
             });
+            e.stopPropagation();
         }
     });
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());

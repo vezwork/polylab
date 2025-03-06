@@ -51,7 +51,7 @@ const pBraces = pInside("{", (str) => p(str), "}");
 const pBrackets = pInside("[", (str) => p(str), "]");
 const pDQuotes = pInside(`"`, pStrValue(`"`), `"`);
 const pSQuotes = pInside(`'`, pStrValue(`'`), `'`);
-const p = pRepeat(
+export const p = pRepeat(
   pOrs(pParens, pBraces, pBrackets, pDQuotes, pSQuotes, pValue)
 );
 

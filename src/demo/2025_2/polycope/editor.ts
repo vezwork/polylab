@@ -76,6 +76,7 @@ export const editor = (
       setAnchorId(id);
       setAnchorPos(picked.pos);
       renderAnchor();
+      wrapEl.focus();
     }
     renderCaret();
 
@@ -149,6 +150,7 @@ export const editor = (
     if (e.paste) {
       if (e.paste.id) {
         act({ ...e, paste: undefined, newId: e.paste.id });
+        // BUG: I think his causes issues, it moves the caret to the wrong spot mid-paste?
         elFromFocusId[getCaretId()]?.act({
           ...e,
           paste: e.paste.data,
@@ -157,7 +159,8 @@ export const editor = (
         });
       } else if (Array.isArray(e.paste)) {
         for (const entry of e.paste) {
-          act({ ...e, paste: undefined, key: entry });
+          if (entry.id) act({ ...e, paste: entry });
+          else act({ ...e, paste: undefined, key: entry });
         }
       }
     } else if (e.newId) {

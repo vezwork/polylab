@@ -4,6 +4,7 @@ import { CaretSink, ContainerSink } from "./caretsink.js";
 import { pSelectionString } from "./parse.js";
 import { linePos, posFromLinePos, getLine } from "./helpers.js";
 import { editor } from "./editor.js";
+import { pp } from "./structure_parse.js";
 
 export const createEditorEnv = () => {
   const caretEl = document.createElement("span");
@@ -42,9 +43,10 @@ export const createEditorEnv = () => {
     lastCheckpoint,
   } = history();
 
+  const elFromFocusId = {};
+
   let caretId = "init";
   let caretPos = 0;
-  let elFromFocusId = {};
 
   let carryPos = -1;
   let carryId = null;
@@ -230,6 +232,26 @@ export const createEditorEnv = () => {
     e1.onReduce?.(e1.str.join(""));
 
     elFromFocusId[caretId].focus();
+
+    // structural parsing experiment
+    const traverse = (i) => (ob) =>
+      Array.isArray(ob)
+        ? ob.flatMap(traverse(i)).filter((a) => a !== null)[0]
+        : ob.i === i || ob.i === i - 1
+        ? ob
+        : null;
+    const split = (ar = []) => {
+      let res = [[]];
+      for (const a of ar) {
+        if (a.char === ",") res.push([]);
+        else res.at(-1).push(a.char);
+      }
+      return res;
+    };
+    // const otherEntriesParse = split(
+    //   traverse(caretPos)(pp(e1.str.join("")).parse)?.parent
+    // );
+    // now I _just_ need multicursors!
   }
 
   const editorLineage = (el) => {
@@ -324,7 +346,7 @@ export const createEditorEnv = () => {
   bigreduce();
 
   const copy = (e) => {
-    if (document.activeElement !== e1) return;
+    if (!e1.contains(document.activeElement)) return;
     if (processedSelection.length === 0) return;
     const output = calcSelectionString(processedSelection);
 
@@ -351,16 +373,14 @@ export const createEditorEnv = () => {
   document.addEventListener("copy", copy);
   document.addEventListener("cut", copy);
   document.addEventListener("paste", (e) => {
-    if (document.activeElement !== e1) return;
+    if (!e1.contains(document.activeElement)) return;
     let paste = e.clipboardData.getData("text");
     console.log("paste!", paste, e);
 
     if (paste) {
-      // WARNING: COMMENT DISABLING PASTING EDITORS FOR NOW!!!!
-      //const output = pSelectionString(paste).parse;
-      const output = paste.split("");
+      const output = pSelectionString(paste).parse;
+      //const output = paste.split("");
 
-      //when will we receive info about renewal?
       const go = (v) =>
         Array.isArray(v)
           ? {
@@ -368,6 +388,8 @@ export const createEditorEnv = () => {
               data: v.map(go),
             }
           : v;
+
+      console.log(output.map(go));
       pushHistory({
         caretId,
         paste: output.map(go),

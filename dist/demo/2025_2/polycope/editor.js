@@ -3,11 +3,11 @@ import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, } from "
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
     const { elFromFocusId, calcAndRenderSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, pushHistory, } = eContext;
     const wrapEl = new DOMParser().parseFromString(`<div style="
-    padding: 6px 6px 6px 2px;
+    padding: 4px 4px 4px 0;
     border: 1px solid black;
     vertical-align: middle;
     user-select: none;
-    border-radius: 4px;
+    border-radius: 6px;
     display: inline-block;
   " class="editor" tabIndex="0"></div>`, "text/html").body.firstChild;
     elFromFocusId[id] = wrapEl;
@@ -158,10 +158,10 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         wrapEl.lineEls = [];
         return lines.map((line, y) => {
             const lineStartEl = document.createElement("span");
-            lineStartEl.style.height = "1.3em";
+            lineStartEl.style.height = "1.27em"; // magic number makes highlight height the same as 18px letters
             lineStartEl.style.width = "4px";
             lineStartEl.style.display = "inline-block";
-            lineStartEl.style.verticalAlign = "middle";
+            lineStartEl.style.verticalAlign = "text-bottom";
             lineStartEl.pos = pos;
             lineStartEl.parentId = id;
             if (y !== 0)

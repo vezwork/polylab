@@ -14,9 +14,30 @@
     width: 400px;
     min-height: 200px;
   }
+  .editor {
+    box-sizing: border-box;
+  }
+  .editor:focus {
+    outline: 0.1px solid black;
+  }
   .selected {
-    background-color: rgba(193, 112, 255, 0.4);
+    box-sizing: border-box;
+    background-color: #e8c6ff;
+    color: rgb(48, 9, 79);
+  }
+  .s-l.s-r {
     border-radius: 4px;
+  }
+  .s-l {
+    border-radius: 4px 0 0 4px;
+  }
+  .s-r {
+    border-radius: 0 4px 4px 0;
+  }
+  @keyframes blink-animation {
+    to {
+      visibility: hidden;
+    }
   }
 </style>
 <script type="module">

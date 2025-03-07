@@ -43,11 +43,11 @@ export const editor = (
 
   const wrapEl = new DOMParser().parseFromString(
     `<div style="
-    padding: 6px 6px 6px 2px;
+    padding: 4px 4px 4px 0;
     border: 1px solid black;
     vertical-align: middle;
     user-select: none;
-    border-radius: 4px;
+    border-radius: 6px;
     display: inline-block;
   " class="editor" tabIndex="0"></div>`,
     "text/html"
@@ -204,10 +204,10 @@ export const editor = (
         pos: any;
         parentId: any;
       };
-      lineStartEl.style.height = "1.3em";
+      lineStartEl.style.height = "1.27em"; // magic number makes highlight height the same as 18px letters
       lineStartEl.style.width = "4px";
       lineStartEl.style.display = "inline-block";
-      lineStartEl.style.verticalAlign = "middle";
+      lineStartEl.style.verticalAlign = "text-bottom";
       lineStartEl.pos = pos;
       lineStartEl.parentId = id;
       if (y !== 0) lineStartEl.innerText = "\n";

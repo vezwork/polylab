@@ -1,7 +1,7 @@
 import { ContainerSink } from "./caretsink.js";
 import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
-    const { elFromFocusId, selectionSinks, calcSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, pushHistory, } = eContext;
+    const { elFromFocusId, calcAndRenderSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, pushHistory, } = eContext;
     const wrapEl = new DOMParser().parseFromString(`<div style="
     padding: 6px 6px 6px 2px;
     border: 1px solid black;
@@ -13,10 +13,6 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
     elFromFocusId[id] = wrapEl;
     const mousePick = (shouldMoveAnchor) => (e) => {
         e.stopPropagation();
-        selectionSinks().forEach((c) => {
-            c.charEl.isSelected = false;
-            c.charEl.classList.remove("selected");
-        });
         const closestLineEl = wrapEl.lineEls.sort((el1, el2) => vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2))[0];
         const picked = [...closestLineEl.children].sort((el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2))[0];
         setCaretId(id);
@@ -28,7 +24,7 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             wrapEl.focus();
         }
         renderCaret();
-        calcSelection();
+        calcAndRenderSelection();
     };
     wrapEl.addEventListener("mousedown", (e) => {
         requestAnimationFrame(() => mousePick(true)(e));

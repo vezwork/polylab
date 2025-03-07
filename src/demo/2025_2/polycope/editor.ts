@@ -29,8 +29,7 @@ export const editor = (
 ) => {
   const {
     elFromFocusId,
-    selectionSinks,
-    calcSelection,
+    calcAndRenderSelection,
     renderCaret,
     renderAnchor,
     getCaretId,
@@ -57,11 +56,6 @@ export const editor = (
   const mousePick = (shouldMoveAnchor) => (e) => {
     e.stopPropagation();
 
-    selectionSinks().forEach((c) => {
-      c.charEl.isSelected = false;
-      c.charEl.classList.remove("selected");
-    });
-
     const closestLineEl = wrapEl.lineEls.sort(
       (el1, el2) =>
         vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2)
@@ -79,8 +73,7 @@ export const editor = (
       wrapEl.focus();
     }
     renderCaret();
-
-    calcSelection();
+    calcAndRenderSelection();
   };
   wrapEl.addEventListener("mousedown", (e) => {
     requestAnimationFrame(() => mousePick(true)(e));

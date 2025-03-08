@@ -7,6 +7,7 @@ import {
   distMouseEventToEl,
   elTopAndBottom,
   vertDistPointToLineEl,
+  makeid,
 } from "./helpers.js";
 
 type WrapElType = HTMLDivElement & {
@@ -64,11 +65,11 @@ export const editor = (
       (el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2)
     )[0];
     setCaretId(id);
-    setCaretPos(picked.pos);
+    setCaretPos(picked.id);
 
     if (shouldMoveAnchor) {
       setAnchorId(id);
-      setAnchorPos(picked.pos);
+      setAnchorPos(picked.id);
       renderAnchor();
       wrapEl.focus();
     }
@@ -94,12 +95,13 @@ export const editor = (
     if (discrim && !e.metaKey) {
       pushHistory({
         key: e.key,
+        keyId: makeid(7), // MULTICURSOR BUG! same id for both cursors. uh oh.
       });
       e.stopPropagation();
     } else if (e.key === "b" && e.metaKey) {
       pushHistory({
         key: e.key,
-        newId: Math.random() + "",
+        newId: makeid(7), // MULTICURSOR BUG! same id for both cursors. uh oh.
       });
       e.stopPropagation();
     } else if (e.key === "Tab" && e.shiftKey) {
@@ -122,22 +124,37 @@ export const editor = (
   wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
   wrapEl.sink.parent = parentContainerSink ?? null;
 
-  let str = [] as string[];
+  let str = [] as { char: string; id: string }[];
   let lines = [[]] as any[][];
 
   function reset() {
     str = [];
     lines = [[]];
 
-    wrapEl.str = str;
+    wrapEl.str = str.map((s) => s.char);
     wrapEl.lines = lines;
     wrapEl.innerHTML = "";
   }
 
   function myInsertAt(pos, char) {
     str = insertAt(str, pos, char);
-    wrapEl.str = str;
+    wrapEl.str = str.map((s) => s.char);
   }
+
+  // char id to pos
+  // insertAfter(id, newThing)
+  // delete(id)
+  const insertAfter = (id, char) => {
+    const i = str.findIndex((v) => v.id === id);
+    if (i === -1) myInsertAt(0, char);
+    else myInsertAt(i + 1, char);
+  };
+  const deleteAtId = (id) => {
+    const i = str.findIndex((v) => v.id === id);
+    if (i === -1) throw "couldn't find id to delete";
+    str = deleteAt(str, i);
+    return i;
+  };
 
   function act(e) {
     if (e.paste) {
@@ -147,8 +164,6 @@ export const editor = (
         elFromFocusId[getCaretId()]?.act({
           ...e,
           paste: e.paste.data,
-          caretId: getCaretId(),
-          caretPos: getCaretPos(),
         });
       } else if (Array.isArray(e.paste)) {
         for (const entry of e.paste) {
@@ -159,37 +174,48 @@ export const editor = (
     } else if (e.newId) {
       const newE = editor(e.newId, wrapEl.sink, eContext);
       newE.render();
-      myInsertAt(getCaretPos(), newE);
-      setCaretPos(0);
+      insertAfter(getCaretPos(), { char: newE, id: e.newId });
+      setCaretPos(newE.id);
       setCaretId(newE.id);
     } else if (e.key.length === 1) {
-      myInsertAt(getCaretPos(), e.key);
-      setCaretPos(getCaretPos() + 1);
+      //const iid = getCaretPos() === 0 ? id : str[getCaretPos() - 1].id;
+
+      insertAfter(getCaretPos(), { char: e.key, id: e.keyId });
+      setCaretId(id);
+      setCaretPos(e.keyId);
     }
     if (e.key === "Enter") {
-      myInsertAt(getCaretPos(), "\n");
-      setCaretPos(getCaretPos() + 1);
+      insertAfter(getCaretPos(), { char: "\n", id: e.keyId });
+      setCaretId(id);
+      setCaretPos(e.keyId);
     }
     if (e.key === "Backspace") {
-      if (getCaretPos() > 0) {
-        str = deleteAt(str, getCaretPos() - 1);
-        setCaretPos(getCaretPos() - 1);
+      if (getCaretPos() !== id) {
+        const i = deleteAtId(getCaretPos());
+        setCaretId(id);
+        setCaretPos(str[i - 1]?.id ?? id);
       } else {
         // TODO?: delete at start of editor
       }
     }
 
-    wrapEl.str = str;
+    wrapEl.str = str.map((s) => s.char);
   }
 
   function calcLines() {
-    let curLine: any[] = [];
+    let curLine = [] as unknown as { char: string; id: string }[] & {
+      id: string;
+    };
+    curLine.id = id;
     lines = [curLine];
-    for (const charOrEditor of str) {
-      if ("\n" === charOrEditor) {
-        curLine = [];
+    for (const ob of str) {
+      if ("\n" === ob.char) {
+        curLine = [] as unknown as { char: string; id: string }[] & {
+          id: string;
+        };
+        curLine.id = ob.id;
         lines.push(curLine);
-      } else curLine.push(charOrEditor);
+      } else curLine.push(ob);
     }
     wrapEl.lines = lines;
   }
@@ -210,64 +236,76 @@ export const editor = (
       lineStartEl.style.verticalAlign = "text-bottom";
       lineStartEl.pos = pos;
       lineStartEl.parentId = id;
+      lineStartEl.id = line.id;
+
       if (y !== 0) lineStartEl.innerText = "\n";
+
       pos++;
 
       let isInCommentBlock = false;
       let isInString = false;
       let isInDoubleString = false;
-      let els = line.map((char: WrapElType | string, x) => {
-        let charEl;
-        // @ts-ignore:
-        if (char.isEditor) {
-          charEl = char;
-        } else if (char === " ") {
-          charEl = document.createElement("span");
-          charEl.innerText = " ";
-          charEl.style.display = "inline-block";
-          charEl.style.verticalAlign = "middle";
-          charEl.style.width = "8px";
-          charEl.style.height = "16px";
-        } else {
-          charEl = document.createElement("span");
-          if (char === "/" && line[x + 1] === "/") {
-            isInCommentBlock = true;
-          }
-          if (isInString || isInDoubleString) charEl.style.color = "orangered";
-          if (char === "'") {
-            isInString = !isInString;
-          }
-          if (char === `"`) {
-            isInDoubleString = !isInDoubleString;
-          }
-          if (isInString || isInDoubleString) charEl.style.color = "orangered";
-          if (
-            (char === "(" || char === ")" || char === "[" || char === "]") &&
-            !isInCommentBlock &&
-            !isInString &&
-            !isInDoubleString
-          )
-            charEl.style.color = "violet";
+      let els = line.map(
+        (
+          { char, id: charId }: { char: WrapElType | string; id: string },
+          x
+        ) => {
+          let charEl;
+          // @ts-ignore:
+          if (char.isEditor) {
+            charEl = char;
+          } else if (char === " ") {
+            charEl = document.createElement("span");
+            charEl.innerText = " ";
+            charEl.style.display = "inline-block";
+            charEl.style.verticalAlign = "middle";
+            charEl.style.width = "8px";
+            charEl.style.height = "16px";
+            charEl.id = charId;
+          } else {
+            charEl = document.createElement("span");
+            charEl.id = charId;
+            if (char === "/" && line[x + 1] === "/") {
+              isInCommentBlock = true;
+            }
+            if (isInString || isInDoubleString)
+              charEl.style.color = "orangered";
+            if (char === "'") {
+              isInString = !isInString;
+            }
+            if (char === `"`) {
+              isInDoubleString = !isInDoubleString;
+            }
+            if (isInString || isInDoubleString)
+              charEl.style.color = "orangered";
+            if (
+              (char === "(" || char === ")" || char === "[" || char === "]") &&
+              !isInCommentBlock &&
+              !isInString &&
+              !isInDoubleString
+            )
+              charEl.style.color = "violet";
 
-          if (
-            // @ts-ignore:
-            !isNaN(char) &&
-            // @ts-ignore:
-            !isNaN(parseInt(char)) &&
-            !isInCommentBlock &&
-            !isInString &&
-            !isInDoubleString
-          )
-            charEl.style.color = "purple";
-          if (isInCommentBlock) charEl.style.color = "crimson";
+            if (
+              // @ts-ignore:
+              !isNaN(char) &&
+              // @ts-ignore:
+              !isNaN(parseInt(char)) &&
+              !isInCommentBlock &&
+              !isInString &&
+              !isInDoubleString
+            )
+              charEl.style.color = "purple";
+            if (isInCommentBlock) charEl.style.color = "crimson";
 
-          charEl.innerText = char;
+            charEl.innerText = char;
+          }
+          charEl.pos = pos;
+          charEl.parentId = id;
+          pos++;
+          return charEl;
         }
-        charEl.pos = pos;
-        charEl.parentId = id;
-        pos++;
-        return charEl;
-      });
+      );
       els = [lineStartEl, ...els];
       const lineEl = document.createElement("div");
       lineEl.style.minHeight = "16px";
@@ -281,10 +319,12 @@ export const editor = (
   wrapEl.act = act;
   wrapEl.id = id;
   wrapEl.lines = lines;
-  wrapEl.str = str;
+  wrapEl.str = str.map((s) => s.char);
   wrapEl.render = render;
   wrapEl.reset = reset;
   wrapEl.act = act;
   wrapEl.isEditor = true;
   return wrapEl;
 };
+
+// I feel like this should be more database-y... what do I mean by that?

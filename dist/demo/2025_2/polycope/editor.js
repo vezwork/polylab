@@ -1,5 +1,5 @@
 import { ContainerSink } from "./caretsink.js";
-import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, } from "./helpers.js";
+import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, makeid, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
     const { elFromFocusId, calcAndRenderSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, pushHistory, } = eContext;
     const wrapEl = new DOMParser().parseFromString(`<div style="
@@ -16,10 +16,10 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         const closestLineEl = wrapEl.lineEls.sort((el1, el2) => vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2))[0];
         const picked = [...closestLineEl.children].sort((el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2))[0];
         setCaretId(id);
-        setCaretPos(picked.pos);
+        setCaretPos(picked.id);
         if (shouldMoveAnchor) {
             setAnchorId(id);
-            setAnchorPos(picked.pos);
+            setAnchorPos(picked.id);
             renderAnchor();
             wrapEl.focus();
         }
@@ -47,13 +47,14 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         if (discrim && !e.metaKey) {
             pushHistory({
                 key: e.key,
+                keyId: makeid(7), // MULTICURSOR BUG! same id for both cursors. uh oh.
             });
             e.stopPropagation();
         }
         else if (e.key === "b" && e.metaKey) {
             pushHistory({
                 key: e.key,
-                newId: Math.random() + "",
+                newId: makeid(7), // MULTICURSOR BUG! same id for both cursors. uh oh.
             });
             e.stopPropagation();
         }
@@ -83,14 +84,31 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
     function reset() {
         str = [];
         lines = [[]];
-        wrapEl.str = str;
+        wrapEl.str = str.map((s) => s.char);
         wrapEl.lines = lines;
         wrapEl.innerHTML = "";
     }
     function myInsertAt(pos, char) {
         str = insertAt(str, pos, char);
-        wrapEl.str = str;
+        wrapEl.str = str.map((s) => s.char);
     }
+    // char id to pos
+    // insertAfter(id, newThing)
+    // delete(id)
+    const insertAfter = (id, char) => {
+        const i = str.findIndex((v) => v.id === id);
+        if (i === -1)
+            myInsertAt(0, char);
+        else
+            myInsertAt(i + 1, char);
+    };
+    const deleteAtId = (id) => {
+        const i = str.findIndex((v) => v.id === id);
+        if (i === -1)
+            throw "couldn't find id to delete";
+        str = deleteAt(str, i);
+        return i;
+    };
     function act(e) {
         if (e.paste) {
             if (e.paste.id) {
@@ -99,8 +117,6 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
                 elFromFocusId[getCaretId()]?.act({
                     ...e,
                     paste: e.paste.data,
-                    caretId: getCaretId(),
-                    caretPos: getCaretPos(),
                 });
             }
             else if (Array.isArray(e.paste)) {
@@ -115,39 +131,45 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         else if (e.newId) {
             const newE = editor(e.newId, wrapEl.sink, eContext);
             newE.render();
-            myInsertAt(getCaretPos(), newE);
-            setCaretPos(0);
+            insertAfter(getCaretPos(), { char: newE, id: e.newId });
+            setCaretPos(newE.id);
             setCaretId(newE.id);
         }
         else if (e.key.length === 1) {
-            myInsertAt(getCaretPos(), e.key);
-            setCaretPos(getCaretPos() + 1);
+            //const iid = getCaretPos() === 0 ? id : str[getCaretPos() - 1].id;
+            insertAfter(getCaretPos(), { char: e.key, id: e.keyId });
+            setCaretId(id);
+            setCaretPos(e.keyId);
         }
         if (e.key === "Enter") {
-            myInsertAt(getCaretPos(), "\n");
-            setCaretPos(getCaretPos() + 1);
+            insertAfter(getCaretPos(), { char: "\n", id: e.keyId });
+            setCaretId(id);
+            setCaretPos(e.keyId);
         }
         if (e.key === "Backspace") {
-            if (getCaretPos() > 0) {
-                str = deleteAt(str, getCaretPos() - 1);
-                setCaretPos(getCaretPos() - 1);
+            if (getCaretPos() !== id) {
+                const i = deleteAtId(getCaretPos());
+                setCaretId(id);
+                setCaretPos(str[i - 1]?.id ?? id);
             }
             else {
                 // TODO?: delete at start of editor
             }
         }
-        wrapEl.str = str;
+        wrapEl.str = str.map((s) => s.char);
     }
     function calcLines() {
         let curLine = [];
+        curLine.id = id;
         lines = [curLine];
-        for (const charOrEditor of str) {
-            if ("\n" === charOrEditor) {
+        for (const ob of str) {
+            if ("\n" === ob.char) {
                 curLine = [];
+                curLine.id = ob.id;
                 lines.push(curLine);
             }
             else
-                curLine.push(charOrEditor);
+                curLine.push(ob);
         }
         wrapEl.lines = lines;
     }
@@ -164,13 +186,14 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             lineStartEl.style.verticalAlign = "text-bottom";
             lineStartEl.pos = pos;
             lineStartEl.parentId = id;
+            lineStartEl.id = line.id;
             if (y !== 0)
                 lineStartEl.innerText = "\n";
             pos++;
             let isInCommentBlock = false;
             let isInString = false;
             let isInDoubleString = false;
-            let els = line.map((char, x) => {
+            let els = line.map(({ char, id: charId }, x) => {
                 let charEl;
                 // @ts-ignore:
                 if (char.isEditor) {
@@ -183,9 +206,11 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
                     charEl.style.verticalAlign = "middle";
                     charEl.style.width = "8px";
                     charEl.style.height = "16px";
+                    charEl.id = charId;
                 }
                 else {
                     charEl = document.createElement("span");
+                    charEl.id = charId;
                     if (char === "/" && line[x + 1] === "/") {
                         isInCommentBlock = true;
                     }
@@ -234,10 +259,11 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
     wrapEl.act = act;
     wrapEl.id = id;
     wrapEl.lines = lines;
-    wrapEl.str = str;
+    wrapEl.str = str.map((s) => s.char);
     wrapEl.render = render;
     wrapEl.reset = reset;
     wrapEl.act = act;
     wrapEl.isEditor = true;
     return wrapEl;
 };
+// I feel like this should be more database-y... what do I mean by that?

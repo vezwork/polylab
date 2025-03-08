@@ -82,9 +82,9 @@ export const createEditorEnv = () => {
 
     // make address
     let cadr = {
-      caret: ["init", 0],
+      caret: ["init", "init"],
       carry: [null, -1],
-      anchor: ["init", 0],
+      anchor: ["init", "init"],
       selected: [],
       id: "" + Math.random(),
     };
@@ -104,12 +104,7 @@ export const createEditorEnv = () => {
     return cursor;
   };
 
-  const {
-    setAdr,
-    getAdr,
-    renderCaret: rc1,
-    renderAnchor: ra1,
-  } = createCursor();
+  const { setAdr, getAdr } = createCursor();
   const renderCaret = () => {
     cursors.forEach(({ renderCaret }) => renderCaret());
   };
@@ -124,20 +119,11 @@ export const createEditorEnv = () => {
   let selectionSinks = new Map([[getAdr().id, []]]);
 
   function getElFromPos([id, pos]) {
-    const [x, y] = linePos(elFromFocusId[id].str, pos);
-    return elFromFocusId[id].els[y][x];
+    return elFromFocusId[id].querySelector("#" + pos);
   }
-
-  const lineFromAdr = ([id, pos]) => getLine(elFromFocusId[id].str, pos);
-  const linePosFromAdr = ([id, pos]) => linePos(elFromFocusId[id].str, pos);
-  const posFromAdrAndLinePos = ([id, pos], linePos) =>
-    posFromLinePos(elFromFocusId[id].str, linePos);
   const elFromAdr = ([id, pos]) => elFromFocusId[id];
   function getCaretopeSink(adr) {
-    const [x, y] = linePosFromAdr(adr);
-    // remove container sinks so they don't throw off the indexing
-    const caretSinkLine = elFromAdr(adr).sink.lines[y].filter((s) => !s.lines);
-    return caretSinkLine[x];
+    return getElFromPos(adr).caretSink;
   }
   const getCaret = (a) => new Caret(getCaretopeSink(a));
 
@@ -168,6 +154,7 @@ export const createEditorEnv = () => {
     renderAnchor: () => renderAnchor(getAdr().anchor),
     getCaretId: () => getAdr().caret[0],
     setCaretId: (id) => {
+      // MULTICURSOR BUG! this won't cut it any more. Need true multicursor support
       setAdr(withCaretAdr(getAdr(), withId(getAdr().caret, id)));
       setAdr(withCarryAdr(getAdr(), withId(getAdr().carry, id)));
     },
@@ -183,6 +170,7 @@ export const createEditorEnv = () => {
       setAdr(withAnchorAdr(getAdr(), withPos(getAdr().anchor, p)));
     },
   });
+
   e1Wrap.append(e1);
   document.body.append(e1Wrap);
   e1.focus();
@@ -203,9 +191,10 @@ export const createEditorEnv = () => {
   const caretTreePos = ([id, pos]) => [
     ...editorLineage(elFromFocusId[id])
       .toReversed()
-      .map((ed) => ed.pos),
-    pos,
+      .map((ed) => indexOfAdr[(ed.parentId, ed.id)]),
+    indexOfAdr([id, pos]),
   ];
+  const indexOfAdr = (adr) => getElFromPos(adr).pos;
   const comp = (rep1, rep2) => {
     const a = caretTreePos(rep1);
     const b = caretTreePos(rep2);
@@ -246,10 +235,10 @@ export const createEditorEnv = () => {
             c.charEl.sink.lines[0][0]
           );
           if (isEditorStartSelected) {
-            selected.push([c.charEl.parentId, c.charEl.pos]);
+            selected.push([c.charEl.parentId, c.charEl.id]);
           }
         } else {
-          selected.push([c.charEl.parentId, c.charEl.pos]);
+          selected.push([c.charEl.parentId, c.charEl.id]);
         }
       }
     });
@@ -288,115 +277,16 @@ export const createEditorEnv = () => {
     for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
     for (const e of mainline()) {
       for (const adr of e.adrs) {
-        setAdr(withCaretAdr(getAdr(), adr.caret));
-        setAdr(withAnchorAdr(getAdr(), adr.anchor));
+        // MULTICURSOR BUG! don't even know whats going on here
+        // the issue is that we need to act with each cursor individually
+        // and let that cursor be updated
+        const { setAdr, getAdr } = cursors.find(
+          (cursor) => cursor.getAdr().id === adr.id
+        );
+        setAdr(adr);
 
-        if (e.commentify) {
-          const [x, y] = linePosFromAdr(getAdr().caret);
-          const lineIndexes = new Set([
-            y,
-            ...adr.selected.map(linePosFromAdr).map(([x, y]) => y),
-          ]);
-          let prevCaretPos = getAdr().caret[1];
-          let prevAnchorPos = getAdr().anchor[1];
-          for (const y of lineIndexes) {
-            const pos = posFromAdrAndLinePos(getAdr().caret, [0, y]);
-            const line = lineFromAdr(withPos(getAdr().caret, pos));
-            if (line.startsWith("//")) {
-              setAdr(
-                withCaretAdr(
-                  getAdr(),
-                  withPos(
-                    getAdr().caret,
-                    posFromAdrAndLinePos(getAdr().caret, [2, y])
-                  )
-                )
-              );
-              elFromAdr(getAdr().caret).act({ key: "Backspace" });
-              elFromAdr(getAdr().caret).act({ key: "Backspace" });
-              // Math.max is used so the caret won't get pushed to the previous line
-              if (prevCaretPos > getAdr().caret[1])
-                prevCaretPos = Math.max(prevCaretPos - 2, getAdr().caret[1]);
-              if (prevAnchorPos > getAdr().caret[1])
-                prevAnchorPos = Math.max(prevAnchorPos - 2, getAdr().caret[1]);
-            } else {
-              setAdr(
-                withCaretAdr(
-                  getAdr(),
-                  withPos(
-                    getAdr().caret,
-                    posFromAdrAndLinePos(getAdr().caret, [0, y])
-                  )
-                )
-              );
-              elFromAdr(getAdr().caret).act({ key: "/" });
-              elFromAdr(getAdr().caret).act({ key: "/" });
-              if (prevCaretPos > getAdr().caret[1] - 2) prevCaretPos += 2;
-              if (prevAnchorPos > getAdr().caret[1] - 2) prevAnchorPos += 2;
-            }
-          }
-          setAdr(withCaretAdr(getAdr(), withPos(getAdr().caret, prevCaretPos)));
-          setAdr(
-            withAnchorAdr(getAdr(), withPos(getAdr().anchor, prevAnchorPos))
-          );
-          continue;
-        }
-        if (e.spacify || e.despacify) {
-          const [x, y] = linePosFromAdr(getAdr().caret);
-          const lineIndexes = new Set([
-            y,
-            ...adr.selected.map(linePosFromAdr).map(([x, y]) => y),
-          ]);
-          let prevCaretPos = getAdr().caret[1];
-          let prevAnchorPos = getAdr().anchor[1];
-          if (e.spacify) {
-            for (const y of lineIndexes) {
-              setAdr(
-                withCaretAdr(
-                  getAdr(),
-                  withPos(
-                    getAdr().caret,
-                    posFromAdrAndLinePos(getAdr().caret, [0, y])
-                  )
-                )
-              );
-              elFromAdr(getAdr().caret).act({ key: " " });
-              elFromAdr(getAdr().caret).act({ key: " " });
-              if (prevCaretPos > getAdr().caret[1] - 2) prevCaretPos += 2;
-              if (prevAnchorPos > getAdr().caret[1] - 2) prevAnchorPos += 2;
-            }
-          }
-          if (e.despacify) {
-            for (const y of lineIndexes) {
-              setAdr(
-                withCaretAdr(
-                  getAdr(),
-                  withPos(
-                    getAdr().caret,
-                    posFromAdrAndLinePos(getAdr().caret, [2, y])
-                  )
-                )
-              );
-              const line = lineFromAdr([getAdr().caret[0], pos]);
-              if (!line.startsWith("  ")) continue;
-              setAdr(withCaretAdr(getAdr(), withPos(getAdr().caret, pos)));
-              elFromAdr(getAdr().caret).act({ key: "Backspace" });
-              elFromAdr(getAdr().caret).act({ key: "Backspace" });
-              // Math.max is used so the caret won't get pushed to the previous line
-              if (prevCaretPos > getAdr().caret[1])
-                prevCaretPos = Math.max(prevCaretPos - 2, getAdr().caret[1]);
-              if (prevAnchorPos > getAdr().caret[1])
-                prevAnchorPos = Math.max(prevAnchorPos - 2, getAdr().caret[1]);
-            }
-          }
-          setAdr(withCaretAdr(getAdr(), withPos(getAdr().caret, prevCaretPos)));
-          setAdr(
-            withAnchorAdr(getAdr(), withPos(getAdr().anchor, prevAnchorPos))
-          );
-          continue;
-        }
-
-        let newAdr = { ...adr };
+        // SELECTION DELEGATION!
+        let newAdr = { ...getAdr() };
         if (newAdr.selected.length > 0) {
           for (const selCaretAdr of newAdr.selected.toReversed()) {
             // each individual delete action in the selection is delegated
@@ -412,15 +302,17 @@ export const createEditorEnv = () => {
           setAdr({ ...getAdr(), selected: [] });
           if (e.key === "Backspace") continue;
         }
+        // ACTION!
         elFromAdr(getAdr().caret).act({ ...e, adr: newAdr });
         setAdr(withAnchorAdr(getAdr(), getAdr().caret));
       }
     }
 
-    for (const [id, el] of Object.entries(elFromFocusId)) {
-      el.calcLines();
-      el.els = el.render();
-      el.sink.lines = el.els.map((line) =>
+    // CREATE SINKS!
+    for (const [id, containerEl] of Object.entries(elFromFocusId)) {
+      containerEl.calcLines();
+      containerEl.els = containerEl.render();
+      containerEl.sink.lines = containerEl.els.map((line) =>
         line.flatMap((charEl) => {
           if (charEl.isEditor) {
             const containerSink = charEl.sink;
@@ -434,15 +326,17 @@ export const createEditorEnv = () => {
               };
             });
             sink.isAfterEditorSink = true;
-            sink.parent = el.sink;
+            sink.parent = containerEl.sink;
             sink.charEl = charEl;
-            containerSink.parentContainerSink = el.sink;
+            charEl.caretSink = sink;
+            containerSink.parentContainerSink = containerEl.sink;
             containerSink.charEl = charEl;
             return [containerSink, sink];
           } else {
             const sink = new CaretSink(() => charEl.getBoundingClientRect());
-            sink.parent = el.sink;
+            sink.parent = containerEl.sink;
             sink.charEl = charEl;
+            charEl.caretSink = sink;
             return sink;
           }
         })
@@ -501,7 +395,7 @@ export const createEditorEnv = () => {
   document.addEventListener("paste", (e) => {
     if (!e1.contains(document.activeElement)) return;
     let paste = e.clipboardData.getData("text");
-    console.log("paste!", paste, e);
+    // console.log("paste!", paste, e);
 
     if (paste) {
       const output = pSelectionString(paste).parse;
@@ -515,7 +409,7 @@ export const createEditorEnv = () => {
             }
           : v;
 
-      console.log(output.map(go));
+      // console.log(output.map(go));
       pushHistory({
         paste: output.map(go),
         adrs: [getAdr()],
@@ -553,6 +447,10 @@ export const createEditorEnv = () => {
     }
     if (e.key === "r" && e.metaKey) {
       e.preventDefault();
+
+      const { setAdr: s, getAdr: g } = createCursor();
+      s({ ...getAdr(), id: g().id });
+      return;
       // structural parsing experiment
       const traverse = (i) => (ob) =>
         Array.isArray(ob)
@@ -635,6 +533,7 @@ export const createEditorEnv = () => {
       }
     }
     if (getAdr().carry[0]) {
+      // BUG HERE - why is carry sometimes invalid? Its after inserting
       c.carrySink = getCaretopeSink(getAdr().carry);
     }
     if (isJumping) {
@@ -677,7 +576,7 @@ export const createEditorEnv = () => {
     setAdr(
       withCaretAdr(getAdr(), [
         c.caretSink.charEl.parentId,
-        c.caretSink.charEl.pos,
+        c.caretSink.charEl.id,
       ])
     );
 
@@ -685,7 +584,6 @@ export const createEditorEnv = () => {
       setAdr(withAnchorAdr(getAdr(), getAdr().caret));
     }
     renderCaret(getAdr().caret);
-    renderAnchor(getAdr().anchor);
 
     clearStyleSelectionSinks();
     for (const { setAdr, getAdr } of cursors)

@@ -1,7 +1,7 @@
 import { ContainerSink } from "./caretsink.js";
-import { insertAt, deleteAt, distMouseEventToEl, vertDistPointToLineEl, makeid, } from "./helpers.js";
+import { insertAt, deleteAt, makeid, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
-    const { elFromFocusId, calcAndRenderSelection, renderCaret, renderAnchor, getCaretId, setCaretId, getCaretPos, setCaretPos, setAnchorId, setAnchorPos, pushHistory, } = eContext;
+    const { elFromFocusId, calcAndRenderSelection, setCaretId, setCaretPos, setAnchorId, setAnchorPos, getCursors, } = eContext;
     const wrapEl = new DOMParser().parseFromString(`<div style="
     padding: 4px 4px 4px 0;
     border: 1px solid black;
@@ -11,32 +11,7 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
     display: inline-block;
   " class="editor" tabIndex="0"></div>`, "text/html").body.firstChild;
     elFromFocusId[id] = wrapEl;
-    const mousePick = (shouldMoveAnchor) => (e) => {
-        e.stopPropagation();
-        const closestLineEl = wrapEl.lineEls.sort((el1, el2) => vertDistPointToLineEl(e, el1) - vertDistPointToLineEl(e, el2))[0];
-        const picked = [...closestLineEl.children].sort((el1, el2) => distMouseEventToEl(e, el1) - distMouseEventToEl(e, el2))[0];
-        setCaretId(id);
-        setCaretPos(picked.id);
-        if (shouldMoveAnchor) {
-            setAnchorId(id);
-            setAnchorPos(picked.id);
-            renderAnchor();
-            wrapEl.focus();
-        }
-        renderCaret();
-        calcAndRenderSelection();
-    };
-    wrapEl.addEventListener("mousedown", (e) => {
-        requestAnimationFrame(() => mousePick(true)(e));
-        e.stopPropagation();
-    });
-    wrapEl.addEventListener("mousemove", (e) => {
-        if (e.buttons === 1) {
-            requestAnimationFrame(() => mousePick(false)(e));
-            e.stopPropagation();
-        }
-    });
-    wrapEl.addEventListener("keydown", (e) => {
+    wrapEl.onKey = (e) => {
         if (e.key === "Tab")
             e.preventDefault();
         if (e.key === "Backspace")
@@ -45,38 +20,33 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             e.preventDefault();
         const discrim = e.key.length === 1 || e.key === "Enter" || e.key === "Backspace";
         if (discrim && !e.metaKey) {
-            pushHistory({
+            return {
                 key: e.key,
-                keyId: makeid(7), // MULTICURSOR BUG! same id for both cursors. uh oh.
-            });
-            e.stopPropagation();
+                keyId: makeid(7),
+            };
         }
         else if (e.key === "b" && e.metaKey) {
-            pushHistory({
+            return {
                 key: e.key,
-                newId: makeid(7), // MULTICURSOR BUG! same id for both cursors. uh oh.
-            });
-            e.stopPropagation();
+                newId: makeid(7),
+            };
         }
         else if (e.key === "Tab" && e.shiftKey) {
-            pushHistory({
+            return {
                 despacify: true,
-            });
-            e.stopPropagation();
+            };
         }
         else if (e.key === "Tab") {
-            pushHistory({
+            return {
                 spacify: true,
-            });
-            e.stopPropagation();
+            };
         }
         else if (e.key === "/" && e.metaKey) {
-            pushHistory({
+            return {
                 commentify: true,
-            });
-            e.stopPropagation();
+            };
         }
-    });
+    };
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
     wrapEl.sink.parent = parentContainerSink ?? null;
     let str = [];
@@ -85,78 +55,92 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         str = [];
         lines = [[]];
         wrapEl.str = str.map((s) => s.char);
+        wrapEl.rawStr = str;
         wrapEl.lines = lines;
         wrapEl.innerHTML = "";
     }
     function myInsertAt(pos, char) {
         str = insertAt(str, pos, char);
-        wrapEl.str = str.map((s) => s.char);
     }
-    // char id to pos
-    // insertAfter(id, newThing)
-    // delete(id)
     const insertAfter = (id, char) => {
         const i = str.findIndex((v) => v.id === id);
         if (i === -1)
             myInsertAt(0, char);
         else
             myInsertAt(i + 1, char);
+        wrapEl.str = str.map((s) => s.char);
+        wrapEl.rawStr = str;
     };
     const deleteAtId = (id) => {
         const i = str.findIndex((v) => v.id === id);
         if (i === -1)
             throw "couldn't find id to delete";
         str = deleteAt(str, i);
+        wrapEl.str = str.map((s) => s.char);
+        wrapEl.rawStr = str;
         return i;
     };
     function act(e) {
-        if (e.paste) {
-            if (e.paste.id) {
-                act({ ...e, paste: undefined, newId: e.paste.id });
-                // BUG: I think his causes issues, it moves the caret to the wrong spot mid-paste?
-                elFromFocusId[getCaretId()]?.act({
-                    ...e,
-                    paste: e.paste.data,
-                });
-            }
-            else if (Array.isArray(e.paste)) {
-                for (const entry of e.paste) {
-                    if (entry.id)
-                        act({ ...e, paste: entry });
-                    else
-                        act({ ...e, paste: undefined, key: entry });
-                }
-            }
-        }
-        else if (e.newId) {
+        // if (e.paste) {
+        //   if (e.paste.id) {
+        //     act({ ...e, paste: undefined, newId: e.paste.id });
+        //     // BUG: I think his causes issues, it moves the caret to the wrong spot mid-paste?
+        //     elFromFocusId[getCaretId()]?.act({
+        //       ...e,
+        //       paste: e.paste.data,
+        //     });
+        //   } else if (Array.isArray(e.paste)) {
+        //     for (const entry of e.paste) {
+        //       if (entry.id) act({ ...e, paste: entry });
+        //       else act({ ...e, paste: undefined, key: entry });
+        //     }
+        //   }
+        // } else
+        if (e.newId) {
             const newE = editor(e.newId, wrapEl.sink, eContext);
             newE.render();
-            insertAfter(getCaretPos(), { char: newE, id: e.newId });
-            setCaretPos(newE.id);
-            setCaretId(newE.id);
+            insertAfter(e.adr.caret[1], { char: newE, id: e.newId });
+            e.setAdr({ ...e.adr, caret: [newE.id, newE.id] });
         }
         else if (e.key.length === 1) {
-            //const iid = getCaretPos() === 0 ? id : str[getCaretPos() - 1].id;
-            insertAfter(getCaretPos(), { char: e.key, id: e.keyId });
-            setCaretId(id);
-            setCaretPos(e.keyId);
+            insertAfter(e.adr.caret[1], { char: e.key, id: e.keyId });
+            e.setAdr({ ...e.adr, caret: [id, e.keyId] });
         }
         if (e.key === "Enter") {
-            insertAfter(getCaretPos(), { char: "\n", id: e.keyId });
-            setCaretId(id);
-            setCaretPos(e.keyId);
+            insertAfter(e.adr.caret[1], { char: "\n", id: e.keyId });
+            e.setAdr({ ...e.adr, caret: [id, e.keyId] });
         }
         if (e.key === "Backspace") {
-            if (getCaretPos() !== id) {
-                const i = deleteAtId(getCaretPos());
-                setCaretId(id);
-                setCaretPos(str[i - 1]?.id ?? id);
+            const isFirstSink = e.getAdr().caret[1] === id;
+            if (!isFirstSink) {
+                const i = deleteAtId(e.getAdr().caret[1]);
+                // gross, but it works
+                for (const cursor of getCursors()) {
+                    if (cursor.getAdr().caret[1] === e.adr.caret[1]) {
+                        cursor.setAdr({
+                            ...cursor.getAdr(),
+                            caret: [id, str[i - 1]?.id ?? id],
+                        });
+                    }
+                    if (cursor.getAdr().anchor[1] === e.adr.caret[1]) {
+                        cursor.setAdr({
+                            ...cursor.getAdr(),
+                            anchor: [id, str[i - 1]?.id ?? id],
+                        });
+                    }
+                    if (cursor.getAdr().carry[1] === e.adr.caret[1]) {
+                        cursor.setAdr({
+                            ...cursor.getAdr(),
+                            carry: [id, str[i - 1]?.id ?? id],
+                        });
+                    }
+                }
+                //e.setAdr({ ...e.adr, caret: [id, str[i - 1]?.id ?? id] });
             }
             else {
                 // TODO?: delete at start of editor
             }
         }
-        wrapEl.str = str.map((s) => s.char);
     }
     function calcLines() {
         let curLine = [];

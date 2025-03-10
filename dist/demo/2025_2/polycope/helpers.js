@@ -52,6 +52,7 @@ export const vertDistPointToLineEl = (e, lineEl) => {
     const p = e.clientY;
     return p >= t && p <= b ? 0 : p <= t ? t - p : p - b;
 };
+//https://stackoverflow.com/a/1349426
 export function makeid(length) {
     let result = "";
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

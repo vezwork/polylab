@@ -64,7 +64,6 @@ export const editor = (
       };
     } else if (e.key === "b" && e.metaKey) {
       return {
-        key: e.key,
         newId: makeid(7),
       };
     } else if (e.key === "Tab" && e.shiftKey) {
@@ -151,28 +150,7 @@ export const editor = (
       const isFirstSink = e.getAdr().caret[1] === id;
       if (!isFirstSink) {
         const i = deleteAtId(e.getAdr().caret[1]);
-        // gross, but it works
-        for (const cursor of getCursors()) {
-          if (cursor.getAdr().caret[1] === e.adr.caret[1]) {
-            cursor.setAdr({
-              ...cursor.getAdr(),
-              caret: [id, str[i - 1]?.id ?? id],
-            });
-          }
-          if (cursor.getAdr().anchor[1] === e.adr.caret[1]) {
-            cursor.setAdr({
-              ...cursor.getAdr(),
-              anchor: [id, str[i - 1]?.id ?? id],
-            });
-          }
-          if (cursor.getAdr().carry[1] === e.adr.caret[1]) {
-            cursor.setAdr({
-              ...cursor.getAdr(),
-              carry: [id, str[i - 1]?.id ?? id],
-            });
-          }
-        }
-        //e.setAdr({ ...e.adr, caret: [id, str[i - 1]?.id ?? id] });
+        e.setAdr({ ...e.adr, caret: [id, str[i - 1]?.id ?? id] });
       } else {
         // TODO?: delete at start of editor
       }

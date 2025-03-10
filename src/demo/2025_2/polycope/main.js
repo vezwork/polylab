@@ -8,6 +8,7 @@ import {
   getLine,
   vertDistPointToLineEl,
   distMouseEventToEl,
+  makeid,
 } from "./helpers.js";
 import { editor } from "./editor.js";
 import { pp } from "./structure_parse.js";
@@ -135,7 +136,7 @@ export const createEditorEnv = () => {
   }
   const elFromAdr = ([id, pos]) => elFromFocusId[id];
   function getCaretopeSink(adr) {
-    return getElFromPos(adr).caretSink;
+    return getElFromPos(adr)?.caretSink;
   }
   const getCaret = (a) => new Caret(getCaretopeSink(a));
 
@@ -402,6 +403,7 @@ export const createEditorEnv = () => {
     if (!e1.contains(document.activeElement)) return;
     if (mainCursor.getAdr().selected.length === 0) return;
     const output = calcSelectionString(mainCursor.getAdr().selected);
+    console.log("copy!", output);
 
     e.clipboardData.setData("text/plain", output);
     e.preventDefault();
@@ -540,6 +542,33 @@ export const createEditorEnv = () => {
       styleSelectionSinks();
       renderCaret();
       return;
+    }
+    if (e.key === "g" && e.metaKey) {
+      e.preventDefault();
+      for (const cursor of cursors) {
+        const str = getSelectionSinks(cursor.getAdr())
+          .map((s) => s.charEl.innerText)
+          .join("");
+        if (str.length > 0) {
+          const newId = makeid(7);
+          pushHistory({
+            actions: [{ adr: cursor.getAdr(), ob: { newId } }],
+          });
+          bigreduce();
+          mainCursor.setAdr({ ...mainCursor.getAdr(), caret: [newId, newId] });
+          for (const char of str) {
+            pushHistory({
+              actions: [
+                {
+                  adr: mainCursor.getAdr(),
+                  ob: { key: char, keyId: makeid(7) },
+                },
+              ],
+            });
+          }
+          bigreduce();
+        }
+      }
     }
     if (e.key === "r" && e.metaKey) {
       e.preventDefault();
@@ -694,3 +723,12 @@ export const createEditorEnv = () => {
 // - localstorage saved history and serialization/deserialization
 // - iframe sandboxed eval
 // - history visualizer with sandboxed canvas thumbnails
+
+// Monday March 10 - just finishing up multicursor + lifting
+// - multicursors are complicating things... Its getting hard to reason about the code here
+// - I don't have to manually maintain so many invariants
+// - I don't know how to deal with what happens when multicursors/multicursor selection overlap
+//   - I'm tempted to use this as excuse to figure out multiplayer
+// - is it time to rewrite some stuff?
+// - if it is --- I need to actually figure out the concrete reasons why I want to rewrite first
+//   and judge whether they can rather be fixed here

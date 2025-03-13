@@ -59,7 +59,7 @@ export const createEditorEnv = () => {
   const renderC = (el) => (addr) => {
     try {
       const caretContainerRect = e1.getBoundingClientRect();
-      const rect = getElFromPos(addr).getBoundingClientRect();
+      const rect = getElFromAdr(addr).getBoundingClientRect();
 
       el.style.height = rect.height - 2;
       el.style.transform = `translate(${rect.right - caretContainerRect.x}px, ${
@@ -131,14 +131,15 @@ export const createEditorEnv = () => {
 
   let selectionSinks = new Map([[mainCursor.getAdr().id, []]]);
 
-  function getElFromPos([id, pos]) {
+  // note: cannot be used inside of bigreduce! Has to be used after a render
+  function getElFromAdr([id, pos]) {
     return elFromFocusId[id].querySelector("#" + pos);
   }
-  const elFromAdr = ([id, pos]) => elFromFocusId[id];
-  function getCaretopeSink(adr) {
-    return getElFromPos(adr)?.caretSink;
+  const elFromAdrId = ([id, pos]) => elFromFocusId[id];
+  function getCaretopeSinkFromAdrId(adr) {
+    return getElFromAdr(adr)?.caretSink;
   }
-  const getCaret = (a) => new Caret(getCaretopeSink(a));
+  const getCaret = (a) => new Caret(getCaretopeSinkFromAdrId(a));
 
   //========================================================================
   // INIT EDITOR
@@ -214,7 +215,7 @@ export const createEditorEnv = () => {
       .map((ed) => indexOfAdr([ed.parentId, ed.id])),
     indexOfAdr([id, pos]),
   ];
-  const indexOfAdr = (adr) => getElFromPos(adr).pos;
+  const indexOfAdr = (adr) => getElFromAdr(adr).pos;
   const comp = (rep1, rep2) => {
     const a = caretTreePos(rep1);
     const b = caretTreePos(rep2);
@@ -230,11 +231,11 @@ export const createEditorEnv = () => {
   function getSelectionSinks(adr) {
     const result = [];
 
-    const anchorSink = getCaretopeSink(adr.anchor);
-    if (!anchorSink || !getCaretopeSink(adr.caret)) return [];
+    const anchorSink = getCaretopeSinkFromAdrId(adr.anchor);
+    if (!anchorSink || !getCaretopeSinkFromAdrId(adr.caret)) return [];
     const [min, max] = minAndMax(adr.caret, adr.anchor);
     const selC = getCaret(min);
-    const maxSink = getCaretopeSink(max);
+    const maxSink = getCaretopeSinkFromAdrId(max);
     while (selC.caretSink && selC.caretSink !== maxSink) {
       selC.moveRight();
       result.push(selC.caretSink);
@@ -310,51 +311,90 @@ export const createEditorEnv = () => {
         }
       }
 
-      // PERFORM ACTIONS
-      for (const { adr, ob } of e.actions) {
-        const { getAdr, setAdr } = cursors.find(
-          (cursor) => cursor.getAdr().id === adr.id
-        );
-        setAdr(adr);
-      }
-      for (const { adr, ob } of e.actions) {
-        const { getAdr, setAdr } = cursors.find(
-          (cursor) => cursor.getAdr().id === adr.id
-        );
-
-        // SELECTION DELEGATION!
-        let newAdr = { ...getAdr() };
-        if (newAdr.selected.length > 0) {
-          for (const selCaretAdr of newAdr.selected.toReversed()) {
-            // each individual delete action in the selection is delegated
-            setAdr({ ...getAdr(), caret: selCaretAdr });
-            elFromAdr(selCaretAdr).act({
-              adr: getAdr(),
-              setAdr,
-              getAdr,
-              key: "Backspace",
-            });
-          }
-          // caret properties are set inside `act`, but the event's caret properties
-          // are not, so we need to manually update them
-          newAdr = withAnchorAdr(getAdr(), getAdr().caret);
-          setAdr(withAnchorAdr(getAdr(), getAdr().caret));
-          setAdr({ ...getAdr(), selected: [] });
-          if (ob.key === "Backspace") continue;
-        }
-        // ACTION!
-        elFromAdr(getAdr().caret).act({
-          ...ob,
-          setAdr,
-          cursors,
-          getAdr,
-          adr: newAdr,
-        });
-        setAdr(withAnchorAdr(getAdr(), getAdr().caret));
-      }
+      // set up addresses before effects in main loop
+      for (const action of e.actions)
+        cursors
+          .find((cursor) => cursor.getAdr().id === action.adr.id)
+          .setAdr(action.adr);
+      // main action loop
+      for (const action of e.actions) reduceStep(action);
     }
 
-    // CREATE SINKS!
+    // Note: sinks are created here! Can't access them in actions!
+    // Related: Can't access rendered things in actions! You can access them in listeners though
+    //   how to think about this? When to do which?
+    createSinks();
+
+    renderCaret();
+    e1.onReduce?.(e1.str.join(""));
+
+    elFromAdrId(mainCursor.getAdr().caret).focus();
+  }
+  function reduceStep({ adr, ob, selectionData }) {
+    const { getAdr, setAdr } = cursors.find(
+      (cursor) => cursor.getAdr().id === adr.id
+    );
+
+    // SELECTION DELETION!
+    let newAdr = { ...getAdr() };
+    const hasSelected = newAdr.selected.length > 0;
+    if (hasSelected) {
+      const selectedAdrsRightToLeft = newAdr.selected.toReversed();
+      // deletion root is used (awkwardly) so that the caret does not
+      // go into editors that being deleted. I think ideally `.selected`
+      // should not include entries inside selected editors, then this
+      // would not be an issue.
+      let deletionRoot = null;
+      for (const selCaretAdr of selectedAdrsRightToLeft) {
+        if (deletionRoot !== null)
+          if (selCaretAdr[0] !== deletionRoot) continue;
+          else deletionRoot = null;
+
+        // each individual delete action in the selection is delegated
+        setAdr({ ...getAdr(), caret: selCaretAdr });
+
+        const deletedChar = elFromAdrId(selCaretAdr).act({
+          adr: getAdr(),
+          setAdr,
+          getAdr,
+          key: "Backspace",
+        });
+        if (deletedChar?.char?.isEditor) deletionRoot = getAdr().caret[0];
+      }
+      // caret properties are set inside `act`, but the event's caret properties
+      // are not, so we need to manually update them
+      newAdr = withAnchorAdr(getAdr(), getAdr().caret);
+      setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+      setAdr({ ...getAdr(), selected: [] });
+
+      // don't perform backspace action after deleting selection:
+      if (ob.key === "Backspace") return;
+    }
+    // ACTION!
+    // TODO: this should only pass a single address, not caret anchor and carry
+    elFromAdrId(getAdr().caret).act({
+      ...ob,
+      setAdr,
+      getAdr,
+      adr: newAdr,
+    });
+    setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+
+    if (ob.newId) {
+      // note: should this be in `wrapEl.onKey`?
+      for (const [key, keyId] of selectionData) {
+        // TODO: doesn't work for nested editors
+        elFromAdrId(getAdr().caret).act({
+          newId: undefined,
+          key,
+          keyId,
+          setAdr,
+          getAdr,
+        });
+      }
+    }
+  }
+  function createSinks() {
     for (const [id, containerEl] of Object.entries(elFromFocusId)) {
       containerEl.calcLines();
       containerEl.els = containerEl.render();
@@ -388,11 +428,6 @@ export const createEditorEnv = () => {
         })
       );
     }
-
-    renderCaret();
-    e1.onReduce?.(e1.str.join(""));
-
-    elFromAdr(mainCursor.getAdr().caret).focus();
   }
 
   //========================================================================
@@ -420,7 +455,7 @@ export const createEditorEnv = () => {
     let balance = 0;
     const inner = selected
       .map((v) => {
-        const s = getCaretopeSink(v);
+        const s = getCaretopeSinkFromAdrId(v);
         if (s.isFirst()) balance++;
         if (s.isAfterEditorSink) {
           balance--;
@@ -499,10 +534,19 @@ export const createEditorEnv = () => {
     }
   });
   e1Wrap.addEventListener("keydown", (e) => {
+    // DEBUG KEY!
+    if (e.key === "d" && e.metaKey) {
+      e.preventDefault();
+      console.log(mainCursor.getAdr());
+      return;
+    }
     const actions = cursors
       .map(({ getAdr }) => ({
         adr: getAdr(),
-        ob: elFromAdr(getAdr().caret).onKey(e),
+        ob: elFromAdrId(getAdr().caret).onKey(e),
+        selectionData: [...calcSelectionString(getAdr().selected)].map(
+          (char) => [char, makeid(7)] // ids for chars to insert must be calculated before history is pushed
+        ),
       }))
       .filter(({ adr, ob }) => ob !== undefined);
     if (actions.length > 0) {
@@ -511,10 +555,12 @@ export const createEditorEnv = () => {
       // why does this happen here?
       // selection will always be gone after the bigreduce, right?
       // also it causes a bug when there are two cursors currently
-      // clearStyleSelectionSinks();
-      // for (const { setAdr, getAdr } of cursors)
-      //   setAdr({ ...getAdr(), selected: [] });
-      // styleSelectionSinks();
+      // later reply: no we can't remove this, selection does not get cleared in bigreduce
+      //   also, what bug!?!?
+      clearStyleSelectionSinks();
+      for (const { setAdr, getAdr } of cursors)
+        setAdr({ ...getAdr(), selected: [] });
+      styleSelectionSinks();
       return;
     }
 
@@ -533,6 +579,7 @@ export const createEditorEnv = () => {
       return;
     }
     if (e.key === "e" && e.metaKey) {
+      // create a multicursor at the current cursor spot (note:hard to separate the cursors!)
       e.preventDefault();
       clearStyleSelectionSinks();
       const newCur = createCursor();
@@ -543,37 +590,12 @@ export const createEditorEnv = () => {
       renderCaret();
       return;
     }
-    if (e.key === "g" && e.metaKey) {
-      e.preventDefault();
-      for (const cursor of cursors) {
-        const str = getSelectionSinks(cursor.getAdr())
-          .map((s) => s.charEl.innerText)
-          .join("");
-        if (str.length > 0) {
-          const newId = makeid(7);
-          pushHistory({
-            actions: [{ adr: cursor.getAdr(), ob: { newId } }],
-          });
-          bigreduce();
-          mainCursor.setAdr({ ...mainCursor.getAdr(), caret: [newId, newId] });
-          for (const char of str) {
-            pushHistory({
-              actions: [
-                {
-                  adr: mainCursor.getAdr(),
-                  ob: { key: char, keyId: makeid(7) },
-                },
-              ],
-            });
-          }
-          bigreduce();
-        }
-      }
-    }
-    if (e.key === "r" && e.metaKey) {
+    if (e.key === "e" && e.metaKey) {
+      // structural selection experiment. janky! because:
+      // - overlapping multiselect causes issues
+      // - the mainCursor is an extra cursor
       e.preventDefault();
 
-      // structural parsing experiment
       const traverse = (i) => (ob) =>
         Array.isArray(ob)
           ? ob.flatMap(traverse(i)).filter((a) => a !== null)[0]
@@ -588,7 +610,8 @@ export const createEditorEnv = () => {
         }
         return res;
       };
-      const pos = getCaretopeSink(mainCursor.getAdr().caret).charEl.pos;
+      const pos = getCaretopeSinkFromAdrId(mainCursor.getAdr().caret).charEl
+        .pos;
       const entries = split(traverse(pos)(pp(e1.str.join("")).parse)?.parent);
 
       for (const ar of entries) {
@@ -615,8 +638,6 @@ export const createEditorEnv = () => {
         e1.str.join(""),
         selectionSinks.map((s) => s.charEl.innerText).join("")
       );
-
-      return;
     }
 
     if (e.key === "c" && e.metaKey) {
@@ -655,7 +676,7 @@ export const createEditorEnv = () => {
       }
       if (getAdr().carry[0]) {
         // BUG HERE - why is carry sometimes invalid? Its after inserting
-        c.carrySink = getCaretopeSink(getAdr().carry);
+        c.carrySink = getCaretopeSinkFromAdrId(getAdr().carry);
       }
       if (isJumping) {
         if (dir === "down") c.moveToRootEnd();
@@ -712,7 +733,7 @@ export const createEditorEnv = () => {
     for (const { setAdr, getAdr } of cursors)
       setAdr({ ...getAdr(), selected: calcSelection(getAdr()) });
     styleSelectionSinks();
-    elFromAdr(mainCursor.getAdr().caret).focus();
+    elFromAdrId(mainCursor.getAdr().caret).focus();
   }
 
   return e1;

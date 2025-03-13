@@ -70,16 +70,23 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         wrapEl.str = str.map((s) => s.char);
         wrapEl.rawStr = str;
     };
+    const getAtId = (id) => {
+        const i = str.findIndex((v) => v.id === id);
+        return str[i];
+    };
     const deleteAtId = (id) => {
         const i = str.findIndex((v) => v.id === id);
-        if (i === -1)
-            throw "couldn't find id to delete";
+        if (i === -1) {
+            console.log("str", str);
+            throw "couldn't find id to delete:" + id + ". inside editor:" + wrapEl.id;
+        }
         str = deleteAt(str, i);
         wrapEl.str = str.map((s) => s.char);
         wrapEl.rawStr = str;
         return i;
     };
     function act(e) {
+        // TODO: should this be handled in main.js? main.js can use e.newId and e.key to do this
         // if (e.paste) {
         //   if (e.paste.id) {
         //     act({ ...e, paste: undefined, newId: e.paste.id });
@@ -98,22 +105,24 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         if (e.newId) {
             const newE = editor(e.newId, wrapEl.sink, eContext);
             newE.render();
-            insertAfter(e.adr.caret[1], { char: newE, id: e.newId });
-            e.setAdr({ ...e.adr, caret: [newE.id, newE.id] });
+            insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
+            e.setAdr({ ...e.getAdr(), caret: [newE.id, newE.id] });
         }
         else if (e.key.length === 1) {
-            insertAfter(e.adr.caret[1], { char: e.key, id: e.keyId });
-            e.setAdr({ ...e.adr, caret: [id, e.keyId] });
+            insertAfter(e.getAdr().caret[1], { char: e.key, id: e.keyId });
+            e.setAdr({ ...e.getAdr(), caret: [id, e.keyId] });
         }
         if (e.key === "Enter") {
-            insertAfter(e.adr.caret[1], { char: "\n", id: e.keyId });
-            e.setAdr({ ...e.adr, caret: [id, e.keyId] });
+            insertAfter(e.getAdr().caret[1], { char: "\n", id: e.keyId });
+            e.setAdr({ ...e.getAdr(), caret: [id, e.keyId] });
         }
         if (e.key === "Backspace") {
             const isFirstSink = e.getAdr().caret[1] === id;
             if (!isFirstSink) {
+                const deletedChar = getAtId(e.getAdr().caret[1]);
                 const i = deleteAtId(e.getAdr().caret[1]);
-                e.setAdr({ ...e.adr, caret: [id, str[i - 1]?.id ?? id] });
+                e.setAdr({ ...e.getAdr(), caret: [id, str[i - 1]?.id ?? id] });
+                return deletedChar;
             }
             else {
                 // TODO?: delete at start of editor

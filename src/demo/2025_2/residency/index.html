@@ -1,0 +1,206 @@
+<style>
+  body {
+    --main-color: #15833f;
+    color: #093f2a;
+    background: #e5eae7;
+    font-family: sans-serif;
+    font-size: 20px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  a:hover {
+    outline: 2px solid #e5e7ea;
+  }
+  hr {
+    border: 1px solid #e5e7ea;
+    margin: 50px 0;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+
+  a:visited {
+    color: var(--main-color);
+  }
+  a:hover {
+    color: var(--main-color);
+  }
+  a:link {
+    color: var(--main-color);
+  }
+  a:active {
+    color: var(--main-color);
+  }
+</style>
+
+<a href="./home.html">← back to research residency</a>
+<div style="margin: 35px 0">
+  <h1 style="font-size: 70px; float: left; margin: 0">Algae</h1>
+  <span style="float: right; font-size: 22px; margin-top: 19px"
+    >Mar 11 2025</span
+  >
+  <span
+    style="
+      color: var(--main-color);
+      clear: right;
+      float: right;
+      font-size: 22px;
+      margin-bottom: 35px;
+    "
+    >Relational layout explorations</span
+  >
+</div>
+<br style="clear: both" />
+<p>
+  During my research residency, I spent some time exploring relational layout.
+  My overarching goal was to understand <strong>propagation</strong> and
+  <strong>relational layout</strong> better.
+</p>
+<div style="margin-top: 60px" />
+<img
+  height="300"
+  style="border-radius: 10px; margin-right: 10px"
+  src="./image.png"
+/>
+<video style="border-radius: 10px" height="300" muted autoplay loop>
+  <source
+    type="video/mp4"
+    src="https://media.mathstodon.xyz/media_attachments/files/113/698/331/081/358/683/original/31e606dc38f120ab.mp4"
+  />
+</video>
+<div style="margin-top: 60px" />
+<p>There were two main sub projects:</p>
+<ul>
+  <li>
+    An initial investigation into a direct-manipulation propagational layout
+    tree
+  </li>
+  <li>A propagation library for Bluefish style canvas layout</li>
+</ul>
+<p>It relates to my <a href="">egg</a> explorations.</p>
+
+Propagation
+<br />
+<video style="border-radius: 10px" height="300" muted autoplay loop>
+  <source
+    type="video/mp4"
+    src="https://media.mathstodon.xyz/media_attachments/files/113/211/446/027/821/987/original/50c166e8a1ee4466.mp4"
+  />
+</video>
+<br />
+Infinite layout
+<br />
+<!-- overflow hidden div to crop black bars on video-->
+<div style="width: 530px; overflow: hidden; height: 298px; border-radius: 10px">
+  <video style="margin-top: -1px" height="300" muted autoplay loop>
+    <source
+      type="video/mp4"
+      src="https://media.mathstodon.xyz/media_attachments/files/113/284/106/482/053/415/original/a649996c3834e625.mp4"
+    />
+  </video>
+</div>
+
+<svg
+  id="mySvgEl"
+  style="position: absolute; top: 0; left: 0; z-index: -10"
+  xmlns="http://www.w3.org/2000/svg"
+  width="30"
+  height="30"
+  viewBox="17066.44 -2274.6295875956366 64.79 60.82"
+></svg>
+<script>
+  const mySvgEl = document.getElementById("mySvgEl");
+  mySvgEl.style.width = window.innerWidth;
+  mySvgEl.style.height = window.innerHeight;
+  mySvgEl.setAttribute(
+    "viewBox",
+    `0 0 ${window.innerWidth} ${window.innerHeight}`
+  );
+
+  //https://stackoverflow.com/a/37411738
+  function makeSvgNode(n, v) {
+    n = document.createElementNS("http://www.w3.org/2000/svg", n);
+    for (var p in v) n.setAttributeNS(null, p, v[p]);
+    return n;
+  }
+
+  const paths = [];
+  const redo = [];
+
+  const ps = [];
+
+  let isMouseDown = false;
+  let grabbing = null;
+  let curPath = null;
+  document.body.addEventListener("keydown", (e) => {
+    if (e.key === "z" && e.shiftKey) {
+      const path = redo.pop();
+
+      if (path) {
+        paths.push(path);
+        mySvgEl.append(path);
+      }
+      return;
+    }
+    if (e.key === "z") {
+      const path = paths.pop();
+      if (path) {
+        redo.push(path);
+        path.remove();
+      }
+      return;
+    }
+  });
+  document.body.addEventListener("mouseup", (e) => {
+    isMouseDown = false;
+    grabbing = null;
+    curPath = null;
+    ps.length = 0;
+  });
+  document.body.addEventListener("mousedown", (e) => {
+    isMouseDown = true;
+    t = 0;
+    if (curPath === null) {
+      const path = makeSvgNode("path", {
+        stroke: Math.random() < 0.5 ? "#c2e0d0" : "#c2cce0",
+        "stroke-width": "12",
+        fill: "none",
+      });
+      curPath = path;
+      curPath.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+
+        grabbing = path;
+        if (!grabbing.t) grabbing.t = [0, 0];
+      });
+      paths.push(curPath);
+      redo.length = 0;
+      mySvgEl.append(curPath);
+    }
+  });
+  let t = 0;
+  document.body.addEventListener("mousemove", (e) => {
+    const m = [e.pageX, e.pageY];
+    if (grabbing) {
+      grabbing.t = [grabbing.t[0] + e.movementX, grabbing.t[1] + e.movementY];
+      grabbing.style.transform = `translate(${grabbing.t[0]}px,${grabbing.t[1]}px)`;
+    }
+    if (isMouseDown && t % 3 === 0) {
+      ps.push(m);
+      curPath.setAttribute(
+        "d",
+        `M${ps[0][0]},${ps[0][1]}` + ps.map(([x, y]) => `L${x},${y}`).join(" ")
+      );
+    }
+    t++;
+  });
+</script>

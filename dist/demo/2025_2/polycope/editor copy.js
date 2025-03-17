@@ -1,6 +1,5 @@
 import { ContainerSink } from "./caretsink.js";
-import { insertAt, deleteAt, makeid } from "./helpers.js";
-import { minEditor } from "./minEditor.js";
+import { insertAt, deleteAt, makeid, } from "./helpers.js";
 export const editor = (id = Math.random() + "", parentContainerSink, eContext) => {
     const wrapEl = new DOMParser().parseFromString(`<div style="
     padding: 4px 4px 4px 0;
@@ -45,11 +44,6 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
                 commentify: true,
             };
         }
-        else if (e.key === "i" && e.metaKey) {
-            return {
-                newImage: true,
-            };
-        }
     };
     wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
     wrapEl.sink.parent = parentContainerSink ?? null;
@@ -57,8 +51,10 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
     let lines = [[]];
     function reset() {
         str = [];
+        lines = [[]];
         wrapEl.str = str.map((s) => s.char);
         wrapEl.rawStr = str;
+        wrapEl.lines = lines;
         wrapEl.innerHTML = "";
     }
     function myInsertAt(pos, char) {
@@ -90,21 +86,13 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         return i;
     };
     function act(e) {
-        if (e.newImage) {
-            const newE = minEditor(e.newId, wrapEl.sink, eContext, e.newImage);
-            newE.render();
-            const i = insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
-            const afterAdr = { ...e.getAdr(), caret: [id, str[i + 1]?.id ?? id] };
-            e.setAdr(afterAdr);
-        }
-        else if (e.newId) {
+        if (e.newId) {
             const newE = editor(e.newId, wrapEl.sink, eContext);
             newE.render();
             const i = insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
             // note: return this to help pasting
             const afterAdr = { ...e.getAdr(), caret: [id, str[i + 1]?.id ?? id] };
-            const innerAdr = { ...e.getAdr(), caret: [newE.id, newE.id] };
-            e.setAdr(innerAdr);
+            e.setAdr({ ...e.getAdr(), caret: [newE.id, newE.id] });
             return afterAdr;
         }
         else if (e.key.length === 1) {
@@ -142,9 +130,10 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
             else
                 curLine.push(ob);
         }
+        wrapEl.lines = lines;
     }
+    wrapEl.calcLines = calcLines;
     function render() {
-        calcLines();
         wrapEl.innerHTML = "";
         let pos = 0;
         wrapEl.lineEls = [];
@@ -228,6 +217,7 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
     }
     wrapEl.act = act;
     wrapEl.id = id;
+    wrapEl.lines = lines;
     wrapEl.str = str.map((s) => s.char);
     wrapEl.render = render;
     wrapEl.reset = reset;

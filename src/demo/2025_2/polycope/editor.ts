@@ -1,23 +1,12 @@
 import { ContainerSink } from "./caretsink.js";
-import {
-  insertAt,
-  deleteAt,
-  linePos,
-  dist,
-  distMouseEventToEl,
-  elTopAndBottom,
-  vertDistPointToLineEl,
-  makeid,
-} from "./helpers.js";
+import { insertAt, deleteAt, makeid } from "./helpers.js";
+import { minEditor } from "./minEditor.js";
 
 type WrapElType = HTMLDivElement & {
   lineEls: any[];
   sink: any;
   render: Function;
-  lines: any[];
-  calcLines: Function;
   isEditor: boolean;
-  els: any[];
   str: string[];
   rawStr: any[];
   reset: Function;
@@ -29,16 +18,6 @@ export const editor = (
   parentContainerSink,
   eContext
 ) => {
-  const {
-    elFromFocusId,
-    calcAndRenderSelection,
-    setCaretId,
-    setCaretPos,
-    setAnchorId,
-    setAnchorPos,
-    getCursors,
-  } = eContext;
-
   const wrapEl = new DOMParser().parseFromString(
     `<div style="
     padding: 4px 4px 4px 0;
@@ -50,7 +29,8 @@ export const editor = (
   " class="editor" tabIndex="0"></div>`,
     "text/html"
   ).body.firstChild as WrapElType;
-  elFromFocusId[id] = wrapEl;
+  eContext.elFromFocusId[id] = wrapEl;
+
   wrapEl.onKey = (e) => {
     if (e.key === "Tab") e.preventDefault();
     if (e.key === "Backspace") e.preventDefault();
@@ -78,6 +58,10 @@ export const editor = (
       return {
         commentify: true,
       };
+    } else if (e.key === "i" && e.metaKey) {
+      return {
+        newImage: true,
+      };
     }
   };
   wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
@@ -88,11 +72,9 @@ export const editor = (
 
   function reset() {
     str = [];
-    lines = [[]];
 
     wrapEl.str = str.map((s) => s.char);
     wrapEl.rawStr = str;
-    wrapEl.lines = lines;
     wrapEl.innerHTML = "";
   }
 
@@ -106,6 +88,7 @@ export const editor = (
 
     wrapEl.str = str.map((s) => s.char);
     wrapEl.rawStr = str;
+    return i;
   };
   const getAtId = (id) => {
     const i = str.findIndex((v) => v.id === id);
@@ -125,27 +108,21 @@ export const editor = (
   };
 
   function act(e) {
-    // TODO: should this be handled in main.js? main.js can use e.newId and e.key to do this
-    // if (e.paste) {
-    //   if (e.paste.id) {
-    //     act({ ...e, paste: undefined, newId: e.paste.id });
-    //     // BUG: I think his causes issues, it moves the caret to the wrong spot mid-paste?
-    //     elFromFocusId[getCaretId()]?.act({
-    //       ...e,
-    //       paste: e.paste.data,
-    //     });
-    //   } else if (Array.isArray(e.paste)) {
-    //     for (const entry of e.paste) {
-    //       if (entry.id) act({ ...e, paste: entry });
-    //       else act({ ...e, paste: undefined, key: entry });
-    //     }
-    //   }
-    // } else
-    if (e.newId) {
+    if (e.newImage) {
+      const newE = minEditor(e.newId, wrapEl.sink, eContext, e.newImage);
+      newE.render();
+      const i = insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
+      const afterAdr = { ...e.getAdr(), caret: [id, str[i + 1]?.id ?? id] };
+      e.setAdr(afterAdr);
+    } else if (e.newId) {
       const newE = editor(e.newId, wrapEl.sink, eContext);
       newE.render();
-      insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
-      e.setAdr({ ...e.getAdr(), caret: [newE.id, newE.id] });
+      const i = insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
+      // note: return this to help pasting
+      const afterAdr = { ...e.getAdr(), caret: [id, str[i + 1]?.id ?? id] };
+      const innerAdr = { ...e.getAdr(), caret: [newE.id, newE.id] };
+      e.setAdr(innerAdr);
+      return afterAdr;
     } else if (e.key.length === 1) {
       insertAfter(e.getAdr().caret[1], { char: e.key, id: e.keyId });
       e.setAdr({ ...e.getAdr(), caret: [id, e.keyId] });
@@ -160,6 +137,7 @@ export const editor = (
         const deletedChar = getAtId(e.getAdr().caret[1]);
         const i = deleteAtId(e.getAdr().caret[1]);
         e.setAdr({ ...e.getAdr(), caret: [id, str[i - 1]?.id ?? id] });
+        // note: return this to help selection deletion
         return deletedChar;
       } else {
         // TODO?: delete at start of editor
@@ -182,11 +160,10 @@ export const editor = (
         lines.push(curLine);
       } else curLine.push(ob);
     }
-    wrapEl.lines = lines;
   }
-  wrapEl.calcLines = calcLines;
 
   function render() {
+    calcLines();
     wrapEl.innerHTML = "";
     let pos = 0;
     wrapEl.lineEls = [];
@@ -283,7 +260,6 @@ export const editor = (
 
   wrapEl.act = act;
   wrapEl.id = id;
-  wrapEl.lines = lines;
   wrapEl.str = str.map((s) => s.char);
   wrapEl.render = render;
   wrapEl.reset = reset;

@@ -23,6 +23,11 @@ export class Caret {
     const next = recurseUpMoveRight(this.caretSink);
     if (next !== null) this.caretSink = next;
   }
+  moveRightFlat() {
+    if (!this.caretSink) return;
+    let next = this.caretSink.rightSibling();
+    if (next !== null) this.caretSink = next;
+  }
   moveUp() {
     if (!this.caretSink) return;
     //if (this.isVerticalLinear) this.carrySink ??= this.caretSink;

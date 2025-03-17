@@ -25,6 +25,13 @@ export class Caret {
         if (next !== null)
             this.caretSink = next;
     }
+    moveRightFlat() {
+        if (!this.caretSink)
+            return;
+        let next = this.caretSink.rightSibling();
+        if (next !== null)
+            this.caretSink = next;
+    }
     moveUp() {
         if (!this.caretSink)
             return;

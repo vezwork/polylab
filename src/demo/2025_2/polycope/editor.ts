@@ -58,10 +58,6 @@ export const editor = (
       return {
         commentify: true,
       };
-    } else if (e.key === "i" && e.metaKey) {
-      return {
-        newImage: true,
-      };
     }
   };
   wrapEl.sink = new ContainerSink(() => wrapEl.getBoundingClientRect());
@@ -77,6 +73,19 @@ export const editor = (
     wrapEl.rawStr = str;
     wrapEl.innerHTML = "";
   }
+
+  const incRenderInsertAfter = (prevId, { key, keyId }) => {
+    const prevEl = wrapEl.querySelector("#" + prevId);
+    const charEl = document.createElement("span");
+    charEl.id = keyId;
+    charEl.innerText = key;
+    charEl.pos = prevEl.pos + 1;
+    charEl.parentId = prevId;
+    prevEl?.after(charEl);
+  };
+  const incRenderDelete = (id) => {
+    wrapEl.querySelector("id")?.remove();
+  };
 
   function myInsertAt(pos, char) {
     str = insertAt(str, pos, char);
@@ -108,13 +117,7 @@ export const editor = (
   };
 
   function act(e) {
-    if (e.newImage) {
-      const newE = minEditor(e.newId, wrapEl.sink, eContext, e.newImage);
-      newE.render();
-      const i = insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });
-      const afterAdr = { ...e.getAdr(), caret: [id, str[i + 1]?.id ?? id] };
-      e.setAdr(afterAdr);
-    } else if (e.newId) {
+    if (e.newId) {
       const newE = editor(e.newId, wrapEl.sink, eContext);
       newE.render();
       const i = insertAfter(e.getAdr().caret[1], { char: newE, id: e.newId });

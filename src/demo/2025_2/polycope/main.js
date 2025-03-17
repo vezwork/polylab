@@ -124,12 +124,6 @@ export const createEditorEnv = () => {
   const renderCaret = () => {
     cursors.forEach(({ renderCaret }) => renderCaret());
   };
-  // functional setters for a full adr
-  const withCaretAdr = (fullAdr, caret) => ({ ...fullAdr, caret });
-  const withCarryAdr = (fullAdr, carry) => ({ ...fullAdr, carry });
-  const withAnchorAdr = (fullAdr, anchor) => ({ ...fullAdr, anchor });
-  const withPos = ([id, pos], newPos) => [id, newPos];
-  const withId = ([id, pos], newId) => [newId, pos];
 
   let selectionSinks = new Map([[cursors[0].getAdr().id, []]]);
 
@@ -318,23 +312,14 @@ export const createEditorEnv = () => {
       }
       // caret properties are set inside `act`, but the event's caret properties
       // are not, so we need to manually update them
-      newAdr = withAnchorAdr(getAdr(), getAdr().caret);
-      setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+      newAdr = setAdr({ ...getAdr(), anchor: getAdr().caret });
+      setAdr({ ...getAdr(), anchor: getAdr().caret });
       setAdr({ ...getAdr(), selected: [] });
 
       // don't perform backspace action after deleting selection:
       if (ob.key === "Backspace") return;
     }
     // ACTION!
-    if (ob.newImage) {
-      elFromAdrId(getAdr().caret).act({
-        newImage: selectionData.map(([key]) => key).join(""),
-        setAdr,
-        getAdr,
-      });
-      return;
-    }
-
     const pasteAction = (paction) => {
       if (Array.isArray(paction)) {
         for (const pob of paction) pasteAction(pob);
@@ -345,7 +330,7 @@ export const createEditorEnv = () => {
           getAdr,
           adr: newAdr,
         });
-        setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+        setAdr({ ...getAdr(), anchor: getAdr().caret });
       } else if (paction.id) {
         const { id, data: pob } = paction;
         // insert id
@@ -355,11 +340,11 @@ export const createEditorEnv = () => {
           getAdr,
           adr: newAdr,
         });
-        setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+        setAdr({ ...getAdr(), anchor: getAdr().caret });
         // recurse and then move caret to after the recursively inserted stuff
         pasteAction(pob);
         setAdr(afterAdr);
-        setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+        setAdr({ ...getAdr(), anchor: getAdr().caret });
       }
     };
     if (ob.paste) {
@@ -372,7 +357,7 @@ export const createEditorEnv = () => {
         getAdr,
         adr: newAdr,
       });
-      setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+      setAdr({ ...getAdr(), anchor: getAdr().caret });
     }
 
     if (ob.newId) {
@@ -688,11 +673,11 @@ export const createEditorEnv = () => {
     for (const { getAdr, setAdr } of cursors) {
       const c = getCaret(getAdr().caret);
       if (dir === "left" || dir === "right") {
-        setAdr(withCarryAdr(getAdr(), withId(getAdr().carry, null)));
+        setAdr({ ...getAdr(), carry: [null, -1] });
       }
       if (dir === "up" || dir === "down") {
         if (getAdr().carry[0] === null) {
-          setAdr(withCarryAdr(getAdr(), getAdr().caret));
+          setAdr({ ...getAdr(), carry: getAdr().caret });
         }
       }
       if (getAdr().carry[0]) {
@@ -736,15 +721,13 @@ export const createEditorEnv = () => {
           if (dir === "right") c.moveRight();
         }
       }
-      setAdr(
-        withCaretAdr(getAdr(), [
-          c.caretSink.charEl.parentId,
-          c.caretSink.charEl.id,
-        ])
-      );
+      setAdr({
+        ...getAdr(),
+        caret: [c.caretSink.charEl.parentId, c.caretSink.charEl.id],
+      });
 
       if (!isSelecting) {
-        setAdr(withAnchorAdr(getAdr(), getAdr().caret));
+        setAdr({ ...getAdr(), anchor: getAdr().caret });
       }
     }
 

@@ -60,22 +60,34 @@
   >
 </div>
 <br style="clear: both" />
-<p>
-  During my research residency, I spent some time making a new version of
-  Polytope with <strong>history</strong> and <strong>Caretope</strong> support.
-</p>
+
+<div id="e_spot"></div>
 
 <script type="module">
   import { createEditorEnv } from "../polycope/main.js";
+  import { str } from "./polycopeIntroStr.js";
+  localStorage.setItem("2025_2_history", str);
   const e = createEditorEnv();
+  document.getElementById("e_spot").append(e);
   // e.onReduce = (str) => console.log("onreduce", str);
-  e.onSave = (str, p) =>
-    console.log("onsave", p, document.body.append(eval(p)));
+  // e.onSave = (str, p) =>
+  //   console.log("onsave", p, document.body.append(eval(p)));
 </script>
 <style>
   .selected {
-    background-color: rgba(193, 112, 255, 0.4);
+    background-color: rgba(255, 112, 164, 0.4);
+  }
+  .s-l.s-r {
     border-radius: 4px;
+  }
+  .s-l {
+    border-radius: 4px 0 0 4px;
+  }
+  .s-r {
+    border-radius: 0 4px 4px 0;
+  }
+  .editor:focus {
+    outline: 0.1px solid black;
   }
 </style>
 
@@ -85,7 +97,7 @@
   src="./history1.png"
   style="border-radius: 10px; border: 10px solid white"
 />
-<p>
-  During my research residency, I spent some time making a new version of
-  Polytope with <strong>history</strong> and <strong>Caretope</strong> support.
-</p>
+
+<a href="https://vezwork.github.io/polylab/dist/demo/2024_11/polycope/">
+  polycope canvas code sketching tool</a
+>

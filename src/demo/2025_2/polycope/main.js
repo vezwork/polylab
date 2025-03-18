@@ -745,7 +745,8 @@ export const createEditorEnv = () => {
     bigreduce();
   }
 
-  return e1;
+  e1Wrap.e = e1;
+  return e1Wrap;
 };
 
 // things I remember removing from 2024_11 polycope:

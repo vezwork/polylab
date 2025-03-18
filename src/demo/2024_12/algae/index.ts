@@ -208,122 +208,122 @@ const centerH = alignH(0.5);
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
 
-// const d1 = drawable((...vs) => {
-//   ctx.fillStyle = "orange";
-//   ctx.fillRect(...vs);
-// });
-// const d2 = drawable((...vs) => {
-//   ctx.fillStyle = "violet";
-//   ctx.fillRect(...vs);
-// });
-// const d3 = drawable((...vs) => {
-//   ctx.fillStyle = "CornflowerBlue";
-//   ctx.fillRect(...vs);
-// });
-// const d4 = drawable((...vs) => {
-//   ctx.fillStyle = "YellowGreen";
-//   ctx.fillRect(...vs);
-// });
-// const v = stackV(d1, d2, d4);
-// stackH(v, d3);
-// centerH(d1, d2, d4);
+const d1 = drawable((...vs) => {
+  ctx.fillStyle = "orange";
+  ctx.fillRect(...vs);
+});
+const d2 = drawable((...vs) => {
+  ctx.fillStyle = "violet";
+  ctx.fillRect(...vs);
+});
+const d3 = drawable((...vs) => {
+  ctx.fillStyle = "CornflowerBlue";
+  ctx.fillRect(...vs);
+});
+const d4 = drawable((...vs) => {
+  ctx.fillStyle = "YellowGreen";
+  ctx.fillRect(...vs);
+});
+const v = stackV(d1, d2, d4);
+stackH(v, d3);
+centerH(d1, d2, d4);
 
-// mapAll(
-//   d2.x,
-//   d2.y,
-//   d3.x,
-//   d3.y
-// )((x1, y1, x2, y2) => {
-//   ctx.strokeStyle = "white";
-//   ctx.lineWidth = 5;
-//   ctx.beginPath();
-//   ctx.lineTo(x1, y1);
-//   ctx.lineTo(x2, y2);
-//   ctx.stroke();
-// });
+mapAll(
+  d2.x,
+  d2.y,
+  d3.x,
+  d3.y
+)((x1, y1, x2, y2) => {
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.lineTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+});
 
-// const b = group(d1, d2, d3, v);
-// mapAll(
-//   b.x,
-//   b.y,
-//   b.w,
-//   b.h
-// )((x, y, w, h) => {
-//   ctx.strokeStyle = "white";
-//   ctx.lineWidth = 5;
-//   ctx.beginPath();
-//   ctx.lineTo(x, y);
-//   ctx.lineTo(x + w, y);
-//   ctx.lineTo(x + w, y + h);
-//   ctx.lineTo(x, y + h);
-//   ctx.closePath();
-//   ctx.stroke();
-// });
+const b = group(d1, d2, d3, v);
+mapAll(
+  b.x,
+  b.y,
+  b.w,
+  b.h
+)((x, y, w, h) => {
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.lineTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.closePath();
+  ctx.stroke();
+});
 
-// set(d1.h)(100);
-// set(d1.w)(100);
-// set(d2.h)(100);
-// set(d2.w)(200);
-// set(d3.h)(100);
-// set(d3.w)(100);
-// set(d4.h)(20);
-// set(d4.w)(20);
+set(d1.h)(100);
+set(d1.w)(100);
+set(d2.h)(100);
+set(d2.w)(200);
+set(d3.h)(100);
+set(d3.w)(100);
+set(d4.h)(20);
+set(d4.w)(20);
 
-// set(d1.y)(100);
-// // set(d1.x)(100);
-// set(d2.x)(120);
-// set(d3.y)(0);
+set(d1.y)(100);
+// set(d1.x)(100);
+set(d2.x)(120);
+set(d3.y)(0);
 
-// const d5 = drawable((...vs) => {
-//   ctx.fillStyle = "red";
-//   ctx.fillRect(...vs);
-// });
-// const d6 = drawable((...vs) => {
-//   ctx.fillStyle = "blue";
-//   ctx.fillRect(...vs);
-// });
-// const d7 = drawable((...vs) => {
-//   ctx.fillStyle = "green";
-//   ctx.fillRect(...vs);
-// });
-// const d8 = drawable((...vs) => {
-//   ctx.fillStyle = "yellow";
-//   ctx.fillRect(...vs);
-// });
+const d5 = drawable((...vs) => {
+  ctx.fillStyle = "red";
+  ctx.fillRect(...vs);
+});
+const d6 = drawable((...vs) => {
+  ctx.fillStyle = "blue";
+  ctx.fillRect(...vs);
+});
+const d7 = drawable((...vs) => {
+  ctx.fillStyle = "green";
+  ctx.fillRect(...vs);
+});
+const d8 = drawable((...vs) => {
+  ctx.fillStyle = "yellow";
+  ctx.fillRect(...vs);
+});
 
-const doLater: Function[] = [];
-const tree = (...ts) => {
-  const d = drawable((...vs) => {
-    ctx.fillStyle = "violet";
-    ctx.fillRect(...vs);
-  });
-  doLater.push(() => {
-    set(d.h)(10);
-    set(d.w)(10);
-  });
-  if (ts.length > 0) {
-    const children = stackPadH(0)(...ts);
-    const s = stackPadV(10)(d, children); // WARNING!!! THIS HAS LESS HORIZONTAL INFO THAN YOU MIGHT EXPECT
-    centerH(d, children); // THIS LINE SHOULD ADD THAT HORIZONTAL INFO SOMEHOW!
-    // IN GENERAL THOUGH: we would need to do analysis on the relationships
-    // TODO: return d and children, not just d
-    // really need to properly implement defaults and use them for setting group properties
-    console.log("children", children, "s", s);
-    return s;
-  }
-  console.log("d", d);
-  return d;
-};
+// const doLater: Function[] = [];
+// const tree = (...ts) => {
+//   const d = drawable((...vs) => {
+//     ctx.fillStyle = "violet";
+//     ctx.fillRect(...vs);
+//   });
+//   doLater.push(() => {
+//     set(d.h)(10);
+//     set(d.w)(10);
+//   });
+//   if (ts.length > 0) {
+//     const children = stackPadH(0)(...ts);
+//     const s = stackPadV(10)(d, children); // WARNING!!! THIS HAS LESS HORIZONTAL INFO THAN YOU MIGHT EXPECT
+//     centerH(d, children); // THIS LINE SHOULD ADD THAT HORIZONTAL INFO SOMEHOW!
+//     // IN GENERAL THOUGH: we would need to do analysis on the relationships
+//     // TODO: return d and children, not just d
+//     // really need to properly implement defaults and use them for setting group properties
+//     console.log("children", children, "s", s);
+//     return s;
+//   }
+//   console.log("d", d);
+//   return d;
+// };
 
-const root = tree(tree(tree(), tree()));
-set(root.x)(100);
-set(root.y)(400);
+// const root = tree(tree(tree(), tree()));
+// set(root.x)(100);
+// set(root.y)(400);
 
-for (const f of doLater) f();
+// for (const f of doLater) f();
 
-// const d = drawable(() => {});
-// map(d.px(1))(console.log);
-// set(d.px(0.5))(0);
-// set(d.x)(-8);
+// // const d = drawable(() => {});
+// // map(d.px(1))(console.log);
+// // set(d.px(0.5))(0);
+// // set(d.x)(-8);
 
-while (forLaterStackPad.length > 0) forLaterStackPad.pop()!();
+// while (forLaterStackPad.length > 0) forLaterStackPad.pop()!();

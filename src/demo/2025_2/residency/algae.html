@@ -66,6 +66,20 @@
   <strong>relational layout</strong> better.
 </p>
 <div style="margin-top: 60px" />
+<h2>Prior art</h2>
+<a href="http://localhost:8080/dist/demo/drawPX23/draw2.html"
+  >Caretope presentation</a
+>
+<a
+  href="https://github.com/vezwork/polylab/blob/main/src/demo/drawPX23/drawtest2.ts"
+  >drawing lib</a
+><br />
+<a href="https://www.youtube.com/watch?v=gT9Xu-ctNqI">
+  "Diagrammar: Simply Make Interactive Diagrams" by Pontus Granström (Strange
+  Loop 2022)</a
+>
+<div style="margin-top: 60px" />
+<h2>Algae</h2>
 <img
   height="300"
   style="border-radius: 10px; margin-right: 10px"
@@ -81,12 +95,25 @@
 <p>There were two main sub projects:</p>
 <ul>
   <li>
-    An initial investigation into a direct-manipulation propagational layout
-    tree
+    An initial investigation into a<br />
+    <strong>direct-manipulation propagational layout tree</strong>
   </li>
-  <li>A propagation library for Bluefish style canvas layout</li>
+  <li>
+    A
+    <strong
+      ><a href="https://bluefishjs.org/">Bluefish</a>-style layout
+      library</strong
+    >
+    for canvas layout, built with propagation to add directionlessness
+  </li>
 </ul>
-<p>It relates to my <a href="">egg</a> explorations.</p>
+
+<h2>With time?</h2>
+Another attempt that avoids issues with how grouping and defaulting work
+together. I want to make everything direct manipulation from the start this time
+so I don't get lost in abstraction.
+
+<h2>Below the surface</h2>
 
 Propagation
 <br />
@@ -121,10 +148,10 @@ Propagation
 <script>
   const mySvgEl = document.getElementById("mySvgEl");
   mySvgEl.style.width = window.innerWidth;
-  mySvgEl.style.height = window.innerHeight;
+  mySvgEl.style.height = document.body.scrollHeight;
   mySvgEl.setAttribute(
     "viewBox",
-    `0 0 ${window.innerWidth} ${window.innerHeight}`
+    `0 0 ${window.innerWidth} ${document.body.scrollHeight}`
   );
 
   //https://stackoverflow.com/a/37411738

@@ -68,14 +68,57 @@
 </div>
 <br style="clear: both" />
 
-<p>I cooked eggs</p>
-<div style="font-size: 40px; font-family: 'fira code'">
-  a * (b + c) = a*b + a*c
+<p>ell's egg recipe:</p>
+
+<h2>step 1: do rewrite stuff</h2>
+<div style="font-size: 40px; font-family: 'fira code'" id="stateDiv">
+  *(a +(b c))
 </div>
+<script>
+  let t = {
+    "*(a +(b c))": ["+(*(a b) *(a c))", "*(+(b c) a)"],
+    "*(a +(c b))": ["+(*(a c) *(a b))", "*(a +(b c))"],
+    "*(+(c b) a)": ["+(*(c a) *(b a))", "*(a +(c b))", "*(+(b c) a)"],
+    "*(+(b c) a)": ["+(*(b a) *(c a))", "*(a +(b c))", "*(+(c b) a)"],
+    "+(*(a b) *(a c))": ["*(a +(b c))", "+(*(a c) *(a b))"],
+    "+(*(a c) *(a b))": ["*(a +(c b))", "+(*(a b) *(a c))"],
+    "+(*(b a) *(c a))": ["*(+(b c) a)", "+(*(c a) *(b a))"],
+    "+(*(c a) *(b a))": [
+      "*(+(c b) a)",
+      "+(*(b a) *(c a))",
+      "+(*(c a) *(egg a))",
+    ],
+    "+(*(c a) *(egg a))": ["+(*(egg a) *(egg a))"],
+    "+(*(egg a) *(egg a))": ["+(*(egg egg) *(egg egg))"],
+    "+(*(egg egg) *(egg egg))": ["egg(*(egg egg) *(egg egg))"],
+    "egg(*(egg egg) *(egg egg))": ["egg(egg(egg egg))"],
+    ["egg(egg(egg egg))"]: ["egg(egg(egg))"],
+    ["egg(egg(egg))"]: ["egg(egg)"],
+    ["egg(egg)"]: ["egg"],
+    egg: ["EGG"],
+    EGG: ["EGG ".repeat(3)],
+    ["EGG ".repeat(3)]: ["EGG ".repeat(20)],
+    ["EGG ".repeat(20)]: ["EGG ".repeat(100)],
+    ["EGG ".repeat(100)]: ["EGG ".repeat(1000)],
+  };
+  let state = "*(a +(b c))";
+  setInterval(() => {
+    state = t[state][Math.floor(Math.random() * t[state].length)];
+    if (state === "EGG ".repeat(1000))
+      document.body.innerText = ("EGG ".repeat(13) + "\n").repeat(1000);
+    document.getElementById("stateDiv").innerText = state;
+  }, 1344);
+</script>
 <a href="https://vezwork.github.io/polylab/src/demo/2024_07/rewrite.js"
   >original rewrite code</a
 >
 
+<h2>step 2: do egg stuff</h2>
+Followed along with this
+<a href="https://www.youtube.com/watch?v=6cJMI9z2TeU"
+  >awesome egg presentation</a
+>
+and its associated paper to make my own egg in JS.
 <figure>
   <img src="https://egraphs-good.github.io/assets/egraphs.svg" width="600" />
   <figcaption>
@@ -84,17 +127,20 @@
   </figcaption>
 </figure>
 
-<a href="https://vezwork.github.io/polylab/dist/demo/2024_08/e_graph">demo</a>
-<br />
+<h2>step 3: evaluate the egg</h2>
 <a
   href="https://raw.githubusercontent.com/vezwork/polylab/refs/heads/main/src/demo/2024_08/lib/builtins.ts"
   >builtins</a
->
+><br />
+<a href="https://vezwork.github.io/polylab/dist/demo/2024_08/e_graph">demo</a>
+<br />
+
 <br />I used parser combinators to create a lisp-y parser (with array and block
 literals), then did post processing on the lisp-y AST to add statements to the
-language.
-<br />
-later, I also made this
-<a href="https://vezwork.github.io/polylab/dist/demo/2024_10/lift_lang/"
-  >small REPL</a
->
+AST. I put the AST into an e-graph, saturated it, and then "evaluated" the
+e-graph (using a method similar to e-class analysis from the egg paper)
+
+<h2>With time?</h2>
+I may tune my egg implementation to be efficient enough to solve algebra
+problems at some point. Regardless, I will use rewriting based ideas going
+forward.

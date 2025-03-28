@@ -203,9 +203,9 @@ export const editor = (
             charEl = document.createElement("span");
             charEl.innerText = " ";
             charEl.style.display = "inline-block";
-            charEl.style.verticalAlign = "middle";
+            charEl.style.verticalAlign = "text-bottom";
             charEl.style.width = "8px";
-            charEl.style.height = "16px";
+            charEl.style.height = "1.22em";
             charEl.id = charId;
           } else {
             charEl = document.createElement("span");

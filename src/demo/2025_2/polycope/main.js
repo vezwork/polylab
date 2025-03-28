@@ -442,7 +442,9 @@ export const createEditorEnv = () => {
           balance--;
           return "<)";
         }
-        return s.isFirst() ? "(>" : "" + s.charEl.innerText;
+        return s.isFirst()
+          ? "(>"
+          : "" + (s.charEl.textContent || s.charEl.innerText); // textContent works for spaces, innerText works for newlines
       })
       .join("");
     let prefix = balance < 0 ? "(>".repeat(Math.abs(balance)) : "";

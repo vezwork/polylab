@@ -167,7 +167,6 @@ export class ContainerSink extends Sink {
     else return this.lines.at(-1)?.at(-1) ?? null;
   }
   topChild(from: Sink): Sink | null {
-    // WARNING: changed something here
     return (
       least(
         this.lines.at(0) ?? [],

@@ -139,7 +139,6 @@ export class ContainerSink extends Sink {
             return this.lines.at(-1)?.at(-1) ?? null;
     }
     topChild(from) {
-        // WARNING: changed something here
         return (least(this.lines.at(0) ?? [], ({ left, right }) => Math.max(from.left, left) - Math.min(from.right, right)) ?? null);
     }
     bottomChild(from) {

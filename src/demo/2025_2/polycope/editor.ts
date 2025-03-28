@@ -1,4 +1,4 @@
-import { ContainerSink } from "./caretsink.js";
+import { CaretSink, ContainerSink } from "./caretsink.js";
 import { insertAt, deleteAt, makeid } from "./helpers.js";
 import { minEditor } from "./minEditor.js";
 
@@ -64,7 +64,6 @@ export const editor = (
   wrapEl.sink.parent = parentContainerSink ?? null;
 
   let str = [] as { char: string; id: string }[];
-  let lines = [[]] as any[][];
 
   function reset() {
     str = [];
@@ -72,20 +71,135 @@ export const editor = (
     wrapEl.str = str.map((s) => s.char);
     wrapEl.rawStr = str;
     wrapEl.innerHTML = "";
+
+    const newlineEl = document.createElement("line");
+    newlineEl.style.display = "block";
+    const lineStartEl = document.createElement("span") as HTMLSpanElement & {
+      pos: any;
+      parentId: any;
+    };
+    lineStartEl.style.height = "1.27em"; // magic number makes highlight height the same as 18px letters
+    lineStartEl.style.width = "4px";
+    lineStartEl.style.display = "inline-block";
+    lineStartEl.style.verticalAlign = "text-bottom";
+    lineStartEl.pos = 0;
+    lineStartEl.parentId = id;
+    lineStartEl.id = id;
+    wrapEl.append(newlineEl);
+    newlineEl.append(lineStartEl);
+
+    const sink = new CaretSink(() => lineStartEl.getBoundingClientRect());
+    sink.parent = wrapEl.sink;
+    sink.charEl = lineStartEl;
+    lineStartEl.caretSink = sink;
+    const lineEls = [...wrapEl.querySelectorAll("line")];
+    wrapEl.lineEls = lineEls;
+    wrapEl.sink.lines = lineEls.map((lineEl) =>
+      [...lineEl.childNodes].map((el) => el.caretSink).filter((v) => v)
+    );
   }
 
+  // towards character spec:
+  // - `pos` is necessary for knowing which direction selection traversal should go in
+  // - `id` is necessary for stable addressing chars
+  // - `parentId` is used somehow for selection stuff
+  // - `innerText` is necessary for display and serialization
+  // - `line` is used in here for finding line to insert at
   const incRenderInsertAfter = (prevId, { key, keyId }) => {
     const prevEl = wrapEl.querySelector("#" + prevId);
     const charEl = document.createElement("span");
     charEl.id = keyId;
     charEl.innerText = key;
-    charEl.pos = prevEl.pos + 1;
-    charEl.parentId = prevId;
+    charEl.parentId = id;
     prevEl?.after(charEl);
+
+    const sink = new CaretSink(() => charEl.getBoundingClientRect());
+    sink.parent = wrapEl.sink;
+    sink.charEl = charEl;
+    charEl.caretSink = sink;
+    const lineEls = [...wrapEl.querySelectorAll("line")];
+    wrapEl.lineEls = lineEls;
+    wrapEl.sink.lines = lineEls.map((lineEl) =>
+      [...lineEl.childNodes].map((el) => el.caretSink).filter((v) => v)
+    );
+    let p = 0;
+    for (const lineEl of wrapEl.querySelectorAll("line")) {
+      for (const el of lineEl.childNodes) {
+        el.pos = p;
+        p++;
+      }
+    }
+  };
+
+  const incRenderInsertNewline = (prevId, keyId) => {
+    const prevEl = document.getElementById(prevId);
+
+    const newlineEl = document.createElement("line");
+    newlineEl.style.display = "block";
+
+    const lineStartEl = document.createElement("span") as HTMLSpanElement & {
+      pos: any;
+      parentId: any;
+    };
+    lineStartEl.style.height = "1.27em"; // magic number makes highlight height the same as 18px letters
+    lineStartEl.style.width = "4px";
+    lineStartEl.style.display = "inline-block";
+    lineStartEl.style.verticalAlign = "text-bottom";
+    lineStartEl.parentId = id;
+    lineStartEl.id = keyId;
+    lineStartEl.innerText = "\n";
+
+    newlineEl.append(lineStartEl);
+
+    prevEl?.parentElement.after(newlineEl);
+    const line = [...prevEl?.parentElement?.childNodes];
+    const pi = line.findIndex((e) => e === prevEl) + 1;
+    lineStartEl.after(...line.slice(pi));
+
+    const sink = new CaretSink(() => lineStartEl.getBoundingClientRect());
+    sink.parent = wrapEl.sink;
+    sink.charEl = lineStartEl;
+    lineStartEl.caretSink = sink;
+    const lineEls = [...wrapEl.querySelectorAll("line")];
+    wrapEl.lineEls = lineEls;
+    wrapEl.sink.lines = lineEls.map((lineEl) =>
+      [...lineEl.childNodes].map((el) => el.caretSink).filter((v) => v)
+    );
+    let p = 0;
+    for (const lineEl of wrapEl.querySelectorAll("line")) {
+      for (const el of lineEl.childNodes) {
+        el.pos = p;
+        p++;
+      }
+    }
   };
   const incRenderDelete = (id) => {
-    wrapEl.querySelector("id")?.remove();
+    const el = wrapEl.querySelector("#" + id);
+    if (el.innerText === "\n") {
+      // TODO: move els from line to prev line
+      const parent = el?.parentElement;
+      if (parent?.previousElementSibling) {
+        el?.remove();
+        parent?.previousElementSibling?.append(...parent?.childNodes);
+      }
+      parent?.remove();
+    } else el?.remove();
+
+    const lineEls = [...wrapEl.querySelectorAll("line")];
+    wrapEl.lineEls = lineEls;
+    wrapEl.sink.lines = lineEls.map((lineEl) =>
+      [...lineEl.childNodes].map((el) => el.caretSink).filter((v) => v)
+    );
+    let p = 0;
+    for (const lineEl of wrapEl.querySelectorAll("line")) {
+      for (const el of lineEl.childNodes) {
+        el.pos = p;
+        p++;
+      }
+    }
   };
+  // goal: make render empty, put all rendering in act (incrementalize rendering)
+  // TODO: all this dom manipulation is SLOWWW!
 
   function myInsertAt(pos, char) {
     str = insertAt(str, pos, char);
@@ -125,13 +239,16 @@ export const editor = (
       const afterAdr = { ...e.getAdr(), caret: [id, str[i + 1]?.id ?? id] };
       const innerAdr = { ...e.getAdr(), caret: [newE.id, newE.id] };
       e.setAdr(innerAdr);
+
       return afterAdr;
     } else if (e.key.length === 1) {
       insertAfter(e.getAdr().caret[1], { char: e.key, id: e.keyId });
+      incRenderInsertAfter(e.getAdr().caret[1], e);
       e.setAdr({ ...e.getAdr(), caret: [id, e.keyId] });
     }
     if (e.key === "Enter") {
       insertAfter(e.getAdr().caret[1], { char: "\n", id: e.keyId });
+      incRenderInsertNewline(e.getAdr().caret[1], e.keyId);
       e.setAdr({ ...e.getAdr(), caret: [id, e.keyId] });
     }
     if (e.key === "Backspace") {
@@ -139,6 +256,7 @@ export const editor = (
       if (!isFirstSink) {
         const deletedChar = getAtId(e.getAdr().caret[1]);
         const i = deleteAtId(e.getAdr().caret[1]);
+        incRenderDelete(e.getAdr().caret[1]);
         e.setAdr({ ...e.getAdr(), caret: [id, str[i - 1]?.id ?? id] });
         // note: return this to help selection deletion
         return deletedChar;
@@ -148,24 +266,35 @@ export const editor = (
     }
   }
 
-  function calcLines() {
-    let curLine = [] as unknown as { char: string; id: string }[] & {
-      id: string;
-    };
-    curLine.id = id;
-    lines = [curLine];
-    for (const ob of str) {
-      if ("\n" === ob.char) {
-        curLine = [] as unknown as { char: string; id: string }[] & {
-          id: string;
-        };
-        curLine.id = ob.id;
-        lines.push(curLine);
-      } else curLine.push(ob);
-    }
-  }
+  // function calcLines() {
+  //   let curLine = [] as unknown as { char: string; id: string }[] & {
+  //     id: string;
+  //   };
+  //   curLine.id = id;
+  //   lines = [curLine];
+  //   for (const ob of str) {
+  //     if ("\n" === ob.char) {
+  //       curLine = [] as unknown as { char: string; id: string }[] & {
+  //         id: string;
+  //       };
+  //       curLine.id = ob.id;
+  //       lines.push(curLine);
+  //     } else curLine.push(ob);
+  //   }
+  // }
 
   function render() {
+    let p = 0;
+    for (const lineEl of wrapEl.querySelectorAll("line")) {
+      for (const el of lineEl.childNodes) {
+        el.pos = p;
+        p++;
+      }
+    }
+    const lineEls = [...wrapEl.querySelectorAll("line")];
+    const els = lineEls.map((lineEl) => [...lineEl.childNodes]);
+    wrapEl.lineEls = lineEls;
+    return els;
     calcLines();
     wrapEl.innerHTML = "";
     let pos = 0;
@@ -203,9 +332,9 @@ export const editor = (
             charEl = document.createElement("span");
             charEl.innerText = " ";
             charEl.style.display = "inline-block";
-            charEl.style.verticalAlign = "middle";
+            charEl.style.verticalAlign = "text-bottom";
             charEl.style.width = "8px";
-            charEl.style.height = "16px";
+            charEl.style.height = "1.22em";
             charEl.id = charId;
           } else {
             charEl = document.createElement("span");

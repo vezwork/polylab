@@ -230,8 +230,6 @@ export const createEditorEnv = () => {
     });
     return selected;
   }
-  const calcFlatSelection = (adr) =>
-    getFlatSelectionSinks(adr).map((c) => [c.charEl.parentId, c.charEl.id]);
 
   function clearStyleSelectionSinks() {
     selectionSinks.values().forEach((ssinks) =>
@@ -262,6 +260,12 @@ export const createEditorEnv = () => {
   //========================================================================
   // BIGREDUCE
   //========================================================================
+  function smallreduce(e) {
+    createDestroyAndSetAdrOfCursors(e.actions);
+    for (const action of e.actions) reduceStep(action);
+    renderCaret();
+    elFromAdrId(cursors[0].getAdr().caret).focus();
+  }
   function bigreduce() {
     for (const [id, el] of Object.entries(elFromFocusId)) el.reset();
     for (const e of mainline()) {
@@ -272,7 +276,7 @@ export const createEditorEnv = () => {
     // Note: sinks are created here! Can't access them in actions!
     // Related: Can't access rendered things in actions! You can access them in listeners though
     //   how to think about this? When to do which?
-    createSinks();
+    //createSinks();
 
     renderCaret();
     elFromAdrId(cursors[0].getAdr().caret).focus();
@@ -376,35 +380,36 @@ export const createEditorEnv = () => {
   function createSinks() {
     for (const [id, containerEl] of Object.entries(elFromFocusId)) {
       containerEl.els = containerEl.render();
-      containerEl.sink.lines = containerEl.els.map((line) =>
-        line.flatMap((charEl) => {
-          if (charEl.isEditor) {
-            const containerSink = charEl.sink;
-            const sink = new CaretSink(() => {
-              const rect = charEl.getBoundingClientRect();
-              return {
-                left: rect.right + 0.1,
-                right: rect.right + 0.2,
-                top: rect.top,
-                bottom: rect.bottom,
-              };
-            });
-            sink.isAfterEditorSink = true;
-            sink.parent = containerEl.sink;
-            sink.charEl = charEl;
-            charEl.caretSink = sink;
-            containerSink.parentContainerSink = containerEl.sink;
-            containerSink.charEl = charEl;
-            return [containerSink, sink];
-          } else {
-            const sink = new CaretSink(() => charEl.getBoundingClientRect());
-            sink.parent = containerEl.sink;
-            sink.charEl = charEl;
-            charEl.caretSink = sink;
-            return sink;
-          }
-        })
-      );
+
+      // containerEl.sink.lines = containerEl.els.map((line) =>
+      //   line.flatMap((charEl) => {
+      //     if (charEl.isEditor) {
+      //       const containerSink = charEl.sink;
+      //       const sink = new CaretSink(() => {
+      //         const rect = charEl.getBoundingClientRect();
+      //         return {
+      //           left: rect.right + 0.1,
+      //           right: rect.right + 0.2,
+      //           top: rect.top,
+      //           bottom: rect.bottom,
+      //         };
+      //       });
+      //       sink.isAfterEditorSink = true;
+      //       sink.parent = containerEl.sink;
+      //       sink.charEl = charEl;
+      //       charEl.caretSink = sink;
+      //       containerSink.parentContainerSink = containerEl.sink;
+      //       containerSink.charEl = charEl;
+      //       return [containerSink, sink];
+      //     } else {
+      //       // const sink = new CaretSink(() => charEl.getBoundingClientRect());
+      //       // sink.parent = containerEl.sink;
+      //       // sink.charEl = charEl;
+      //       // charEl.caretSink = sink;
+      //       // return sink;
+      //     }
+      //   })
+      // );
     }
   }
 
@@ -442,24 +447,9 @@ export const createEditorEnv = () => {
           balance--;
           return "<)";
         }
-        return s.isFirst() ? "(>" : "" + s.charEl.innerText;
+        return s.isFirst() ? "(>" : "" + s.charEl.textContent;
       })
       .join("");
-    let prefix = balance < 0 ? "(>".repeat(Math.abs(balance)) : "";
-    let postfix = balance > 0 ? "<)".repeat(balance) : "";
-    return prefix + inner + postfix;
-  }
-  function dog(selected) {
-    let balance = 0;
-    const inner = selected.map((v) => {
-      const s = getCaretopeSinkFromAdrId(v);
-      if (s.isFirst())
-        if (s.isAfterEditorSink) {
-          balance--;
-          return "<)";
-        }
-      return s.isFirst() ? "(>" : "" + s.charEl.innerText;
-    });
     let prefix = balance < 0 ? "(>".repeat(Math.abs(balance)) : "";
     let postfix = balance > 0 ? "<)".repeat(balance) : "";
     return prefix + inner + postfix;
@@ -554,7 +544,8 @@ export const createEditorEnv = () => {
       .filter(({ adr, ob }) => ob !== undefined);
     if (actions.length > 0) {
       pushHistory({ actions });
-      bigreduce();
+      smallreduce({ actions });
+      // bigreduce();
       // why does this happen here?
       // selection will always be gone after the bigreduce, right?
       // also it causes a bug when there are two cursors currently

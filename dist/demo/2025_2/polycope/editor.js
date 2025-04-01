@@ -55,18 +55,6 @@ export const editor = (id = Math.random() + "", parentContainerSink, eContext) =
         wrapEl.rawStr = str;
         wrapEl.innerHTML = "";
     }
-    const incRenderInsertAfter = (prevId, { key, keyId }) => {
-        const prevEl = wrapEl.querySelector("#" + prevId);
-        const charEl = document.createElement("span");
-        charEl.id = keyId;
-        charEl.innerText = key;
-        charEl.pos = prevEl.pos + 1;
-        charEl.parentId = prevId;
-        prevEl?.after(charEl);
-    };
-    const incRenderDelete = (id) => {
-        wrapEl.querySelector("id")?.remove();
-    };
     function myInsertAt(pos, char) {
         str = insertAt(str, pos, char);
     }

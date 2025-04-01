@@ -230,8 +230,6 @@ export const createEditorEnv = () => {
     });
     return selected;
   }
-  const calcFlatSelection = (adr) =>
-    getFlatSelectionSinks(adr).map((c) => [c.charEl.parentId, c.charEl.id]);
 
   function clearStyleSelectionSinks() {
     selectionSinks.values().forEach((ssinks) =>

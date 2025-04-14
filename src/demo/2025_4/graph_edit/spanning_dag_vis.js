@@ -10,6 +10,7 @@ import {
   setLength,
 } from "../../../lib/math/Vec2.js";
 import { lerp } from "../../../lib/math/Line2.js";
+import { concat } from "../../../lib/structure/Iterable.js";
 
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
@@ -45,6 +46,32 @@ function drawArrow(context, from, to) {
 
 const nexts = (p) => Arrow.all.filter(({ p1 }) => p1 === p);
 
+function* topoBf(start) {
+  const { sccIndex, nodeToScc } = yield* dfsVis(start);
+
+  const viewed = new Set([start]);
+  const queue = [start];
+  let i = 0;
+  while (queue.length > 0) {
+    const cur = queue.pop();
+    cur.char = i;
+    i = i + 1;
+    yield {};
+
+    for (const edge of nexts(cur)) {
+      const to = edge.p2;
+
+      if (!viewed.has(to)) {
+        viewed.add(to);
+        queue.push(to);
+      }
+    }
+    queue.sort(
+      (a, b) => sccIndex.get(nodeToScc.get(a)) - sccIndex.get(nodeToScc.get(b))
+    );
+  }
+}
+
 function* dfs(start, viewedNodes = new Set()) {
   viewedNodes.add(start);
   yield { viewed: start };
@@ -56,6 +83,8 @@ function* dfs(start, viewedNodes = new Set()) {
   }
   yield { visited: start };
 }
+
+// Tarjan's strongly connected components alg ref: https://www.youtube.com/watch?v=wUgWX0nc4NY
 function* dfsVis(start) {
   const visitedNodes = new Set(),
     viewedNodes = new Set(),
@@ -65,8 +94,9 @@ function* dfsVis(start) {
     index = new Map(),
     low = new Map(),
     s = [],
-    sccs = []; // topologically sorted strongly connected components,
-  const nodeToScc = new Map();
+    sccs = [], // reverse topologically sorted strongly connected components,
+    sccIndex = new Map(),
+    nodeToScc = new Map();
   let i = 0;
 
   const edgeToScc = new Map();
@@ -81,7 +111,7 @@ function* dfsVis(start) {
 
       index.set(v, i);
       low.set(v, i);
-      v.char = i;
+      // v.char = i;
 
       i = i + 1;
       s.push(v);
@@ -110,7 +140,7 @@ function* dfsVis(start) {
 
       if (onStack.has(to)) {
         low.set(from, Math.min(low.get(from), low.get(to)));
-        from.char = low.get(from);
+        // from.char = low.get(from);
         yield {};
       }
     }
@@ -141,11 +171,13 @@ function* dfsVis(start) {
           }
         }
 
-        sccs.unshift(scc);
+        sccIndex.set(scc, sccs.length);
+        sccs.push(scc);
         yield { sccs };
       }
     }
   }
+  return { sccIndex, nodeToScc };
 }
 
 class Point {
@@ -242,8 +274,8 @@ c.addEventListener("pointerup", (e) => {
 
 const p1 = new Point([100, 100], "A");
 const p2 = new Point([100, 200], "B");
-new Arrow(p1, p2, "10 +");
-let B = dfsVis(p1);
+new Arrow(p1, p2);
+let B = topoBf(p1);
 let bfsPoint = [p1, [], []];
 let bfsEdge = { visitedEdges: new Set(), queueEdges: [] };
 let sccs = new Set();
@@ -253,7 +285,7 @@ document.addEventListener("keydown", (e) => {
   console.log(e.key);
   if (e.key.length === 1) new Point(v(...pointer), e.key);
   if (e.key === "Alt") {
-    B = dfsVis(p1);
+    B = topoBf(p1);
     bfsPoint = [p1, [], []];
     bfsEdge = { visitedEdges: new Set(), queueEdges: [] };
     sccs = new Set();

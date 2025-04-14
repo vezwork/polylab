@@ -3,11 +3,23 @@
 <h3>controls:</h3>
 <ul>
   <li>click + drag: reposition point</li>
-  <li>type letter: place point</li>
+  <li>type letter or click: place point</li>
   <li>ctrl/meta + drag: arrow</li>
   <li>
     Alt: start
-    <a href="https://en.wikipedia.org/wiki/Breadth-first_search">BFS</a>
+    <a
+      href="https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm"
+      >Tarjan's alg</a
+    >
     animation
   </li>
+  <br />
+  <strong>important note:</strong
+  ><br />
+  Why did I implement an algorithm to find strongly connected components (SCCs)
+  and not just do a topological sort on the DAG produced by DFS? Because SCCs do
+  not depend on the traversal. There can be many DAGs that span a graph, but
+  only one SCC equivalence relation. I hope this makes it so I can get the SCCs
+  for the whole graph ahead of time, instead of computing a spanning DAG on
+  every update.
 </ul>

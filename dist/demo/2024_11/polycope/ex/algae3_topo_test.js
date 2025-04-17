@@ -12,7 +12,7 @@ import {
   obClass,
 } from "./ex/algae3_topo.js";
 
-const Box = (w = 30, flag) => {
+const Box = (w = 15, flag) => {
   const box = { l: Ob(0, flag), r: Ob(w, flag) };
   rel(box.l, box.r, { to: (v) => v + w, from: (v) => v - w });
   return box;
@@ -75,25 +75,23 @@ const t = (...ts) => {
   } else return Box2();
 };
 
-//const ba = Box2()
-//const bb = Box2()
-//const bc = Box2()
-//y_(bc,x_(ba,bb))
-//const bb = t()
-const tt = t(t(t(t(t(t(t(), t())), t())), t(), t(t(), t(t(), t()))));
-//Group2(tt)
+// TODO: test usage
+// - overlapping groups
+// - arrows
+// - using single dimension relation full bounding boxes
+// - example usages in general
+// TODO: check for duplicate work in `set`
+// TODO: documentation
 
-//set(bb.y.l, 300)
-console.log("AAAAAAAA");
-//set(bb.x.l, 300)
+const tt = t(t(), t());
+const otherBox = Box2();
+x_(tt, otherBox);
 
 let i = 100;
 
 function anim() {
   if (!paused) requestAnimationFrame(anim);
   ctx.clearRect(0, 0, c.width, c.height);
-
-  //set(bc.x.r, 200+Math.sin(i)*20)
 
   ctx.fillStyle = "salmon";
   ctx.globalAlpha = 0.3;
@@ -112,6 +110,8 @@ function anim() {
 
   if (focus.flag === "y") set(focus, focus.v + (mouseY - focus.v) * 0.1);
   else set(focus, focus.v + (mouseX - focus.v) * 0.1);
+
+  //set(otherBox.y.r, 400+Math.sin(i)*20)
   draw();
 }
 requestAnimationFrame(anim);
@@ -130,6 +130,7 @@ const draw = () => {
   const y = (ob) => (ob.flag === "y" ? xo(ob) : yo(ob));
 
   ctx.fillStyle = "orange";
+  ctx.font = "8px sans-serif";
   ctx.fillRect(x(focus), y(focus), 10, 10);
   ctx.fillStyle = "black";
 

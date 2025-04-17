@@ -102,6 +102,8 @@ export const set = (ob, v) => {
   ob.setOrder = setOrder.size;
   setOrder.set(ob, 0);
 
+  const alreadySet = new Set([ob]);
+
   localStronglyConnectedComponents(
     ob,
     (node) => dag.get(node) ?? [],
@@ -124,8 +126,13 @@ export const set = (ob, v) => {
       const cur = to;
       if (dir === "up") {
         // q: is this getting calculated duplicate times for some nodes?
+        // a: yes
         const children = [...(downRels.get(cur) ?? [])];
         if (children.length > 0) {
+          // ISSUE: we are not visiting edges in the right order, because
+          //   we don't get correct behaviour if we return when `alreadySet.has(cur)`
+          //if (alreadySet.has(cur)) return;
+          alreadySet.add(cur);
           cur.v = children[0].f(...children.map((e) => e.ob1.v));
         }
       }

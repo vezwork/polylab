@@ -1,14 +1,24 @@
 import { localStronglyConnectedComponents } from "./stronglyConnectedComponents.js";
-const classes = new Set();
+const gradeUp = (...init) =>
+  traverseUpClasses((edge) => {
+    const class1 = obClass.get(edge.ob1);
+    const class2 = obClass.get(edge.ob2);
+    grades.set(
+      class2,
+      Math.max(grades.get(class2) ?? 0, grades.get(class1) + 1)
+    );
+  })(...init);
+
 export const obClass = new Map();
 const initialClasses = new Set();
+const grades = new Map();
+
 const union = (ob1, ob2) => {
   const c1 = obClass.get(ob1);
   const c2 = obClass.get(ob2);
-  classes.delete(c1);
-  classes.delete(c2);
   const unionClass = c1.union(c2);
-  classes.add(unionClass);
+  grades.set(unionClass, Math.max(grades.get(c1), grades.get(c2)));
+  gradeUp(unionClass);
   for (const ob of unionClass) obClass.set(ob, unionClass);
 
   if (initialClasses.has(c1) && initialClasses.has(c2))
@@ -16,6 +26,8 @@ const union = (ob1, ob2) => {
 
   initialClasses.delete(c1);
   initialClasses.delete(c2);
+  grades.delete(c1);
+  grades.delete(c2);
 };
 
 export const Obs = [];
@@ -23,9 +35,9 @@ export const Ob = (v, flag) => {
   const newOb = { v, id: Math.random().toFixed(3).slice(2) };
   const newClass = new Set([newOb]);
   newOb.flag = flag;
-  classes.add(newClass);
   obClass.set(newOb, newClass);
   initialClasses.add(newClass);
+  grades.set(0);
   Obs.push(newOb);
   return newOb;
 };
@@ -46,6 +58,30 @@ export const rel = (ob1, ob2, f) => {
   union(ob1, ob2);
   return edge;
 };
+export const delRel = (edge) => {
+  rels.get(edge.ob1)?.delete(edge);
+  lers.get(edge.ob2)?.delete(edge);
+
+  // un-union
+  // - add new class
+  const oldClass = obClass.get(edge.ob1);
+  const newClass = new Set();
+  // - set the obs connected to e.g. ob2 to the new class
+  let hasUpRelsIn = false;
+  traverseClass(edge.ob2, (cur) => {
+    newClass.add(cur);
+    oldClass.delete(cur);
+    if (downRels.get(cur)?.size > 0) hasUpRelsIn = true;
+  });
+  // - maintain initialClasses
+  if (!hasUpRelsIn) initialClasses.add(newClass);
+  hasUpRelsIn = false;
+  traverseClass(edge.ob1, (cur) => {
+    if (downRels.get(cur)?.size > 0) hasUpRelsIn = true;
+  });
+  if (!hasUpRelsIn) initialClasses.add(oldClass);
+  // note: maybe rethink classes and grading altogether because grade has a perf problem
+};
 
 const sum = (...vs) => vs.reduce((p, c) => p + c, 0);
 export const avg = (...vs) => sum(...vs) / vs.length;
@@ -64,30 +100,29 @@ export const upRel =
   (f, flag) =>
   (...obs) => {
     const upOb = Ob(f(...obs.map((ob) => ob.v)), flag);
+    grades.set(
+      obClass.get(upOb),
+      Math.max(...obs.map((ob) => grades.get(obClass.get(ob))))
+    );
     upOb.obs = obs;
-    upOb.init = [f, ...obs.map((ob) => ob.v)];
-    for (const ob of obs) upRelHelper(ob, upOb, f);
+    upOb.edges = obs.map((ob) => upRelHelper(ob, upOb, f));
     return upOb;
   };
+export const delUpRelEdge = (upEdge) => {
+  upRels.get(upEdge.ob1)?.delete(upEdge);
+  downRels.get(upEdge.ob2)?.delete(upEdge);
 
-export const grade = () => {
-  const classGrade = new Map();
-  for (const cl of initialClasses) classGrade.set(cl, 0);
-  const queue = [...initialClasses];
-  while (queue.length > 0) {
-    const cur = queue.pop();
-    for (const ob of cur) {
-      for (const edge of upRels.get(ob) ?? []) {
-        const c2 = obClass.get(edge.ob2);
-        classGrade.set(
-          c2,
-          Math.max(classGrade.get(c2) ?? 0, classGrade.get(cur) + 1)
-        );
-        queue.push(c2);
-      }
-    }
-  }
-  return classGrade;
+  let hasUpRelsIn = false;
+  traverseClass(upEdge.ob2, (cur) => {
+    if (downRels.get(cur)?.size > 0) hasUpRelsIn = true;
+  });
+  if (!hasUpRelsIn) initialClasses.add(obClass.get(upEdge.ob2));
+};
+export const delOb = (ob) => {
+  for (const edge of rels.get(ob) ?? []) delRel(edge);
+  for (const edge of lers.get(ob) ?? []) delRel(edge);
+  for (const edge of upRels.get(ob) ?? []) delUpRelEdge(edge);
+  for (const edge of downRels.get(ob) ?? []) delUpRelEdge(edge);
 };
 
 export const setOrder = new Map();
@@ -112,15 +147,19 @@ export const set = (ob, v) => {
       if (setOrder.get(enter)) setOrder.set(enter, "!");
       else setOrder.set(enter, setOrder.size);
 
-      traverseClass(enter, new Set(), (_, edge) => {
-        edge.to.setOrder = setOrder.size;
-        if (setOrder.get(edge.to)) setOrder.set(edge.to, "!");
-        else setOrder.set(edge.to, setOrder.size);
+      traverseClass(
+        enter,
+        () => {},
+        (edge) => {
+          edge.to.setOrder = setOrder.size;
+          if (setOrder.get(edge.to)) setOrder.set(edge.to, "!");
+          else setOrder.set(edge.to, setOrder.size);
 
-        const v = edge.f(edge.from.v);
-        delta.set(edge.to, v - edge.to.v);
-        edge.to.v = v;
-      });
+          const v = edge.f(edge.from.v);
+          delta.set(edge.to, v - edge.to.v);
+          edge.to.v = v;
+        }
+      );
     },
     ({ from, to, dir }) => {
       const cur = to;
@@ -146,7 +185,7 @@ export const set = (ob, v) => {
 };
 
 export const findNiceDAG = (ob) => {
-  const g = grade();
+  const g = grades;
 
   const subgraph = new Map();
 
@@ -172,27 +211,34 @@ export const findNiceDAG = (ob) => {
       });
     }
 
-    const { ups, downs } = traverseClass(cur, noDown, (obBeingSet, edge) => {
-      queue = queue.filter(([dir, ob]) => ob !== obBeingSet);
-      viewed.add(obBeingSet);
-      setMapAdd(subgraph, edge.from, edge);
-      setMapAdd(subgraph, edge.to, { to: edge.from, from: edge.to });
-      //noDown.delete(obBeingSet);
-    });
-
-    for (const edge of ups) {
-      if (!viewed.has(edge.ob2)) {
-        queue.push(["up", edge.ob2]);
-        viewed.add(edge.ob2);
-        noDown.add(edge.ob2);
+    traverseClass(
+      cur,
+      (cur) => {
+        for (const edge of upRels.get(cur) ?? []) {
+          if (!viewed.has(edge.ob2)) {
+            queue.push(["up", edge.ob2]);
+            viewed.add(edge.ob2);
+            noDown.add(edge.ob2);
+          }
+        }
+        if (!noDown.has(cur)) {
+          for (const edge of downRels.get(cur) ?? []) {
+            if (!viewed.has(edge.ob1)) {
+              queue.push(["down", edge.ob1, edge.ob2]);
+              viewed.add(edge.ob1);
+            }
+          }
+        }
+      },
+      (edge) => {
+        const obBeingSet = edge.to;
+        queue = queue.filter(([dir, ob]) => ob !== obBeingSet);
+        viewed.add(obBeingSet);
+        setMapAdd(subgraph, edge.from, edge);
+        setMapAdd(subgraph, edge.to, { to: edge.from, from: edge.to });
+        //noDown.delete(obBeingSet);
       }
-    }
-    for (const edge of downs) {
-      if (!viewed.has(edge.ob1)) {
-        queue.push(["down", edge.ob1, edge.ob2]);
-        viewed.add(edge.ob1);
-      }
-    }
+    );
 
     queue.sort((a, b) => {
       const gradeB = g.get(obClass.get(b[1]));
@@ -215,31 +261,43 @@ const edgesOut = (cur) => {
 
   return res;
 };
-const traverseClass = (ob, noDown, onset) => {
+const traverseClass = (ob, onNode, onEdge = () => {}) => {
   const viewed = new Set([ob]);
   let queue = [ob];
-  const ups = [];
-  const downs = [];
   while (queue.length > 0) {
     const cur = queue.pop();
 
-    ups.push(...(upRels.get(cur) ?? []));
-    if (!noDown.has(cur)) downs.push(...[...(downRels.get(cur) ?? [])]);
+    onNode(cur);
 
     for (const edge of edgesOut(cur)) {
       if (!viewed.has(edge.to)) {
         queue.push(edge.to);
         viewed.add(edge.to);
 
-        onset(edge.to, edge);
+        onEdge(edge);
       }
     }
   }
-
-  return { ups, downs };
 };
+const traverseUpClasses =
+  (onEdge) =>
+  (...init) => {
+    const queue = [...init];
+    while (queue.length > 0) {
+      const cur = queue.pop();
+      for (const ob of cur) {
+        for (const edge of upRels.get(ob) ?? []) {
+          const c2 = obClass.get(edge.ob2);
+          onEdge(edge);
+          queue.push(c2);
+        }
+      }
+    }
+  };
 
 // TODO:
-// - initialize values (how?)
-// - propagate
-// - visualize
+// - clean up core algorithm to be `findNiceDAG` then toposort (with visit direction and class entrance)
+//   - remove unecessary up direction sets
+// - add deletion of rels and upRels
+// PERF TODO:
+// - grade is taking up a lot of time

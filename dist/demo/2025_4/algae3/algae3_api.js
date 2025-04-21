@@ -1,15 +1,4 @@
-import {
-  Ob,
-  set,
-  rel,
-  upRel,
-  Obs,
-  upRels,
-  rels,
-  setOrder,
-  avg,
-  obClass,
-} from "./algae3_topo.js";
+import { Ob, set, rel, upRel, Obs, upRels, rels, avg } from "./algae3_topo.js";
 
 export { set, Ob, delRel, delOb } from "./algae3_topo.js";
 

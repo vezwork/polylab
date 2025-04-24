@@ -1,9 +1,10 @@
-import { Ob, set, rel, upRel, Obs, upRels, rels, avg } from "./algae3_topo.js";
+import { Ob, rel, upRel } from "./algae3_topo.js";
 
-export { set, Ob, delRel, delOb } from "./algae3_topo.js";
+export { set, Ob, delRel, delOb, rel } from "./algae3_topo.js";
 
 // want:
 // - lines
+// - padding
 // - outline/background
 // - boxes
 // - arrows (between arbitrary points on shapes)
@@ -12,7 +13,7 @@ export { set, Ob, delRel, delOb } from "./algae3_topo.js";
 // - circle
 // - stack?
 
-// demoes:
+// demos:
 // - bluefish demos
 // - tree
 // - dag
@@ -22,7 +23,7 @@ export { set, Ob, delRel, delOb } from "./algae3_topo.js";
 // - limits of multiRels?
 // - non-isomorphism rels
 
-const bidirPlusConst = (w) => ({ to: (v) => v + w, from: (v) => v - w });
+export const bidirPlusConst = (w) => ({ to: (v) => v + w, from: (v) => v - w });
 const bidirEq = { to: (v) => v, from: (v) => v };
 
 // 1-DIM OBJECTS
@@ -38,7 +39,16 @@ export const WidthInterval = (w = DEFAULT_WIDTH) => {
 
 // 2-DIM OBJECTS
 
-export const Point = () => ({ x: Ob(0), y: Ob(0) });
+const Pad = (interval, pad = 10) => ({
+  l: rel(Ob(0), interval.l, bidirPlusConst(pad)).ob1,
+  r: rel(interval.r, Ob(0), bidirPlusConst(pad)).ob2,
+});
+export const Pad2 = (interval2, pad) => ({
+  x: Pad(interval2.x, pad),
+  y: Pad(interval2.y, pad),
+});
+
+export const Point = () => [Ob(0), Ob(0)];
 
 export const Interval2 = () => ({
   x: Interval(),
@@ -50,8 +60,10 @@ export const WidthInterval2 = (w, h) => ({
   y: WidthInterval(h),
 });
 
-const Min = upRel(Math.min);
-const Max = upRel(Math.max);
+const Min = upRel(Math.min, (a, d, b) => a + d);
+const Max = upRel(Math.max, (a, d, b) => a + d);
+// const Min = upRel(Math.min, (a, d, b) => (a < b ? b : a), true);
+// const Max = upRel(Math.max, (a, d, b) => (a > b ? b : a), true);
 
 // assumes boxes always have l < r
 export const Group = (...intervals) => ({
@@ -63,7 +75,19 @@ export const Group2 = (...interval2s) => ({
   y: Group(...interval2s.map((i2) => i2.y)),
 });
 
-// ACCESSORS
+// 2D ACCESSORS
+
+export const centerCenter = (ob) => [centerX(ob), centerY(ob)];
+export const leftCenter = (ob) => [left(ob), centerY(ob)];
+export const rightCenter = (ob) => [right(ob), centerY(ob)];
+export const centerTop = (ob) => [centerX(ob), top(ob)];
+export const centerBottom = (ob) => [centerX(ob), bottom(ob)];
+export const leftTop = (ob) => [left(ob), top(ob)];
+export const rightTop = (ob) => [right(ob), top(ob)];
+export const leftBottom = (ob) => [left(ob), bottom(ob)];
+export const rightBottom = (ob) => [right(ob), bottom(ob)];
+
+// 1D ACCESSORS
 
 export const x = (interval2) => interval.x;
 export const y = (interval2) => interval.y;
@@ -74,7 +98,8 @@ export const right = (interval2) => interval2.x.r;
 
 const lerp = (i) => (l, r) => (1 - i) * l + i * r;
 
-const p = (i) => (interval) => upRel(lerp(i))(interval.l, interval.r);
+const p = (i) => (interval) =>
+  upRel(lerp(i), (a, d) => a + d)(interval.l, interval.r);
 const center = p(0.5);
 export const centerX = (interval2) => p(0.5)(interval2.x);
 export const centerY = (interval2) => p(0.5)(interval2.y);
@@ -85,6 +110,10 @@ export const centerY = (interval2) => p(0.5)(interval2.y);
 // 1-DIM RELATIONS
 
 export const eq = (a, b) => rel(a, b, bidirEq);
+export const eq2 = ([a1, a2], [b1, b2]) => [
+  rel(a1, b1, bidirEq),
+  rel(a2, b2, bidirEq),
+];
 
 // 2-DIM RELATIONS
 

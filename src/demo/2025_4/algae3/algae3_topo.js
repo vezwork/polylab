@@ -1,6 +1,6 @@
 export const Obs = [];
 export const Ob = (v) => {
-  const newOb = { v, id: Math.random().toFixed(3).slice(2) };
+  const newOb = { v };
   Obs.push(newOb);
   return newOb;
 };
@@ -29,19 +29,24 @@ const sum = (...vs) => vs.reduce((p, c) => p + c, 0);
 export const avg = (...vs) => sum(...vs) / vs.length;
 export const upRels = new Map();
 export const downRels = new Map();
-const upRelHelper = (ob1, ob2, f = Math.max) => {
-  const edge = { ob1, ob2, f };
+const upRelHelper = (ob1, ob2) => {
+  const edge = { ob1, ob2 };
   setMapAdd(upRels, ob1, edge);
   setMapAdd(downRels, ob2, edge);
 
   return edge;
 };
+
 export const upRel =
-  (f, flag) =>
+  (f, unf, selfLoop = false) =>
   (...obs) => {
-    const upOb = Ob(f(...obs.map((ob) => ob.v)), flag);
+    const upOb = Ob(f(...obs.map((ob) => ob.v)));
+    upOb.f = f;
+    upOb.selfLoop = selfLoop;
+    upOb.unf = unf;
+    //debug info
     upOb.obs = obs;
-    upOb.edges = obs.map((ob) => upRelHelper(ob, upOb, f));
+    upOb.edges = obs.map((ob) => upRelHelper(ob, upOb));
     return upOb;
   };
 export const delUpRelEdge = (upEdge) => {
@@ -56,7 +61,8 @@ export const delOb = (ob) => {
 };
 
 export const set = (ob, v) => {
-  const { subgraph: dag, opSubgraph: opDag } = findNiceDAG(ob);
+  const { subgraph: dag, opSubgraph: opDag } = upAndDownTraversalDAG(ob);
+
   const delta = new Map();
   delta.set(ob, v - ob.v);
   ob.v = v;
@@ -73,7 +79,8 @@ export const set = (ob, v) => {
       cur,
       (node) => edges.push(...(dag.get(node) ?? [])),
       (edge) => {
-        const v = edge.f(edge.from.v);
+        // on side
+        const v = edge.f(edge.from.v, edge.to.v);
         delta.set(edge.to, v - edge.to.v);
         edge.to.v = v;
       }
@@ -84,15 +91,20 @@ export const set = (ob, v) => {
       setMapAdd(viewedOpEdges, to, edge);
 
       if (dir === "up") {
+        // on up
         if (opDag.get(to).size === viewedOpEdges.get(to).size) {
           queue.push(to);
           const children = [...(downRels.get(to) ?? [])];
-          to.v = children[0].f(...children.map((e) => e.ob1.v));
+          to.v = to.f(
+            ...children.map((e) => e.ob1.v),
+            ...(to.selfLoop ? [to.v] : [])
+          );
         }
       } else {
+        // on down
         queue.push(to);
 
-        const v = to.v + delta.get(from);
+        const v = from.unf(to.v, delta.get(from), from.v);
         delta.set(to, v - to.v);
         to.v = v;
       }
@@ -100,13 +112,19 @@ export const set = (ob, v) => {
   }
 };
 
-export const findNiceDAG = (ob) => {
+export const upAndDownTraversalDAG = (ob) => {
   const subgraph = new Map();
   const opSubgraph = new Map();
 
   const setByDir = new Map([[ob, "enter"]]);
-  // TODO: add all upEdges that go into a node that will be visited via up
-  //  instead of up edges for each children
+
+  const addEdge = (from, to, dir) => {
+    const e = { from, to, dir };
+    setMapAdd(subgraph, from, e);
+    setMapAdd(opSubgraph, to, e);
+    setByDir.set(to, dir);
+  };
+
   let queue = [ob];
   while (queue.length > 0) {
     traverseClass(
@@ -117,15 +135,11 @@ export const findNiceDAG = (ob) => {
           const from = edge.ob1;
           if (!setByDir.has(to)) {
             queue.push(to);
+            // note: this is extra work that could be avoided by interleaving visiting classes
             traverseClass(to, (n) => setByDir.set(n, "side"));
-            setByDir.set(to, "up");
-            const e = { from, to, dir: "up" };
-            setMapAdd(subgraph, from, e);
-            setMapAdd(opSubgraph, to, e);
+            addEdge(from, to, "up");
           } else if (setByDir.get(to) === "up") {
-            const e = { from, to, dir: "up" };
-            setMapAdd(subgraph, from, e);
-            setMapAdd(opSubgraph, to, e);
+            addEdge(from, to, "up");
           }
           // else don't use this edge
         }
@@ -135,11 +149,10 @@ export const findNiceDAG = (ob) => {
             const from = edge.ob2;
             if (!setByDir.has(to)) {
               queue.push(to);
-              traverseClass(to, (n) => setByDir.set(n, "side"));
-              setByDir.set(to, "down");
-              const e = { from, to, dir: "down" };
-              setMapAdd(subgraph, from, e);
-              setMapAdd(opSubgraph, to, e);
+              traverseClass(to, (n) => {
+                if (!setByDir.has(n)) setByDir.set(n, "side");
+              });
+              addEdge(from, to, "down");
             }
           }
         }
@@ -181,10 +194,3 @@ const traverseClass = (ob, onNode, onEdge = () => {}) => {
     }
   }
 };
-
-// TODO:
-// - clean up core algorithm to be `findNiceDAG` then toposort (with visit direction and class entrance)
-//   - remove unecessary up direction sets
-// - add deletion of rels and upRels
-// PERF TODO:
-// - grade is taking up a lot of time

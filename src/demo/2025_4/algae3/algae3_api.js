@@ -1,4 +1,4 @@
-import { Ob, rel, upRel } from "./algae3_topo.js";
+import { Ob, rel, upRel, set } from "./algae3_topo.js";
 
 export { set, Ob, delRel, delOb, rel } from "./algae3_topo.js";
 
@@ -48,7 +48,7 @@ export const Pad2 = (interval2, pad) => ({
   y: Pad(interval2.y, pad),
 });
 
-export const Point = () => [Ob(0), Ob(0)];
+export const Point = (v1 = 0, v2 = 0) => [Ob(v1), Ob(v2)];
 
 export const Interval2 = () => ({
   x: Interval(),
@@ -62,9 +62,6 @@ export const WidthInterval2 = (w, h) => ({
 
 const Min = upRel(Math.min, (a, d, b) => a + d);
 const Max = upRel(Math.max, (a, d, b) => a + d);
-// const Min = upRel(Math.min, (a, d, b) => (a < b ? b : a), true);
-// const Max = upRel(Math.max, (a, d, b) => (a > b ? b : a), true);
-
 // assumes boxes always have l < r
 export const Group = (...intervals) => ({
   l: Min(...intervals.map((i) => i.l)),
@@ -110,10 +107,12 @@ export const centerY = (interval2) => p(0.5)(interval2.y);
 // 1-DIM RELATIONS
 
 export const eq = (a, b) => rel(a, b, bidirEq);
+export const eqOffset = (a, b, w) => rel(a, b, bidirPlusConst(w));
 export const eq2 = ([a1, a2], [b1, b2]) => [
   rel(a1, b1, bidirEq),
   rel(a2, b2, bidirEq),
 ];
+export const set2 = ([ob1, ob2], [v1, v2]) => [set(ob1, v1), set(ob2, v2)];
 
 // 2-DIM RELATIONS
 
@@ -148,3 +147,14 @@ export const spaceY = (spacing = 10) =>
     bottom,
     top
   );
+
+export const stackX = (a, b, spacing = 10) => {
+  let g = spaceX(spacing)(a, b);
+  eq(centerY(a), centerY(b));
+  return g;
+};
+export const stackY = (a, b, spacing = 10) => {
+  let g = spaceY(spacing)(a, b);
+  eq(centerX(a), centerX(b));
+  return g;
+};

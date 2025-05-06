@@ -29,10 +29,10 @@ const sum = (...vs) => vs.reduce((p, c) => p + c, 0);
 export const avg = (...vs) => sum(...vs) / vs.length;
 export const upRels = new Map();
 export const downRels = new Map();
-const upRelHelper = (ob1, ob2) => {
-  const edge = { ob1, ob2 };
+const addUpRelEdge = (upOb) => (ob1) => {
+  const edge = { ob1, ob2: upOb };
   setMapAdd(upRels, ob1, edge);
-  setMapAdd(downRels, ob2, edge);
+  setMapAdd(downRels, upOb, edge);
 
   return edge;
 };
@@ -46,7 +46,7 @@ export const upRel =
     upOb.unf = unf;
     //debug info
     upOb.obs = obs;
-    upOb.edges = obs.map((ob) => upRelHelper(ob, upOb));
+    upOb.edges = obs.map(addUpRelEdge(upOb));
     return upOb;
   };
 export const delUpRelEdge = (upEdge) => {

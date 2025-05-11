@@ -59,8 +59,8 @@
   <a
     href="https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D"
     >canvas-2D</a
-  >-specific API, but I think it would only take a couple hours to make an HTML
-  or SVG or WebGL one.
+  >-specific <a href="./alga_canvas.js">API</a>, but I think it would only take
+  a couple hours to make an HTML or SVG or WebGL one.
 </p>
 <p>
   Alga core's multidirectional evaluation makes it effective for expressing
@@ -150,19 +150,19 @@
     outline: 1px solid var(--main-color);
   "
 >
-// imports and canvas set-up code are not shown in this code
+// imports and canvas set-up are not shown in this code
 
 const b1 = DraggableBox("yellowgreen");
 const b2 = DraggableBox("orangered");
 const b3 = DraggableBox("violet");
 const b4 = DraggableBox("cornflowerblue");
-<span style='color: orangered'>b2.left = b1.right + 5;</span>
-<span style='color: orangered'>b4.left = b3.right + 5;</span>
+<span style='color: orangered'>b2.left = b1.right + 5; //one-time set</span>
+<span style='color: orangered'>b4.left = b3.right + 5; //one-time set</span>
 const g1 = Outline(Group2(b1, b2));
 const g2 = Outline(Group2(b3, b4));
-<span style='color: var(--main-color)'>g2.top = g1.bottom.plus(15);</span>
-<span style='color: orangered'>g1.top = 20;</span>
-<span style='color: orangered'>g1.left = 20;</span>
+<span style='color: var(--main-color)'>g2.top = g1.bottom.plus(15); //set and create relationship</span>
+<span style='color: orangered'>g1.top = 20; //one-time set</span>
+<span style='color: orangered'>g1.left = 20; //one-time set</span>
 Line(g1.centerBottom, g2.centerTop);
 </pre>
 <hr />

@@ -119,7 +119,7 @@ export const d = (ctx) => {
   const DraggableOutline = (drawable) => {
     const o = Outline(Pad2(drawable, 7.5));
     const dragHandle = DraggableBox("#eee");
-    eq2(rightBottom(drawable), leftTop(dragHandle));
+    eq2(drawable.rightBottom, dragHandle.leftTop);
     return o;
   };
 

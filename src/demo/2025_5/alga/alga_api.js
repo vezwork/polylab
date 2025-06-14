@@ -38,7 +38,7 @@ export const WidthInterval = (w = DEFAULT_WIDTH) => {
 };
 
 const Pad = (interval, pad = 10) => ({
-  l: rel(Ob(0), interval.l, bidirPlusConst(pad)).ob1,
+  l: rel(interval.l, Ob(0), bidirPlusConst(-pad)).ob2,
   r: rel(interval.r, Ob(0), bidirPlusConst(pad)).ob2,
 });
 
@@ -104,9 +104,47 @@ const addInterval2Sugar = (interval2) => {
     get rightBottom() {
       return rightBottom(interval2);
     },
+    // 2D setters
+    set leftTop(v) {
+      if (v.hasOwnProperty("v")) eq2(leftTop(interval2), v);
+      else set2(leftTop(interval2), v);
+    },
+    set leftCenter(v) {
+      if (v.hasOwnProperty("v")) eq2(leftCenter(interval2), v);
+      else set2(leftCenter(interval2), v);
+    },
+    set leftBottom(v) {
+      if (v.hasOwnProperty("v")) eq2(leftBottom(interval2), v);
+      else set2(leftBottom(interval2), v);
+    },
+    set centerTop(v) {
+      if (v.hasOwnProperty("v")) eq2(centerTop(interval2), v);
+      else set2(centerTop(interval2), v);
+    },
+    set centerCenter(v) {
+      if (v.hasOwnProperty("v")) eq2(centerCenter(interval2), v);
+      else set2(centerCenter(interval2), v);
+    },
+    set centerBottom(v) {
+      if (v.hasOwnProperty("v")) eq2(centerBottom(interval2), v);
+      else set2(centerBottom(interval2), v);
+    },
+    set rightTop(v) {
+      if (v.hasOwnProperty("v")) eq2(rightTop(interval2), v);
+      else set2(rightTop(interval2), v);
+    },
+    set rightCenter(v) {
+      if (v.hasOwnProperty("v")) eq2(rightCenter(interval2), v);
+      else set2(rightCenter(interval2), v);
+    },
+    set rightBottom(v) {
+      if (v.hasOwnProperty("v")) eq2(rightBottom(interval2), v);
+      else set2(rightBottom(interval2), v);
+    },
   };
 };
 
+// TODO: make it take a list of drawables
 export const Pad2 = (interval2, pad) =>
   addInterval2Sugar({
     x: Pad(interval2.x, pad),
@@ -131,10 +169,10 @@ const Min = upRel(Math.min, (a, d, b) => a + d);
 const Max = upRel(Math.max, (a, d, b) => a + d);
 
 // assumes boxes always have l < r
-export const Group = (...intervals) => {
+export const Group1 = (...intervals) => {
   const group = {
-    l: Min(...intervals.map((i) => i.l)),
-    r: Max(...intervals.map((i) => i.r)),
+    l: Min(...intervals.map((i) => ("v" in i ? i : i.l))),
+    r: Max(...intervals.map((i) => ("v" in i ? i : i.r))),
   };
   group.add = (i) => {
     group.l.addOb(i.l);
@@ -146,10 +184,10 @@ export const Group = (...intervals) => {
   };
   return group;
 };
-export const Group2 = (...interval2s) => {
+export const Group = (...interval2s) => {
   const group2 = {
-    x: Group(...interval2s.map((i2) => i2.x)),
-    y: Group(...interval2s.map((i2) => i2.y)),
+    x: Group1(...interval2s.map((i2) => (Array.isArray(i2) ? i2[0] : i2.x))),
+    y: Group1(...interval2s.map((i2) => (Array.isArray(i2) ? i2[1] : i2.y))),
   };
   group2.add = (i2) => {
     group2.x.add(i2.x);
@@ -174,10 +212,8 @@ export const rightTop = (ob) => [right(ob), top(ob)];
 export const leftBottom = (ob) => [left(ob), bottom(ob)];
 export const rightBottom = (ob) => [right(ob), bottom(ob)];
 
-// 1D ACCESSORS
-
-export const x = (interval2) => interval.x;
-export const y = (interval2) => interval.y;
+export const x = (interval2) => interval2.x;
+export const y = (interval2) => interval2.y;
 export const top = (interval2) => interval2.y.l;
 export const bottom = (interval2) => interval2.y.r;
 export const left = (interval2) => interval2.x.l;
@@ -197,11 +233,15 @@ export const centerY = (interval2) => p(0.5)(interval2.y);
 // 1-DIM RELATIONS
 
 export const eq = (a, b) => rel(a, b, bidirEq);
-export const eqOffset = (a, b, w) => rel(a, b, bidirPlusConst(w));
 export const eq2 = ([a1, a2], [b1, b2]) => [
   rel(a1, b1, bidirEq),
   rel(a2, b2, bidirEq),
 ];
+export const lessThan = (a, b) =>
+  rel(a, b, {
+    to: (v, cur = -Infinity) => Math.max(cur, v),
+    from: (v, cur = Infinity) => Math.min(cur, v),
+  });
 export const set2 = ([ob1, ob2], [v1, v2]) => [set(ob1, v1), set(ob2, v2)];
 
 // 2-DIM RELATIONS
@@ -212,7 +252,7 @@ const relateComponentsOrdered =
   (...interval2s) => {
     for (let i = 0; i < interval2s.length - 1; i++)
       relation(curAccessor(interval2s[i]), nextAccessor(interval2s[i + 1]));
-    return Group2(...interval2s);
+    return Group(...interval2s);
   };
 const eqComponentsOrdered = relateComponentsOrdered(eq);
 const eqComponents = (accessor) => eqComponentsOrdered(accessor, accessor);
@@ -238,18 +278,16 @@ export const spaceY = (spacing = 10) =>
     top
   );
 
-export const stackX = (a, b, spacing = 10) => {
-  let g = spaceX(spacing)(a, b);
-  eq(centerY(a), centerY(b));
-  return g;
-};
-export const stackXTop = (a, b, spacing = 10) => {
-  let g = spaceX(spacing)(a, b);
-  eq(top(a), top(b));
-  return g;
-};
-export const stackY = (a, b, spacing = 10) => {
-  let g = spaceY(spacing)(a, b);
-  eq(centerX(a), centerX(b));
-  return g;
-};
+export const stackX =
+  (spacing = 10, alignment = 0.5) =>
+  (...is) => {
+    for (const i of is.slice(1)) eq(p(alignment)(is[0].y), p(alignment)(i.y));
+    return spaceX(spacing)(...is);
+  };
+
+export const stackY =
+  (spacing = 10, alignment = 0.5) =>
+  (...is) => {
+    for (const i of is.slice(1)) eq(p(alignment)(is[0].x), p(alignment)(i.x));
+    return spaceY(spacing)(...is);
+  };

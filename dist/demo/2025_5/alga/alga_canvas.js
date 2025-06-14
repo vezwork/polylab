@@ -2,7 +2,7 @@ import { sub, angleOf, fromPolar } from "../../../lib/math/Vec2.js";
 import {
   WidthInterval2,
   Interval2,
-  Group2,
+  Group,
   delOb,
   Point,
   eq2,
@@ -16,6 +16,7 @@ import {
   set,
   centerCenter,
   delRel,
+  set2,
 } from "./alga_api.js";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
@@ -107,7 +108,7 @@ export const d = (ctx) => {
       ctx.beginPath();
       ctx.rect(x, y, x2 - x, y2 - y);
       ctx.stroke();
-    })(Group2(...interval2s));
+    })(Group(...interval2s));
 
   // scene definition
   const draggables = [];
@@ -116,10 +117,11 @@ export const d = (ctx) => {
     draggables.push(box);
     return box;
   };
-  const DraggableOutline = (drawable) => {
-    const o = Outline(Pad2(drawable, 7.5));
+  const DraggableOutline = (...drawables) => {
+    const g = Group(...drawables);
+    const o = Outline(Pad2(g, 7.5));
     const dragHandle = DraggableBox("#eee");
-    eq2(drawable.rightBottom, dragHandle.leftTop);
+    eq2(g.rightBottom, dragHandle.leftTop);
     return o;
   };
 
@@ -128,24 +130,47 @@ export const d = (ctx) => {
     const iny = p[1].v > i2.y.l.v && p[1].v < i2.y.r.v;
     return inx && iny;
   };
-
+  const areIntervalsOverLapping = (a, b) =>
+    (a.l.v > b.l.v && a.l.v < b.r.v) ||
+    (a.r.v > b.l.v && a.r.v < b.r.v) ||
+    (a.l.v < b.l.v && a.r.v > b.r.v);
+  const areInteval2sOverlapping = (a) => (b) =>
+    areIntervalsOverLapping(a.x, b.x) && areIntervalsOverLapping(a.y, b.y);
+  const mouseAnchor = Point();
   const mouse = Point();
-  let curOutline = undefined;
+  const mouseSelectArea = Group(mouseAnchor, mouse);
+  Outline(mouseSelectArea);
+  // TODO: need to be able to group mouseAnchor and mouse to get mouseSelectArea instead of mouseI2
+  // but neither Group nor Group2 work with Points.
+  const outlines = [];
   let dragging;
+  let isMouseDown = false;
+  let selectedDraggables = [];
   c.addEventListener("mousemove", (e) => {
-    set(mouse[0], e.offsetX);
-    set(mouse[1], e.offsetY);
-    if (curOutline) {
-      deleteDrawable(curOutline);
-      curOutline = undefined;
-    }
+    let mousePos = [e.offsetX, e.offsetY];
+    set2(mouse, mousePos);
+    if (!isMouseDown || dragging) set2(mouseAnchor, mousePos);
+
+    for (const outline of outlines) deleteDrawable(outline);
+    outlines.length = 0;
+
+    selectedDraggables = draggables.filter(
+      areInteval2sOverlapping(mouseSelectArea)
+    );
+
     for (const draggable of draggables)
-      if (isPointInside(mouse, draggable) && !curOutline)
-        return (curOutline = Outline(draggable));
+      if (isPointInside(mouse, draggable) && outlines.length === 0)
+        return outlines.push(Outline(draggable));
   });
+
+  function anim() {
+    requestAnimationFrame(anim);
+  }
+  anim();
 
   let mouseRels;
   c.addEventListener("mousedown", (e) => {
+    isMouseDown = true;
     for (const draggable of draggables) {
       if (isPointInside(mouse, draggable) && !mouseRels) {
         mouseRels = eq2(centerCenter(draggable), mouse);
@@ -153,7 +178,13 @@ export const d = (ctx) => {
       }
     }
   });
+
   c.addEventListener("mouseup", (e) => {
+    isMouseDown = false;
+    set2(mouseAnchor, [e.offsetX, e.offsetY]);
+    if (selectedDraggables.length > 0 && !dragging) {
+      DraggableOutline(Group(...selectedDraggables));
+    }
     if (mouseRels) {
       for (const draggable of draggables) {
         if (draggable !== dragging && isPointInside(mouse, draggable)) {
@@ -179,5 +210,6 @@ export const d = (ctx) => {
     draggables,
     Text,
     Line,
+    mouse,
   };
 };

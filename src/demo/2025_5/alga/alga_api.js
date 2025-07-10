@@ -1,4 +1,4 @@
-import { Ob, rel, upRel, set } from "./alga_core.js";
+import { Ob, rel, delRel, upRel, set } from "./alga_core.js";
 
 export { set, Ob, delRel, delOb, rel } from "./alga_core.js";
 
@@ -30,10 +30,14 @@ const bidirEq = { to: (v) => v, from: (v) => v };
 
 export const Interval = () => ({ l: Ob(0), r: Ob(0) });
 
-const DEFAULT_WIDTH = 15;
+const DEFAULT_WIDTH = 10;
 export const WidthInterval = (w = DEFAULT_WIDTH) => {
   const box = Interval();
-  rel(box.l, box.r, bidirPlusConst(w));
+  let r = rel(box.l, box.r, bidirPlusConst(w));
+  box.set = (newW) => {
+    delRel(r);
+    r = rel(box.l, box.r, bidirPlusConst(newW));
+  };
   return box;
 };
 
@@ -165,8 +169,14 @@ export const WidthInterval2 = (w, h) =>
     y: WidthInterval(h),
   });
 
-const Min = upRel(Math.min, (a, d, b) => a + d);
-const Max = upRel(Math.max, (a, d, b) => a + d);
+const Min = upRel(
+  (...args) => (args.length === 0 ? 0 : Math.min(...args)),
+  (a, d, b) => a + d
+);
+const Max = upRel(
+  (...args) => (args.length === 0 ? 0 : Math.max(...args)),
+  (a, d, b) => a + d
+);
 
 // assumes boxes always have l < r
 export const Group1 = (...intervals) => {
@@ -175,12 +185,12 @@ export const Group1 = (...intervals) => {
     r: Max(...intervals.map((i) => ("v" in i ? i : i.r))),
   };
   group.add = (i) => {
-    group.l.addOb(i.l);
-    group.r.addOb(i.r);
+    group.l.addOb("v" in i ? i : i.l);
+    group.r.addOb("v" in i ? i : i.r);
   };
   group.del = (i) => {
-    group.l.delOb(i.l);
-    group.r.delOb(i.r);
+    group.l.delOb("v" in i ? i : i.l);
+    group.r.delOb("v" in i ? i : i.r);
   };
   return group;
 };
@@ -190,12 +200,12 @@ export const Group = (...interval2s) => {
     y: Group1(...interval2s.map((i2) => (Array.isArray(i2) ? i2[1] : i2.y))),
   };
   group2.add = (i2) => {
-    group2.x.add(i2.x);
-    group2.y.add(i2.y);
+    group2.x.add(Array.isArray(i2) ? i2[0] : i2.x);
+    group2.y.add(Array.isArray(i2) ? i2[1] : i2.y);
   };
   group2.del = (i2) => {
-    group2.x.del(i2.x);
-    group2.y.del(i2.y);
+    group2.x.del(Array.isArray(i2) ? i2[0] : i2.x);
+    group2.y.del(Array.isArray(i2) ? i2[1] : i2.y);
   };
   return addInterval2Sugar(group2);
 };

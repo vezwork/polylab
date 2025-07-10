@@ -1,5 +1,11 @@
-export const Ob = (v, name) => {
-  const newOb = { v, name };
+const setMapAdd = (setMap, key, value) => {
+  if (!setMap.has(key)) setMap.set(key, new Set());
+  setMap.get(key).add(value);
+  return value;
+};
+
+export const Ob = (v) => {
+  const newOb = { v };
   newOb.valueOf = () => newOb.v;
   newOb.plus = (a) => {
     const plusOb = Ob(v + a);
@@ -7,12 +13,6 @@ export const Ob = (v, name) => {
     return plusOb;
   };
   return newOb;
-};
-
-const setMapAdd = (setMap, key, value) => {
-  if (!setMap.has(key)) setMap.set(key, new Set());
-  setMap.get(key).add(value);
-  return value;
 };
 
 export const rels = new Map();
@@ -46,9 +46,9 @@ const addUpRelEdge = (upOb) => (ob1) => {
 };
 
 export const upRel =
-  (f, unf, name, selfLoop = false) =>
+  (f, unf, selfLoop = false) =>
   (...obs) => {
-    const upOb = Ob(f(...obs.map((ob) => ob.v)), name);
+    const upOb = Ob(f(...obs.map((ob) => ob.v)));
     upOb.f = f;
     upOb.selfLoop = selfLoop;
     upOb.unf = unf;
@@ -89,54 +89,53 @@ export const delOb = (ob) => {
 const calculateForces = (obs, delta) => {
   const force = new Map(obs.map((ob) => [ob, delta]));
   let todo = [...obs.map((ob) => [ob, "enter"])];
+
+  const proposeValue = (cur, to, proposedToValue, dir) => {
+    const toForce = proposedToValue - to.v;
+    if (Math.abs(force.get(to)) > Math.abs(force.get(cur))) return;
+    if (Math.abs(toForce) < 0.01) return;
+
+    if (!force.has(to) || Math.abs(toForce) > Math.abs(force.get(to))) {
+      force.set(to, toForce);
+      todo = todo.filter(([item]) => item !== to);
+      todo.push([to, dir]);
+    }
+  };
+
+  // const visited = new Set();
+
   while (todo.length > 0) {
     const [cur, dir] = todo.pop();
-    for (const edge of rels.get(cur) ?? []) {
-      const { ob2: to, f } = edge;
 
-      if (Math.abs(force.get(to)) > Math.abs(force.get(cur))) continue;
+    // if (visited.has(cur)) console.error("loop in dependency graph!");
+    // visited.add(cur);
 
-      const toForce = f(cur.v + force.get(cur), to.v, force.get(cur)) - to.v;
-
-      if (Math.abs(toForce) < 0.01) continue;
-      if (!force.has(to) || Math.abs(toForce) > Math.abs(force.get(to))) {
-        force.set(to, toForce);
-        todo = todo.filter(([item]) => item !== to);
-        todo.push([to, "side"]);
-      }
+    for (const { ob2: to, f } of rels.get(cur) ?? []) {
+      proposeValue(
+        cur,
+        to,
+        f(cur.v + force.get(cur), to.v, force.get(cur)),
+        "side"
+      );
     }
-    for (const edge of upRels.get(cur) ?? []) {
-      const { ob2: to } = edge;
-
-      if (Math.abs(force.get(to)) > Math.abs(force.get(cur))) continue;
-
-      const toForce =
+    for (const { ob2: to } of upRels.get(cur) ?? []) {
+      proposeValue(
+        cur,
+        to,
         to.f(
           ...[...downRels.get(to)].map((e) => (force.get(e.ob1) ?? 0) + e.ob1.v)
-        ) - to.v;
-
-      if (Math.abs(toForce) < 0.01) continue;
-      if (!force.has(to) || Math.abs(toForce) > Math.abs(force.get(to))) {
-        force.set(to, toForce);
-        todo = todo.filter(([item]) => item !== to);
-        todo.push([to, "up"]);
-      }
+        ),
+        "up"
+      );
     }
     if (dir !== "up") {
-      for (const edge of downRels.get(cur) ?? []) {
-        const { ob1: to, ob2: from } = edge;
-
-        if (Math.abs(force.get(to)) > Math.abs(force.get(cur))) continue;
-
-        const toForce =
-          from.unf(to.v, force.get(cur), cur.v + force.get(cur)) - to.v;
-
-        if (Math.abs(toForce) < 0.01) continue;
-        if (!force.has(to) || Math.abs(toForce) > Math.abs(force.get(to))) {
-          force.set(to, toForce);
-          todo = todo.filter(([item]) => item !== to);
-          todo.push([to, "down"]);
-        }
+      for (const { ob1: to, ob2: from } of downRels.get(cur) ?? []) {
+        proposeValue(
+          cur,
+          to,
+          from.unf(to.v, force.get(cur), cur.v + force.get(cur)),
+          "down"
+        );
       }
     }
     // todo.sort(([a], [b]) => Math.abs(force.get(a)) - Math.abs(force.get(b)));

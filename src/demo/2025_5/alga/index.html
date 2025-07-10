@@ -198,10 +198,12 @@ Line(g1.centerBottom, g2.centerTop);
 
   // make things crispy
   const dpr = window.devicePixelRatio;
-  c.width = window.innerWidth * dpr;
-  c.height = window.innerHeight * dpr;
-  c.style.width = window.innerWidth + "px";
-  c.style.height = window.innerHeight + "px";
+  const h = c.height;
+  const w = c.width;
+  c.width = w * dpr;
+  c.height = h * dpr;
+  c.style.width = w + "px";
+  c.style.height = h + "px";
   ctx.scale(dpr, dpr);
 
   const {
@@ -404,6 +406,14 @@ Line(g1.centerBottom, g2.centerTop);
   const bbg = DraggableOutline(bb1, bb2, bb22, bb3);
   bbg.top = 300;
   bbg.left = 300;
+
+  (() => {
+    const num = DraggableBox("gray");
+    const denom = DraggableBox("gray");
+    const numG = Group(num);
+    const denomG = Group(denom);
+    frac(numG, denomG).leftTop = [400, 400];
+  })();
 
   function anim() {
     requestAnimationFrame(anim);

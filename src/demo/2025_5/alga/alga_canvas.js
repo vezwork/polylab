@@ -1,10 +1,10 @@
-import { sub, angleOf, fromPolar } from "../../../lib/math/Vec2.js";
+import { sub, angleOf, fromPolar, add } from "../../../lib/math/Vec2.js";
 import {
   WidthInterval2,
   Interval2,
   Group,
   delOb,
-  Point,
+  Point as P,
   eq2,
   leftTop,
   rightBottom,
@@ -54,9 +54,7 @@ export const d = (ctx) => {
     return ob;
   };
   const draw = () => {
-    drawables.map(({ ob, draw }) =>
-      draw(left(ob).v, top(ob).v, right(ob).v, bottom(ob).v)
-    );
+    drawables.map(({ ob, draw }) => draw(ob));
   };
   const deleteDrawable = (drawable) => {
     delOb(drawable.x.l);
@@ -66,8 +64,20 @@ export const d = (ctx) => {
     drawables = drawables.filter((d) => d.ob !== drawable);
   };
 
+  const Point = (color = "blue", r) =>
+    drawable((ob) => {
+      const [x, y] = ob;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.restore();
+    })(P());
+
   const Box = (color = "blue", w, h) =>
-    drawable((x, y, x2, y2) => {
+    drawable((ob) => {
+      const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       ctx.save();
       ctx.fillStyle = color;
       ctx.fillRect(x, y, x2 - x, y2 - y);
@@ -76,14 +86,16 @@ export const d = (ctx) => {
 
   const FONT_SIZE = 20;
   const Text = (text, size = FONT_SIZE) =>
-    drawable((x, y, x2, y2) => {
+    drawable((ob) => {
+      const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       ctx.textBaseline = "top";
       ctx.font = `${size}px serif`;
       ctx.fillText(text, x, y);
     })(WidthInterval2(...measureWidth(ctx, text, size)));
 
   const Line = (from, to) => {
-    const ar = drawable((x, y, x2, y2) => {
+    const ar = drawable((ob) => {
+      const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x2, y2);
@@ -95,16 +107,18 @@ export const d = (ctx) => {
   };
 
   const Arrow = (from, to) => {
-    const ar = drawable((x, y, x2, y2) => drawArrow(ctx, [x, y], [x2, y2]))(
-      Interval2()
-    );
+    const ar = drawable((ob) => {
+      const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
+      drawArrow(ctx, [x, y], [x2, y2]);
+    })(Interval2());
     if (from) eq2(from, leftTop(ar));
     if (to) eq2(to, rightBottom(ar));
     return ar;
   };
 
   const Outline = (...interval2s) =>
-    drawable((x, y, x2, y2) => {
+    drawable((ob) => {
+      const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       ctx.beginPath();
       ctx.rect(x, y, x2 - x, y2 - y);
       ctx.stroke();
@@ -120,8 +134,15 @@ export const d = (ctx) => {
   const DraggableOutline = (...drawables) => {
     const g = Group(...drawables);
     const o = Outline(Pad2(g, 7.5));
-    const dragHandle = DraggableBox("#eee");
-    eq2(g.rightBottom, dragHandle.leftTop);
+    eq2(o.leftTop, DraggableBox("#eee").centerCenter);
+    eq2(o.rightTop, DraggableBox("#eee").centerCenter);
+    eq2(o.leftBottom, DraggableBox("#eee").centerCenter);
+    eq2(o.rightBottom, DraggableBox("#eee").centerCenter);
+
+    eq2(o.rightCenter, DraggableBox("#eee").centerCenter);
+    eq2(o.leftCenter, DraggableBox("#eee").centerCenter);
+    eq2(o.centerTop, DraggableBox("#eee").centerCenter);
+    eq2(o.centerBottom, DraggableBox("#eee").centerCenter);
     return o;
   };
 
@@ -136,14 +157,15 @@ export const d = (ctx) => {
     (a.l.v < b.l.v && a.r.v > b.r.v);
   const areInteval2sOverlapping = (a) => (b) =>
     areIntervalsOverLapping(a.x, b.x) && areIntervalsOverLapping(a.y, b.y);
-  const mouseAnchor = Point();
-  const mouse = Point();
+  const mouseAnchor = P();
+  const mouse = P();
   const mouseSelectArea = Group(mouseAnchor, mouse);
   Outline(mouseSelectArea);
   // TODO: need to be able to group mouseAnchor and mouse to get mouseSelectArea instead of mouseI2
   // but neither Group nor Group2 work with Points.
   const outlines = [];
   let dragging;
+  const isDragging = () => !!dragging;
   let isMouseDown = false;
   let selectedDraggables = [];
   c.addEventListener("mousemove", (e) => {
@@ -206,10 +228,12 @@ export const d = (ctx) => {
     Outline,
     Arrow,
     DraggableBox,
+    Point,
     DraggableOutline,
     draggables,
     Text,
     Line,
+    isDragging,
     mouse,
   };
 };

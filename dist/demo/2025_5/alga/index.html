@@ -216,39 +216,126 @@ Line(g1.centerBottom, g2.centerTop);
     deleteDrawable,
     Text,
     Line,
+    DropzoneBox,
+    mouse,
+    getArrows,
+    isPointInside,
   } = d(ctx);
 
   const txtInit = DraggableBox();
+  const caretRoot = Box("LightGray");
   let txtL = Group(txtInit);
-  let txtO = Outline(txtL);
+
   let txtHead = txtInit;
+
   txtInit.leftTop = [250, 200];
+
+  let caretAr = Arrow(caretRoot.leftTop, txtHead.leftTop);
+
+  Arrow(txtL.leftBottom, txtHead.leftBottom);
+
+  caretRoot.left = txtL.left - 20;
+  caretRoot.bottom = txtL.top - 20;
+
   // next:
   // - better text rendering
   // - backspace (deleting object from group)
   // - left and right careting (along Arrows somehow?)
+  const outline = DraggableOutline(txtL, caretRoot);
+  let me = outline;
   document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.shiftKey) {
+      eval(buildStr());
+      return;
+    }
     if (e.key === "Enter") {
+      txtL = getPrev(txtHead)[1];
+
       const newTxtInit = DraggableBox("red", 10, 10);
       const newTxtL = Group(newTxtInit);
       stackY(5, 0)(txtL, newTxtL);
 
       Arrow(txtHead.centerBottom, newTxtInit.centerTop);
       txtL = newTxtL;
+      outline.add(txtL);
       txtHead = newTxtInit;
+      deleteDrawable(caretAr);
 
-      deleteDrawable(txtO);
-      txtO = Outline(txtL);
-      // what if this automatically outlined whatever txtO pointed at?
-    } else {
+      newTxtInit.text = "\n";
+
+      Arrow(txtL.leftBottom, txtHead.leftBottom);
+
+      caretAr = Arrow(caretRoot.leftTop, txtHead.leftTop);
+    } else if (e.key.length === 1) {
+      txtHead = getNext(caretRoot);
       const newHead = Text(e.key);
-      stackX(8)(txtHead, newHead);
+      stackX(3)(txtHead, newHead);
+
+      txtL = getPrev(txtHead)[1];
 
       txtL.add(newHead);
       Arrow(txtHead.rightCenter, newHead.leftCenter);
+      Arrow(txtL.leftBottom, newHead.leftBottom);
       txtHead = newHead;
+      deleteDrawable(caretAr);
+      caretAr = Arrow(caretRoot.leftTop, txtHead.leftTop);
+    } else if (e.key === "ArrowLeft") {
+      const a = getPrev(getNext(caretRoot))[0];
+      console.log("a", a);
+      deleteDrawable(caretAr);
+      caretAr = Arrow(caretRoot.leftTop, a.leftTop);
+    } else if (e.key === "ArrowRight") {
+      const a = getNext(getNext(caretRoot));
+      if (!a) return;
+      console.log("a", a);
+      deleteDrawable(caretAr);
+      caretAr = Arrow(caretRoot.leftTop, a.leftTop);
+    } else if (e.key === "ArrowUp") {
+      txtHead = getNext(caretRoot);
+      const newHead = DropzoneBox("gray");
+      stackX(3)(txtHead, newHead);
+
+      txtL = getPrev(txtHead)[1];
+
+      txtL.add(newHead);
+      Arrow(txtHead.rightCenter, newHead.leftCenter);
+      Arrow(txtL.leftBottom, newHead.leftBottom);
+      txtHead = newHead;
+      deleteDrawable(caretAr);
+      caretAr = Arrow(caretRoot.leftTop, txtHead.leftTop);
     }
   });
+  const buildStr = () => {
+    let cur = txtInit;
+    let str = "";
+    while (cur) {
+      str += cur.text ?? "";
+      cur = getNext(cur);
+    }
+    return str;
+  };
+  const getPrev = (i2) =>
+    getArrows()
+      .filter((a) => i2 === a.to[0].interval2)
+      .map((i) => i.from[0].interval2);
+  const getNext = (i2) =>
+    getArrows().filter((a) => i2 === a.from[0].interval2)[0]?.to[0].interval2;
+
+  const makeInteractiveSwitchDiagram = () => {
+    const l = Box("black", 20, 20);
+    const r = Box("white", 20, 20);
+    const dd = DraggableOutline(stackX(0)(l, r));
+    dd.leftTop = [100, 100];
+    c.addEventListener("mousedown", (e) => {
+      if (isPointInside(mouse, dd)) {
+        let savedColor = l.color;
+        l.color = r.color;
+        r.color = savedColor;
+      }
+    });
+  };
+  makeInteractiveSwitchDiagram();
+
   // what if this text was in a group and the group auto-expanded?
 
   const exp = (numD, expD) => {
@@ -272,6 +359,12 @@ Line(g1.centerBottom, g2.centerTop);
     stackY(5)(Σ, bottomD);
     return Group(Σ, topD, bottomD, rightD);
   };
+  const op =
+    (opStr = "+") =>
+    (leftD, rightD) => {
+      const opD = Text(opStr, 30);
+      return stackX()(leftD, opD, rightD);
+    };
 
   const g = stackX(0)(
     Text("ζ(s) = "),
@@ -348,16 +441,17 @@ Line(g1.centerBottom, g2.centerTop);
   Arrow(b1.centerTop, c0.centerTop);
   Arrow(b2.centerTop, c0.centerTop);
   Arrow(b2.centerTop, c1.centerTop);
+  Arrow(b1.centerTop, c1.centerTop);
 
   DraggableOutline(a0, b0, b1, b2, c0, c1).leftTop = [300, 20];
 
-  spaceX(20)(b0, b1, b2);
+  spaceX(22.5)(b0, b1, b2);
   spaceX(55)(c0, c1);
-  eq(a0.left, b0.left);
-  eq(b0.left, c0.left);
+  a0.left = b0.left;
+  b0.left = c0.left;
   spaceY()(a0, Group(b0, b1, b2));
   spaceY()(Group(b0, b1, b2), c0);
-  spaceY()(b2, c1);
+  spaceY()(Group(b1, b2), c1);
 
   const m00 = DraggableBox("yellowgreen");
   const m10 = DraggableBox("salmon");
@@ -407,13 +501,30 @@ Line(g1.centerBottom, g2.centerTop);
   bbg.top = 300;
   bbg.left = 300;
 
-  (() => {
-    const num = DraggableBox("gray");
-    const denom = DraggableBox("gray");
-    const numG = Group(num);
-    const denomG = Group(denom);
-    frac(numG, denomG).leftTop = [400, 400];
-  })();
+  addEventListener("keydown", (e) => {
+    if (e.key === "s") {
+      const l = DropzoneBox("LightGray", 40, 40);
+      const r = DropzoneBox("LightGray", 40, 40);
+      exp(l, r).leftTop = mouse;
+    }
+    if (e.key === "d") {
+      const l = DropzoneBox("LightGray", 40, 40);
+      const r = DropzoneBox("LightGray", 40, 40);
+      op()(l, r).leftTop = mouse;
+    }
+    if (e.key === "f") {
+      const num = DropzoneBox("LightGray", 40, 40);
+      const denom = DropzoneBox("LightGray", 40, 40);
+      frac(num, denom).leftTop = mouse;
+    }
+    if (e.key === "g") {
+      sum(
+        DropzoneBox("LightGray", 40, 40),
+        DropzoneBox("LightGray", 40, 40),
+        DropzoneBox("LightGray", 40, 40)
+      ).leftTop = mouse;
+    }
+  });
 
   function anim() {
     requestAnimationFrame(anim);

@@ -1,6 +1,6 @@
 import { Ob, rel, delRel, upRel, set } from "./alga_core.js";
 
-export { set, Ob, delRel, delOb, rel } from "./alga_core.js";
+export { set, Ob, delRel, delOb, rel, explore } from "./alga_core.js";
 
 // want:
 // - lines
@@ -48,7 +48,7 @@ const Pad = (interval, pad = 10) => ({
 
 // 2-DIM OBJECTS
 const addInterval2Sugar = (interval2) => {
-  return {
+  const sugared = {
     ...interval2,
     // 1D getters
     get top() {
@@ -146,6 +146,11 @@ const addInterval2Sugar = (interval2) => {
       else set2(rightBottom(interval2), v);
     },
   };
+  interval2.x.l.interval2 = sugared;
+  interval2.x.r.interval2 = sugared;
+  interval2.y.l.interval2 = sugared;
+  interval2.y.r.interval2 = sugared;
+  return sugared;
 };
 
 // TODO: make it take a list of drawables
@@ -231,8 +236,11 @@ export const right = (interval2) => interval2.x.r;
 
 const lerp = (i) => (l, r) => (1 - i) * l + i * r;
 
-const p = (i) => (interval) =>
-  upRel(lerp(i), (a, d) => a + d)(interval.l, interval.r);
+const p = (i) => (interval) => {
+  const u = upRel(lerp(i), (a, d) => a + d)(interval.l, interval.r);
+  u.interval2 = interval.l?.interval2;
+  return u;
+};
 const center = p(0.5);
 export const centerX = (interval2) => p(0.5)(interval2.x);
 export const centerY = (interval2) => p(0.5)(interval2.y);

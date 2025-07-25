@@ -1,4 +1,10 @@
-import { sub, angleOf, fromPolar, add } from "../../../lib/math/Vec2.js";
+import {
+  sub,
+  angleOf,
+  fromPolar,
+  add,
+  angleBetween,
+} from "../../../lib/math/Vec2.js";
 import {
   WidthInterval2,
   Interval2,
@@ -17,6 +23,7 @@ import {
   centerCenter,
   delRel,
   set2,
+  explore,
 } from "./alga_api.js";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
@@ -35,8 +42,8 @@ const measureWidth = (ctx, text, size) => {
 //https://stackoverflow.com/a/6333775
 function drawArrow(ctx, from, to) {
   const headlen = 7; // length of head in pixels
-  const d = sub(to, from);
-  const angle = angleOf(d);
+
+  const angle = angleBetween(from, to);
   ctx.beginPath();
   ctx.moveTo(...from);
   ctx.lineTo(...to);
@@ -50,7 +57,9 @@ export const d = (ctx) => {
   const c = ctx.canvas;
   let drawables = [];
   const drawable = (draw) => (ob) => {
-    drawables.push({ ob, draw });
+    const d = { ob, draw };
+    drawables.push(d);
+    ob.drawable = d;
     return ob;
   };
   const draw = () => {
@@ -62,6 +71,8 @@ export const d = (ctx) => {
     delOb(drawable.y.l);
     delOb(drawable.y.r);
     drawables = drawables.filter((d) => d.ob !== drawable);
+
+    Arrows = Arrows.filter((d) => d !== drawable);
   };
 
   const Point = (color = "blue", r) =>
@@ -75,23 +86,30 @@ export const d = (ctx) => {
       ctx.restore();
     })(P());
 
-  const Box = (color = "blue", w, h) =>
-    drawable((ob) => {
+  const Box = (color = "blue", w, h) => {
+    const d = drawable((ob) => {
       const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       ctx.save();
-      ctx.fillStyle = color;
+      ctx.fillStyle = d.color;
       ctx.fillRect(x, y, x2 - x, y2 - y);
       ctx.restore();
     })(WidthInterval2(w, h));
+    d.color = color;
+    return d;
+  };
 
   const FONT_SIZE = 20;
-  const Text = (text, size = FONT_SIZE) =>
-    drawable((ob) => {
+  const Text = (text, size = FONT_SIZE) => {
+    const d = drawable((ob) => {
       const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       ctx.textBaseline = "top";
       ctx.font = `${size}px serif`;
       ctx.fillText(text, x, y);
     })(WidthInterval2(...measureWidth(ctx, text, size)));
+    d.text = text;
+    d.size = size;
+    return d;
+  };
 
   const Line = (from, to) => {
     const ar = drawable((ob) => {
@@ -106,11 +124,15 @@ export const d = (ctx) => {
     return ar;
   };
 
+  let Arrows = [];
   const Arrow = (from, to) => {
     const ar = drawable((ob) => {
       const [x, y, x2, y2] = [left(ob), top(ob), right(ob), bottom(ob)];
       drawArrow(ctx, [x, y], [x2, y2]);
     })(Interval2());
+    Arrows.push(ar);
+    ar.from = from;
+    ar.to = to;
     if (from) eq2(from, leftTop(ar));
     if (to) eq2(to, rightBottom(ar));
     return ar;
@@ -129,7 +151,19 @@ export const d = (ctx) => {
   const DraggableBox = (color, w, h) => {
     const box = Box(color, w, h);
     draggables.push(box);
+    box.x.l.draggable = box;
+    box.x.r.draggable = box;
+    box.y.l.draggable = box;
+    box.y.r.draggable = box;
     return box;
+  };
+  const dropzones = [];
+  const DropzoneBox = (color, w, h) => {
+    const box = Box(color, w, h);
+    const dropzone = Group(box);
+    dropzone.placeholder = box;
+    dropzones.push(dropzone);
+    return dropzone;
   };
   const DraggableOutline = (...drawables) => {
     const g = Group(...drawables);
@@ -143,7 +177,7 @@ export const d = (ctx) => {
     eq2(o.leftCenter, DraggableBox("#eee").centerCenter);
     eq2(o.centerTop, DraggableBox("#eee").centerCenter);
     eq2(o.centerBottom, DraggableBox("#eee").centerCenter);
-    return o;
+    return g;
   };
 
   const isPointInside = (p, i2) => {
@@ -168,8 +202,13 @@ export const d = (ctx) => {
   const isDragging = () => !!dragging;
   let isMouseDown = false;
   let selectedDraggables = [];
+  let mousePos = [0, 0];
   c.addEventListener("mousemove", (e) => {
-    let mousePos = [e.offsetX, e.offsetY];
+    mousePos = [e.offsetX, e.offsetY];
+  });
+
+  function anim() {
+    requestAnimationFrame(anim);
     set2(mouse, mousePos);
     if (!isMouseDown || dragging) set2(mouseAnchor, mousePos);
 
@@ -183,12 +222,20 @@ export const d = (ctx) => {
     for (const draggable of draggables)
       if (isPointInside(mouse, draggable) && outlines.length === 0)
         return outlines.push(Outline(draggable));
-  });
-
-  function anim() {
-    requestAnimationFrame(anim);
   }
   anim();
+
+  const getConnectedDraggableGroup = (draggable) =>
+    Group(
+      ...new Set([
+        ...[...explore(draggable.x.l)]
+          .filter((o) => o.draggable)
+          .map((o) => o.draggable),
+        ...[...explore(draggable.y.l)]
+          .filter((o) => o.draggable)
+          .map((o) => o.draggable),
+      ])
+    );
 
   let mouseRels;
   c.addEventListener("mousedown", (e) => {
@@ -197,6 +244,7 @@ export const d = (ctx) => {
       if (isPointInside(mouse, draggable) && !mouseRels) {
         mouseRels = eq2(centerCenter(draggable), mouse);
         dragging = draggable;
+        // DraggableOutline(getConnectedDraggableGroup(draggable));
       }
     }
   });
@@ -211,6 +259,14 @@ export const d = (ctx) => {
       for (const draggable of draggables) {
         if (draggable !== dragging && isPointInside(mouse, draggable)) {
           eq2(centerCenter(draggable), centerCenter(dragging));
+        }
+      }
+      for (const dropzone of dropzones) {
+        if (isPointInside(mouse, dropzone) && dropzone.placeholder) {
+          dropzone.del(dropzone.placeholder);
+          deleteDrawable(dropzone.placeholder);
+          dropzone.placeholder = undefined;
+          dropzone.add(getConnectedDraggableGroup(dragging));
         }
       }
       delRel(mouseRels[0]);
@@ -228,6 +284,7 @@ export const d = (ctx) => {
     Outline,
     Arrow,
     DraggableBox,
+    DropzoneBox,
     Point,
     DraggableOutline,
     draggables,
@@ -235,5 +292,7 @@ export const d = (ctx) => {
     Line,
     isDragging,
     mouse,
+    getArrows: () => Arrows,
+    isPointInside,
   };
 };

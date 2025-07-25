@@ -91,8 +91,9 @@ const calculateForces = (obs, delta) => {
   let todo = [...obs.map((ob) => [ob, "enter"])];
 
   const proposeValue = (cur, to, proposedToValue, dir) => {
-    const toForce = proposedToValue - to.v;
     if (Math.abs(force.get(to)) > Math.abs(force.get(cur))) return;
+    const toForce = proposedToValue - to.v;
+
     if (Math.abs(toForce) < 0.01) return;
 
     if (!force.has(to) || Math.abs(toForce) > Math.abs(force.get(to))) {
@@ -102,30 +103,31 @@ const calculateForces = (obs, delta) => {
     }
   };
 
-  // const visited = new Set();
+  const visited = new Set();
 
   while (todo.length > 0) {
     const [cur, dir] = todo.pop();
 
-    // if (visited.has(cur)) console.error("loop in dependency graph!");
-    // visited.add(cur);
+    if (visited.has(cur)) {
+      console.error("unexpected re-visit");
+    }
+    visited.add(cur);
 
+    for (const { ob2: to } of upRels.get(cur) ?? []) {
+      const children = [...downRels.get(to)].map((e) => e.ob1);
+      proposeValue(
+        cur,
+        to,
+        to.f(...children.map((ob) => (force.get(ob) ?? 0) + ob.v)),
+        "up"
+      );
+    }
     for (const { ob2: to, f } of rels.get(cur) ?? []) {
       proposeValue(
         cur,
         to,
         f(cur.v + force.get(cur), to.v, force.get(cur)),
         "side"
-      );
-    }
-    for (const { ob2: to } of upRels.get(cur) ?? []) {
-      proposeValue(
-        cur,
-        to,
-        to.f(
-          ...[...downRels.get(to)].map((e) => (force.get(e.ob1) ?? 0) + e.ob1.v)
-        ),
-        "up"
       );
     }
     if (dir !== "up") {
@@ -138,7 +140,7 @@ const calculateForces = (obs, delta) => {
         );
       }
     }
-    // todo.sort(([a], [b]) => Math.abs(force.get(a)) - Math.abs(force.get(b)));
+    todo.sort(([a], [b]) => Math.abs(force.get(a)) - Math.abs(force.get(b)));
   }
   return force;
 };
@@ -147,4 +149,22 @@ export const set = (ob, v) => {
   const force = calculateForces([ob], v - ob.v);
   for (const [ob, delta] of force) ob.v += delta;
   return force;
+};
+
+export const explore = (ob) => {
+  let todo = [ob];
+  const visited = new Set();
+
+  while (todo.length > 0) {
+    const cur = todo.pop();
+    visited.add(cur);
+
+    for (const { ob2: to } of rels.get(cur) ?? [])
+      if (!visited.has(to)) todo.push(to);
+    for (const { ob2: to } of upRels.get(cur) ?? [])
+      if (!visited.has(to)) todo.push(to);
+    for (const { ob1: to } of downRels.get(cur) ?? [])
+      if (!visited.has(to)) todo.push(to);
+  }
+  return visited;
 };

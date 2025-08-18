@@ -482,9 +482,11 @@ function sandboxedEval(toEval, callback = () => {}) {
   const iframeDiv = document.createElement("div");
   iframeDiv.style.position = "absolute";
   iframeDiv.style.top = "790px";
-  iframeDiv.style.right = "740px";
+  iframeDiv.style.right = "40px";
   iframeDiv.style.height = "calc(100% - 40px)";
-  iframeDiv.style.width = "0px";
+  iframeDiv.style.width = "700px";
+  iframeDiv.style.display = "flex";
+  iframeDiv.style.flexDirection = "row-reverse";
   iframeDiv.append(iframe);
 
   document.body.append(iframeDiv);

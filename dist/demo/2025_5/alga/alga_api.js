@@ -2,6 +2,8 @@ import { Ob, rel, delRel, upRel, set } from "./alga_core.js";
 
 export { set, Ob, delRel, delOb, rel, explore } from "./alga_core.js";
 
+import { addInterval2Sugar, addPointSugar } from "./alga_api_sugar.js";
+
 // want:
 // - lines
 // - padding
@@ -47,111 +49,6 @@ const Pad = (interval, pad = 10) => ({
 });
 
 // 2-DIM OBJECTS
-const addInterval2Sugar = (interval2) => {
-  const sugared = {
-    ...interval2,
-    // 1D getters
-    get top() {
-      return top(interval2);
-    },
-    get left() {
-      return left(interval2);
-    },
-    get right() {
-      return right(interval2);
-    },
-    get bottom() {
-      return bottom(interval2);
-    },
-    // 1D setters
-    set top(v) {
-      if (v.hasOwnProperty("v")) eq(top(interval2), v);
-      else set(top(interval2), v);
-    },
-    set left(v) {
-      if (v.hasOwnProperty("v")) eq(left(interval2), v);
-      else set(left(interval2), v);
-    },
-    set right(v) {
-      if (v.hasOwnProperty("v")) eq(right(interval2), v);
-      else set(right(interval2), v);
-    },
-    set bottom(v) {
-      if (v.hasOwnProperty("v")) eq(bottom(interval2), v);
-      else set(bottom(interval2), v);
-    },
-    // 2D getters
-    get leftTop() {
-      return leftTop(interval2);
-    },
-    get leftCenter() {
-      return leftCenter(interval2);
-    },
-    get leftBottom() {
-      return leftBottom(interval2);
-    },
-    get centerTop() {
-      return centerTop(interval2);
-    },
-    get centerCenter() {
-      return centerCenter(interval2);
-    },
-    get centerBottom() {
-      return centerBottom(interval2);
-    },
-    get rightTop() {
-      return rightTop(interval2);
-    },
-    get rightCenter() {
-      return rightCenter(interval2);
-    },
-    get rightBottom() {
-      return rightBottom(interval2);
-    },
-    // 2D setters
-    set leftTop(v) {
-      if (v.hasOwnProperty("v")) eq2(leftTop(interval2), v);
-      else set2(leftTop(interval2), v);
-    },
-    set leftCenter(v) {
-      if (v.hasOwnProperty("v")) eq2(leftCenter(interval2), v);
-      else set2(leftCenter(interval2), v);
-    },
-    set leftBottom(v) {
-      if (v.hasOwnProperty("v")) eq2(leftBottom(interval2), v);
-      else set2(leftBottom(interval2), v);
-    },
-    set centerTop(v) {
-      if (v.hasOwnProperty("v")) eq2(centerTop(interval2), v);
-      else set2(centerTop(interval2), v);
-    },
-    set centerCenter(v) {
-      if (v.hasOwnProperty("v")) eq2(centerCenter(interval2), v);
-      else set2(centerCenter(interval2), v);
-    },
-    set centerBottom(v) {
-      if (v.hasOwnProperty("v")) eq2(centerBottom(interval2), v);
-      else set2(centerBottom(interval2), v);
-    },
-    set rightTop(v) {
-      if (v.hasOwnProperty("v")) eq2(rightTop(interval2), v);
-      else set2(rightTop(interval2), v);
-    },
-    set rightCenter(v) {
-      if (v.hasOwnProperty("v")) eq2(rightCenter(interval2), v);
-      else set2(rightCenter(interval2), v);
-    },
-    set rightBottom(v) {
-      if (v.hasOwnProperty("v")) eq2(rightBottom(interval2), v);
-      else set2(rightBottom(interval2), v);
-    },
-  };
-  interval2.x.l.interval2 = sugared;
-  interval2.x.r.interval2 = sugared;
-  interval2.y.l.interval2 = sugared;
-  interval2.y.r.interval2 = sugared;
-  return sugared;
-};
 
 // TODO: make it take a list of drawables
 export const Pad2 = (interval2, pad) =>
@@ -160,7 +57,7 @@ export const Pad2 = (interval2, pad) =>
     y: Pad(interval2.y, pad),
   });
 
-export const Point = (v1 = 0, v2 = 0) => [Ob(v1), Ob(v2)];
+export const Point = (v1 = 0, v2 = 0) => addPointSugar([Ob(v1), Ob(v2)]);
 
 export const Interval2 = () =>
   addInterval2Sugar({
@@ -217,15 +114,15 @@ export const Group = (...interval2s) => {
 
 // 2D ACCESSORS
 
-export const centerCenter = (ob) => [centerX(ob), centerY(ob)];
-export const leftCenter = (ob) => [left(ob), centerY(ob)];
-export const rightCenter = (ob) => [right(ob), centerY(ob)];
-export const centerTop = (ob) => [centerX(ob), top(ob)];
-export const centerBottom = (ob) => [centerX(ob), bottom(ob)];
-export const leftTop = (ob) => [left(ob), top(ob)];
-export const rightTop = (ob) => [right(ob), top(ob)];
-export const leftBottom = (ob) => [left(ob), bottom(ob)];
-export const rightBottom = (ob) => [right(ob), bottom(ob)];
+export const centerCenter = (ob) => addPointSugar([centerX(ob), centerY(ob)]);
+export const leftCenter = (ob) => addPointSugar([left(ob), centerY(ob)]);
+export const rightCenter = (ob) => addPointSugar([right(ob), centerY(ob)]);
+export const centerTop = (ob) => addPointSugar([centerX(ob), top(ob)]);
+export const centerBottom = (ob) => addPointSugar([centerX(ob), bottom(ob)]);
+export const leftTop = (ob) => addPointSugar([left(ob), top(ob)]);
+export const rightTop = (ob) => addPointSugar([right(ob), top(ob)]);
+export const leftBottom = (ob) => addPointSugar([left(ob), bottom(ob)]);
+export const rightBottom = (ob) => addPointSugar([right(ob), bottom(ob)]);
 
 export const x = (interval2) => interval2.x;
 export const y = (interval2) => interval2.y;
@@ -235,7 +132,6 @@ export const left = (interval2) => interval2.x.l;
 export const right = (interval2) => interval2.x.r;
 
 const lerp = (i) => (l, r) => (1 - i) * l + i * r;
-
 const p = (i) => (interval) => {
   const u = upRel(lerp(i), (a, d) => a + d)(interval.l, interval.r);
   u.interval2 = interval.l?.interval2;

@@ -108,16 +108,7 @@
   c.style.height = ch + "px";
   ctx.scale(dpr, dpr);
 
-  const {
-    draw,
-    Box,
-    Outline,
-    DraggableBox,
-    DraggableOutline,
-    deleteDrawable,
-    Text,
-    Line,
-  } = d(ctx);
+  const { draw, Box, Outline, DraggableBox, Line } = d(ctx);
 
   const b1 = DraggableBox("yellowgreen");
   const b2 = DraggableBox("orangered");
@@ -259,12 +250,12 @@ Line(g1.centerBottom, g2.centerTop);
       txtL = newTxtL;
       outline.add(txtL);
       txtHead = newTxtInit;
-      deleteDrawable(caretAr);
 
       newTxtInit.text = "\n";
 
       Arrow(txtL.leftBottom, txtHead.leftBottom);
 
+      deleteDrawable(caretAr);
       caretAr = Arrow(caretRoot.leftTop, txtHead.leftTop);
     } else if (e.key.length === 1) {
       txtHead = getNext(caretRoot);
@@ -277,17 +268,20 @@ Line(g1.centerBottom, g2.centerTop);
       Arrow(txtHead.rightCenter, newHead.leftCenter);
       Arrow(txtL.leftBottom, newHead.leftBottom);
       txtHead = newHead;
+
       deleteDrawable(caretAr);
       caretAr = Arrow(caretRoot.leftTop, txtHead.leftTop);
     } else if (e.key === "ArrowLeft") {
       const a = getPrev(getNext(caretRoot))[0];
       console.log("a", a);
+
       deleteDrawable(caretAr);
       caretAr = Arrow(caretRoot.leftTop, a.leftTop);
     } else if (e.key === "ArrowRight") {
       const a = getNext(getNext(caretRoot));
       if (!a) return;
       console.log("a", a);
+
       deleteDrawable(caretAr);
       caretAr = Arrow(caretRoot.leftTop, a.leftTop);
     } else if (e.key === "ArrowUp") {

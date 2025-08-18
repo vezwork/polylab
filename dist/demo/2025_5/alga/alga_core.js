@@ -110,6 +110,7 @@ const calculateForces = (obs, delta) => {
 
     if (visited.has(cur)) {
       console.error("unexpected re-visit");
+      continue;
     }
     visited.add(cur);
 

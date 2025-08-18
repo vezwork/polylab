@@ -449,21 +449,6 @@ export const createEditorEnv = () => {
     let postfix = balance > 0 ? "<)".repeat(balance) : "";
     return prefix + inner + postfix;
   }
-  function dog(selected) {
-    let balance = 0;
-    const inner = selected.map((v) => {
-      const s = getCaretopeSinkFromAdrId(v);
-      if (s.isFirst())
-        if (s.isAfterEditorSink) {
-          balance--;
-          return "<)";
-        }
-      return s.isFirst() ? "(>" : "" + s.charEl.innerText;
-    });
-    let prefix = balance < 0 ? "(>".repeat(Math.abs(balance)) : "";
-    let postfix = balance > 0 ? "<)".repeat(balance) : "";
-    return prefix + inner + postfix;
-  }
   e1.addEventListener("scroll", () => {
     renderCaret();
   });
@@ -522,7 +507,6 @@ export const createEditorEnv = () => {
     for (const cursor of cursors) {
       if (cursor.getAdr().id !== cursors[0].getAdr().id) removeCursor(cursor);
     }
-    clearStyleSelectionSinks();
     for (const { setAdr, getAdr } of cursors) {
       setAdr({ ...getAdr(), selected: calcSelection(getAdr()) });
     }

@@ -65,14 +65,25 @@ export const d = (ctx) => {
   const draw = () => {
     drawables.map(({ ob, draw }) => draw(ob));
   };
-  const deleteDrawable = (drawable) => {
-    delOb(drawable.x.l);
-    delOb(drawable.x.r);
-    delOb(drawable.y.l);
-    delOb(drawable.y.r);
-    drawables = drawables.filter((d) => d.ob !== drawable);
 
+  const deleteDrawable = (drawable) => {
+    if (drawable.deld === true) return; // already deleted
+    drawable.deld = true;
+
+    drawable.delOwns?.forEach(deleteDrawable);
+
+    drawables = drawables.filter((d) => d.ob !== drawable);
     Arrows = Arrows.filter((d) => d !== drawable);
+
+    if (Array.isArray(drawable)) {
+      delOb(drawable[0]);
+      delOb(drawable[1]);
+    } else {
+      delOb(drawable.x.l);
+      delOb(drawable.x.r);
+      delOb(drawable.y.l);
+      delOb(drawable.y.r);
+    }
   };
 
   const Point = (color = "blue", r) =>
@@ -119,8 +130,16 @@ export const d = (ctx) => {
       ctx.lineTo(x2, y2);
       ctx.stroke();
     })(Interval2());
-    if (from) eq2(from, leftTop(ar));
-    if (to) eq2(to, rightBottom(ar));
+    if (from) {
+      eq2(from, leftTop(ar));
+      const fromD = from[0].interval2 ?? from[0].point;
+      fromD.delOwns = [...(fromD.delOwns ?? []), ar];
+    }
+    if (to) {
+      eq2(to, rightBottom(ar));
+      const toD = to[0].interval2 ?? to[0].point;
+      toD.delOwns = [...(toD.delOwns ?? []), ar];
+    }
     return ar;
   };
 
@@ -133,8 +152,16 @@ export const d = (ctx) => {
     Arrows.push(ar);
     ar.from = from;
     ar.to = to;
-    if (from) eq2(from, leftTop(ar));
-    if (to) eq2(to, rightBottom(ar));
+    if (from) {
+      eq2(from, leftTop(ar));
+      const fromD = from[0].interval2 ?? from[0].point;
+      fromD.delOwns = [...(fromD.delOwns ?? []), ar];
+    }
+    if (to) {
+      eq2(to, rightBottom(ar));
+      const toD = to[0].interval2 ?? to[0].point;
+      toD.delOwns = [...(toD.delOwns ?? []), ar];
+    }
     return ar;
   };
 
@@ -191,6 +218,14 @@ export const d = (ctx) => {
     (a.l.v < b.l.v && a.r.v > b.r.v);
   const areInteval2sOverlapping = (a) => (b) =>
     areIntervalsOverLapping(a.x, b.x) && areIntervalsOverLapping(a.y, b.y);
+
+  addEventListener("keydown", (e) => {
+    if (e.key === "Backspace") {
+      for (const draggable of draggables)
+        if (isPointInside(mouse, draggable)) deleteDrawable(draggable);
+    }
+  });
+
   const mouseAnchor = P();
   const mouse = P();
   const mouseSelectArea = Group(mouseAnchor, mouse);

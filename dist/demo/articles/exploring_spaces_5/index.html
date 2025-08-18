@@ -1,0 +1,261 @@
+<!-- #region -->
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1><a href="../exploring_spaces/">Exploring Spaces</a> 5: Functions</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+July 27 2025<br /><br />
+
+<audio controls>
+  <source src="./recording.mp3" type="audio/mpeg" />
+  Your browser does not support the audio element.
+</audio>
+<!-- #endregion -->
+
+<section>
+  <h2>Continuous function</h2>
+
+  <svg viewBox="-12 0 24 200" width="24" style="vertical-align: middle">
+    <circle class="draggable y" r="10"></circle>
+  </svg>
+  <span style="font-size: 40px; font-weight: bold">→</span>
+  <svg
+    viewBox="0 -12 200 24"
+    width="200"
+    style="vertical-align: middle; margin-bottom: 10px"
+  >
+    <circle class="draggable x" r="10"></circle>
+  </svg>
+  <span style="font-size: 30px">=</span>
+  <svg
+    viewBox="0 -12 200 200"
+    width="200"
+    height="200"
+    style="vertical-align: middle; margin-bottom: 10px"
+  >
+    <circle class="draggable x y" r="10"></circle>
+  </svg>
+  <script type="module">
+    const mod = (a, n, nL = 0) =>
+      ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
+    const clamp = (a, n, nL = 0) => Math.min(Math.max(a, n), nL);
+
+    function makeDraggable(state, el) {
+      // from https://www.redblobgames.com/making-of/draggable/
+      function start(event) {
+        if (event.button !== 0) return; // left button only
+        let { x, y } = state.eventToCoordinates(event);
+
+        state.dragging = {
+          dx: 0,
+          dy: 0,
+        };
+        el.classList.add("dragging");
+        el.setPointerCapture(event.pointerId);
+      }
+
+      function end(_event) {
+        state.dragging = null;
+        el.classList.remove("dragging");
+      }
+
+      function move(event) {
+        if (!state.dragging) return;
+        let { x, y } = state.eventToCoordinates(event);
+        if (el.classList.contains("x")) state.x = x + state.dragging.dx;
+        if (el.classList.contains("y")) state.y = y + state.dragging.dy;
+      }
+
+      el.addEventListener("pointerdown", start);
+      el.addEventListener("pointerup", end);
+      el.addEventListener("pointercancel", end);
+      el.addEventListener("pointermove", move);
+      el.addEventListener("touchstart", (e) => e.preventDefault());
+    }
+
+    function eventToSvgCoordinates(event, el = event.currentTarget) {
+      const svg = el.ownerSVGElement;
+      let p = svg.createSVGPoint();
+      p.x = event.clientX;
+      p.y = event.clientY;
+      p = p.matrixTransform(svg.getScreenCTM().inverse());
+      return p;
+    }
+
+    const els = Array.from(document.querySelectorAll(".draggable"));
+    const points = new Map();
+    const lerp = (a, b, n) => (1 - n) * a + n * b;
+    let state = {
+      eventToCoordinates: eventToSvgCoordinates,
+      dragging: null,
+      _x: undefined,
+      _y: undefined,
+      _pos: undefined,
+      get x() {
+        return this._x;
+      },
+      set x(n) {
+        this._x = clamp(0, n, 200);
+        points.set(this._y, this._x);
+        for (const el of els) {
+          if (el.classList.contains("x")) el.setAttribute("cx", this._x);
+        }
+      },
+      get y() {
+        return this._y;
+      },
+      set y(n) {
+        this._y = clamp(0, n, 200);
+        for (const el of els) {
+          if (el.classList.contains("y")) el.setAttribute("cy", this._y);
+        }
+
+        let above = Infinity;
+        let below = -Infinity;
+        for (const [py, px] of points) {
+          if (py <= n) below = Math.max(below, py);
+          if (py >= n) above = Math.min(above, py);
+        }
+        let res;
+        if (above === Infinity && below === -Infinity) res = 0;
+        else if (above === Infinity) res = points.get(below);
+        else if (below === -Infinity) res = points.get(above);
+        else
+          res = lerp(
+            points.get(below),
+            points.get(above),
+            (n - below) / (above - below)
+          );
+        console.log(res);
+        if (!isNaN(res)) {
+          this._x = res;
+          for (const el of els) {
+            if (el.classList.contains("x")) el.setAttribute("cx", this._x);
+          }
+        }
+      },
+    };
+    state.x = 20;
+    state.y = 20;
+    for (const el of els) makeDraggable(state, el);
+  </script>
+  <style>
+    svg {
+      background: #eee;
+      border-radius: 10px;
+    }
+    circle {
+      stroke: black;
+      stroke-width: 2px;
+    }
+    .draggable {
+      cursor: grab;
+      fill: white;
+    }
+    .dragging {
+      cursor: grabbing;
+      fill: hsl(200, 54%, 76%);
+    }
+  </style>
+</section>
+
+<!-- #region -->
+<div style="clear: both"></div>
+<h2 id="comments">Exploring Spaces Comments</h2>
+<textarea
+  id="commenttext1"
+  style="width: 100%; height: 80px"
+  placeholder="Hi, I'm [name]. You are a bit wrong about [blank]. I liked [blank]. [blank] didn't make sense, could you clarify? There's a bug!"
+></textarea>
+<button id="commentbutton1">Submit comment</button>
+<div id="commentarea"></div>
+<script type="module">
+  const MY_FORKED_VAL_URL = "https://vez-tomatoSalmon.web.val.run/";
+
+  const getComments = async () => {
+    const response = await fetch(MY_FORKED_VAL_URL);
+    const json = await response.json();
+    return json;
+  };
+
+  const addComment = async (str) => {
+    try {
+      const response = await fetch(MY_FORKED_VAL_URL, {
+        method: "POST",
+        body: JSON.stringify(str),
+      });
+
+      if (response.status >= 400 && response.status < 600) {
+        /* error */
+        return false;
+      } else {
+        /* success */
+        return true;
+      }
+    } catch (e) {
+      /* error */
+      return false;
+    }
+  };
+
+  function appendComment(str) {
+    const div = document.createElement("div");
+    div.style.display = "block";
+    div.style.margin = "10px 0";
+    div.style.background = "#eee";
+    div.style.padding = "10px";
+    div.style.borderRadius = "10px";
+    div.textContent = str;
+    document.getElementById("commentarea").append(div);
+  }
+
+  (await getComments()).forEach(appendComment);
+
+  const text = document.getElementById("commenttext1");
+  const button = document.getElementById("commentbutton1");
+  button.addEventListener("click", async () => {
+    const value = text.value;
+
+    button.textContent = "🔄";
+    const success = await addComment(value);
+    if (success === false) {
+      button.textContent =
+        "❌ error (sorry theres no details or error reporting yet)";
+    } else {
+      button.textContent = "✅";
+      button.disabled = true;
+      text.disabled = true;
+      text.value = "";
+      appendComment(value);
+    }
+  });
+</script>
+<!-- #endregion -->

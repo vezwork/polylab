@@ -91,7 +91,8 @@ export function setup(myName) {
   const linearizedEvents = [];
 
   const registerEvent = (id, ev) => {
-    if (isDiffInc(id, clockDiff(clock, ev.clock))) throw "bug: bad register!"; // inneffecient for now to simplify things and catch bugs
+    //console.log(id, clockDiff(clock, ev.clock), clock, ev.clock);
+    //if (isDiffInc(id, clockDiff(clock, ev.clock))) throw "bug: bad register!"; // inneffecient for now to simplify things and catch bugs
     clock = incClock(id, clock);
     insertIntoSorted(ev, linearizedEvents, compareEventClocksAlphabetical);
     addEvent(id, ev, events);

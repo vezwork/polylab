@@ -69,6 +69,7 @@ export const scalarMul = (s) => (t1) => [t1[0] * s, t1[1] * s, t1[2] * s, t1[3] 
 // probably not a good way to interpolate transforms, but thats ok for now
 export const lerp = (start, end, t) => addEntries(start)(scalarMul(t)(subEntries(end)(start)));
 export const apply = (t) => ([x, y]) => [x * t[0] + y * t[2] + t[4], x * t[1] + y * t[3] + t[5]];
+// doesn't use translation, like apply does (for points instead of vectors)
 export const applyToVec = (t) => (v) => apply(zeroTranslate(t))(v);
 // Field stuff
 export const zero = [0, 0, 0, 0, 0, 0];

@@ -1,0 +1,238 @@
+<script type="module">
+  import { MapWithInverse } from "../../../lib/structure/data.js";
+
+  import { DLinkedList } from "./DLinkedList.js";
+
+  // string of character objects
+  const l = new DLinkedList();
+
+  // now I want a list of lists that I can add and remove from
+  // that is synced with the `ll`
+
+  // list of lines of character objects
+  const lol = new DLinkedList();
+  const line0Node = lol.addAfter(lol.start, createLine());
+
+  // let's sync em up
+
+  const lolFroml = new MapWithInverse();
+  const lFromlol = lolFroml.inverse;
+  lolFroml.set(l.start, line0Node.data.start);
+
+  l.onChange(({ method, args, returns }) => {
+    if (method === "addAfter") {
+      const [prev, newData, dontPropagate] = args;
+      const newNode = returns;
+
+      if (dontPropagate) return;
+
+      // find the node corresponding to `prev` in `lol`
+      const lolPrev = lolFroml.get(prev);
+      // then
+      // if node is a newline, create new line
+      if (newNode.data.char === "\n") {
+        const newLine = createLine();
+        const newLineNode = lol.addAfter(lolPrev.list.node, newLine, true);
+
+        lolFroml.set(newNode, newLine.start);
+      }
+      // else addAfter corresponding node
+      else {
+        const lolNewNode = lolPrev.list.addAfter(lolPrev, newNode.data, true);
+        lolFroml.set(newNode, lolNewNode);
+      }
+    }
+    if (method === "remove") {
+      const [node, dontPropagate] = args;
+      const prev = returns;
+
+      if (dontPropagate) return;
+
+      // find the node corresponding to `node` in `lol`
+      const lolRemove = lolFroml.get(node);
+      // then
+      const line = lolRemove.list;
+      // if node is a newline, remove line and join two lines
+      if (node.data.char === "\n") {
+        lol.remove(line.node, true);
+
+        const lineBefore = line.node.prev.data;
+        for (const node of line)
+          lineBefore.addAfter(lineBefore.end, node.data, true);
+      }
+      // else remove the node
+      else {
+        lolRemove.list.remove(lolRemove, true);
+      }
+    }
+  });
+
+  const a = l.addAfter(l.end, { char: "a" });
+  const b = l.addAfter(l.end, { char: "b" });
+  l.addAfter(l.end, { char: "c" });
+  const fl = l.addAfter(l.end, { char: "\n" });
+  l.addAfter(l.end, { char: "d" });
+  l.addAfter(l.end, { char: "\n" });
+  l.addAfter(l.end, { char: "e" });
+  l.addAfter(l.end, { char: "\n" });
+  l.addAfter(l.end, { char: "f" });
+  // l.remove(fl);
+  // l.remove(b);
+
+  // Now for the backwards direction!
+
+  lol.onChange(({ method, args, returns }) => {
+    if (method === "addAfter") {
+      const [prev, newData, dontPropagate] = args;
+      const newNode = returns;
+
+      if (dontPropagate) return;
+
+      // new line, so add \n
+      const lPrev = lFromlol.get(prev.data.end);
+      const newlNewlineNode = l.addAfter(lPrev, { char: "\n" }, true);
+      lFromlol.set(newNode.data.start, newlNewlineNode);
+    }
+    if (method === "remove") {
+      const [node, dontPropagate] = args;
+      const prev = returns;
+
+      if (dontPropagate) return;
+
+      const lNode = lFromlol.get(node.data.start);
+
+      if (lNode === l.start) {
+        if (node.next === undefined) throw `can't remove the only line!`;
+        const firstNewLineNode = node.next.data.start;
+
+        l.remove(lFromlol.get(firstNewLineNode), true);
+        lFromlol.set(firstNewLineNode, l.start);
+      } else {
+        l.remove(lNode, true);
+      }
+      for (const n of node.data) l.remove(lFromlol.get(n));
+    }
+  });
+
+  //... We'll have to set up listeners whenever new lines are created
+
+  function createLine() {
+    const line = new DLinkedList();
+    line.onChange(({ method, args, returns }) => {
+      if (method === "addAfter") {
+        const [prev, newData, dontPropagate] = args;
+        const newNode = returns;
+
+        if (dontPropagate) return;
+
+        // simply add character
+        const newLineNode = l.addAfter(lFromlol.get(prev), newData, true);
+        lFromlol.set(newLineNode, newNode);
+      }
+      if (method === "remove") {
+        const [node, dontPropagate] = args;
+        const prev = returns;
+
+        if (dontPropagate) return;
+
+        // simply remove character
+        l.remove(lFromlol.get(node), true);
+      }
+    });
+    return line;
+  }
+
+  lol.addAfter(lol.end, createLine());
+  lol.end.data.addAfter(lol.end.data.start, { char: "j" });
+  lol.start.next.data.remove(lol.start.next.data.start.next);
+
+  //its working!!
+  //- note: if we want to have more representations that are synced, we'll need a more sophisticated
+  //  system than `dontPropagate` because we actually do want to propagate then, just not back to
+  //  where propagation has already happened.
+  //- idea: might be nice to not have nodes, and have prev and next stored in maps, could use
+  //  2025_4/graph_edit.
+
+  // lets preserve this file because its presented in the order I was figuring things out...
+  // But, I wrote the drawing code first in Polycope, then DLinkedList in the browser console,
+  // copied those over to local files via VSCode, and finally wrote this file in VSCode.
+
+  // I'm moving over to `canvas_text_edit` from here
+
+  addEventListener("click", (e) => {
+    lol.remove(lol.start.next);
+  });
+
+  const c = document.getElementById("c");
+  const ctx = c.getContext("2d");
+
+  const boxh = 20;
+  const boxw = 20;
+  const keyName = {
+    "\n": "↵",
+    Tab: "→",
+    " ": "·",
+  };
+
+  function drawLol() {
+    let x = 0;
+    let y = 45;
+
+    for (let line of lol) {
+      let lineYMax = 0;
+      for (const box of line.data) {
+        box.x = x;
+        x += boxw;
+        lineYMax = Math.max(y + boxh, lineYMax);
+      }
+      const lineYmid = y + (lineYMax - y) / 2;
+      for (const box of line.data) {
+        box.y = lineYmid - boxh / 2;
+        ctx.beginPath();
+        ctx.rect(box.x, box.y, boxw, boxh);
+        ctx.stroke();
+        ctx.textBaseline = "top";
+        ctx.textAlign = "center";
+        ctx.font = `${boxw}px serif`;
+        ctx.fillText(
+          keyName[box.data.char] ?? box.data.char,
+          box.x + boxw / 2,
+          box.y
+        );
+      }
+      x = 0;
+      y = lineYMax;
+      if (y > c.height) break;
+    }
+  }
+
+  function drawl() {
+    let x = 0;
+    for (const box of l) {
+      box.x = x;
+      x += boxw;
+      box.y = 0;
+      ctx.beginPath();
+      ctx.rect(box.x, box.y, boxw, boxh);
+      ctx.stroke();
+      ctx.textBaseline = "top";
+      ctx.textAlign = "center";
+      ctx.font = `${boxw}px serif`;
+      ctx.fillText(
+        keyName[box.data.char] ?? box.data.char,
+        box.x + boxw / 2,
+        box.y
+      );
+    }
+  }
+
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.clearRect(0, 0, c.width, c.height);
+
+    drawLol();
+    drawl();
+  }
+  requestAnimationFrame(draw);
+</script>
+<canvas id="c"></canvas>

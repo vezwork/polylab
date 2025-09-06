@@ -98,6 +98,7 @@ export const apply =
   ([x, y]: Vec2): Vec2 =>
     [x * t[0] + y * t[2] + t[4], x * t[1] + y * t[3] + t[5]];
 
+// doesn't use translation, like apply does (for points instead of vectors)
 export const applyToVec =
   (t: CtxTransform) =>
   (v: Vec2): Vec2 =>

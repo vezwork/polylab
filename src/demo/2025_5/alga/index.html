@@ -408,6 +408,25 @@ Line(g1.centerBottom, g2.centerTop);
     return res;
   };
 
+  const belowMap = new Map();
+  const below = (a, b) => {
+    if (!belowMap.has(a)) {
+      const belowGroup = Group();
+      belowMap.set(a, belowGroup);
+      stackY(20)(a, belowGroup);
+    }
+    belowMap.get(a).add(b);
+  };
+  const aaa = DraggableBox("purple");
+  const bbb = DraggableBox("red");
+  const ccc = DraggableBox("orange");
+  bbb.top = ccc.top;
+  below(aaa, bbb);
+  below(aaa, ccc);
+  const o = DraggableOutline(aaa, bbb, ccc);
+  o.top = 300;
+  o.left = 400;
+
   // actually a DAG
   const minNode = dagNode();
   const subDag1 = dagNode(dagNode(dagNode(minNode), dagNode(minNode)));

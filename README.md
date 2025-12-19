@@ -2,7 +2,7 @@
 
 My rough work and experiments for Polytope. There is a lot of undocumented and unpublicized stuff in here, but [Caretope](https://github.com/vezwork/polylab/tree/main/src/demo/caretope) has some documentation so far.
 
-There are demos you can view in the demos folder, for example: 
+There are demos you can view in the demos folder, for example:
 
 - [https://vezwork.github.io/polylab/dist/demo/caretope/viscaretope.html](https://vezwork.github.io/polylab/dist/demo/caretope/viscaretope.html)
 

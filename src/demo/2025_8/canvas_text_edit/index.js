@@ -14,7 +14,7 @@ let lFromlol = s.lFromlol;
 // TODO:
 // - column remembering for up/down nav
 // -[x] history
-//   - selection restoration on undo
+//   -[x] selection restoration on undo
 // - mouse picking
 // -[x] selection
 // - copy & paste

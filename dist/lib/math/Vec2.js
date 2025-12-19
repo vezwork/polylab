@@ -42,6 +42,7 @@ export const normalVec2FromAngle = (theta) => [
     Math.cos(theta),
     Math.sin(theta),
 ];
+export const toPolar = (v) => [length(v), angleOf(v)];
 export const fromPolar = (length, theta) => [
     length * Math.cos(theta),
     length * Math.sin(theta),

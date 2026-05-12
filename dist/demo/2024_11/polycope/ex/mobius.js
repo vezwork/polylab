@@ -22,7 +22,7 @@ const pow = ([r1, i1], [r2, i2]) => {
   return [b * Math.cos(c), b * Math.sin(c)];
 };
 const exp = (z) => pow(e, z);
-
+//mobius transform stuff I think
 const mid = [z(1), z(0), z(0), z(1)];
 const mmul = (t1, t2) => [
   add(mul(t1[0], t2[0]), mul(t1[1], t2[2])),

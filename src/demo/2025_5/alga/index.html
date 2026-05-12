@@ -45,12 +45,11 @@
 
 <p>
   This note is about Alga. The
-  <a href="./alga_core.js">core</a> of alga is really about a certain funky sort
-  of multidirectional computation, but it was designed to solve some layout
-  language problems. In particular, it was designed to implement a relational
-  layout combinator API similar to (and based on)
-  <a href="https://bluefishjs.org/">Bluefish</a>'s with some additional
-  properties I wanted.
+  <a href="./alga_core.js">core</a> of alga is a form of bidirectional
+  propagation designed to compute most layouts in a single pass over positions.
+  It was designed to implement a relational layout combinator API based on
+  <a href="https://bluefishjs.org/">Bluefish</a>'s with an additional feature I
+  wanted (full bounding boxes around arbitrary groupings of objects).
 </p>
 <img src="./layers.svg" />
 <p>
@@ -63,9 +62,8 @@
   a couple hours to make an HTML or SVG or WebGL one.
 </p>
 <p>
-  Alga core's multidirectional evaluation makes it effective for expressing
-  direct-manipulable layouts. You can change any part of the layout, and any
-  related parts of the diagram will be recomputed to respect relationships.
+  Alga's bidirectional propagation makes it effective for expressing
+  direct-manipulable layouts where you can drag any part of a diagram.
 </p>
 
 <p>Check out an example:</p>

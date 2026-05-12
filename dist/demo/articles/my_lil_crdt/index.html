@@ -1,0 +1,125 @@
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1>My lil' CRDT</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+May 2 2026<br />
+
+<section>
+  <h2>Sending and logging Messages</h2>
+
+  <div style="border: 1px solid black; margin: 13px; padding: 10px">
+    peer1 <input type="text" id="say1" />
+    <pre id="log1" style="font-size: 10px"></pre>
+  </div>
+  <div style="border: 1px solid black; margin: 13px; padding: 10px">
+    peer2 <input type="text" id="say2" />
+    <pre id="log2" style="font-size: 10px"></pre>
+  </div>
+  <div style="background: black; color: white; margin: 13px; padding: 10px">
+    server
+    <pre id="s1" style="font-size: 10px"></pre>
+  </div>
+
+  TODO NOTE: trying to show the messages being passed with server, not just the
+  state. It goes by too fast though.
+
+  <script>
+    const server = () => {
+      const listeners = [];
+      return {
+        on: (l) => listeners.push(l),
+        say: (v) => listeners.forEach((l) => l(v)),
+      };
+    };
+
+    const s = server();
+    s.on((m) => {
+      s1.innerText = JSON.stringify(m, undefined, 2);
+      setTimeout(() => (s1.innerText = ""), 1000);
+    });
+
+    const peer = (s, myId, sayEl, logEl) => {
+      const log = {};
+      let myN = 0;
+
+      s.on(({ id, msg, n }) => {
+        if (log[id] === undefined) log[id] = [];
+        log[id][n] = msg;
+        logEl.innerText = JSON.stringify(log, undefined, 2);
+      });
+      sayEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const msg = sayEl.value;
+          sayEl.value = "";
+          s.say({ id: myId, msg, n: myN });
+          myN++;
+        }
+      });
+    };
+
+    peer(s, "el", say1, log1);
+    peer(s, "s", say2, log2);
+  </script>
+
+  <h2>Coming back online</h2>
+  When you come back online, you may have missed a bunch of messages. To address
+  that, I want you to be able to say what messages you have already to other
+  people and ask them to send you any more recent ones they have.
+
+  <div style="border: 1px solid black; margin: 13px; padding: 10px">
+    peer3 <input type="text" id="say3" />
+    <label><input type="checkbox" id="ison3" /> offline</label>
+    <pre id="log3" style="font-size: 10px"></pre>
+  </div>
+  <div style="border: 1px solid black; margin: 13px; padding: 10px">
+    peer4 <input type="text" id="say4" />
+    <label><input type="checkbox" id="ison4" /> offline</label>
+    <pre id="log4" style="font-size: 10px"></pre>
+  </div>
+
+  <h2>Message Order DAG</h2>
+
+  now we want messages to be able to say what they came after.
+
+  <h2>Linearizing</h2>
+
+  now we want all peers to be able to linearize the DAG in the same way.
+</section>

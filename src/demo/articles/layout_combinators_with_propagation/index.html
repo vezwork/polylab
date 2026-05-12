@@ -1,0 +1,342 @@
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1>Layout Combinators with Propagation</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+Apr 26 2026<br />
+
+<section>
+  <h2>Layout</h2>
+
+  Have you ever wanted to programmatically place things on a computer screen?
+  I'm not talking about using a robot to slap sticky notes on the glass, I'm
+  talking about lighting pixels up in certain places on the screen to display a
+  graphic.
+  <br /><br />
+  In many cases, the "basic" way to do that is to use a method that draws a
+  graphic at certain coordinates on the screen. <br /><br />
+  <div>
+    <pre style="float: left"> draw(apple, 200, 200) </pre>
+    <img src="./apple.png" style="float: right; height: 200px" />
+  </div>
+  <br style="clear: both" />
+  so yea, that's kinda what layout is for the purposes of this article. It's
+  placing graphics at positions on the screen.
+  <br /><br />
+  But layout gets a lot more complex than rendering a single apple at a single
+  spot. Layout is also about <strong>composing</strong> various graphics.<br /><br />
+  I want to show you a way I like to do that.
+
+  <h2>Layout Combinators</h2>
+
+  You can combine a couple graphics that can be drawn at an x&y into a new
+  combined graphic that can be drawn at an x&y!
+
+  <div>
+    <pre> above(beside(apple, orange), banana) </pre>
+    <img src="./fruit_combo.png" style="float: right; height: 120px" />
+  </div>
+  <br style="clear: both" />
+
+  <h2>Implementing Layout Combinators</h2>
+
+  <p>
+    One reason I like layout combinators is they don't take much code to
+    implement. Less code is nice because that way I don't mind re-implementing
+    them in different languages or in different rendering environments. Less
+    code is also nice because it makes them easier to tweak!
+  </p>
+
+  <div
+    style="
+      border: 1px solid black;
+      display: inline-block;
+      border-radius: 12px;
+      background: #eee;
+      color: gray;
+    "
+  >
+    #circ_abov_c<br />
+    <canvas id="circ_abov_c" style="margin: 0; background: white"></canvas>
+  </div>
+  <pre id="circ_abov">
+const circle = (r) => {
+    return {
+        w: r*2,
+        h: r*2,
+        draw: (ctx,x,y) => {
+            ctx.beginPath();
+            ctx.arc(x+r, y+r, r, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+    }
+}
+const above = (a,b) => { 
+    const w = Math.max(a.w,b.w)
+    return {
+        w,
+        h: a.h+b.h,
+        draw: (ctx,x,y) => {
+            const c = x+w/2
+            a.draw(ctx,c-a.w/2,y)
+            b.draw(ctx,c-b.w/2,y+a.h)
+        }
+    }
+}
+
+above(above(circle(10),circle(5)),circle(30))
+  .draw(circ_abov_c.getContext("2d"), 20, 20);</pre
+  >
+  <script>
+    eval(circ_abov.innerText);
+  </script>
+
+  <h2 style="clear: both">Propagators</h2>
+
+  Its kinda like spreadsheet<br />
+
+  <span class="prop">
+    <code>a</code>
+    <span id="prop1"></span>
+  </span>
+  <button id="prop1b">a+=1</button><br />
+  <span class="prop">
+    <code>b = a+1</code>
+    <span id="prop2"></span>
+  </span>
+  <button id="prop2b">b-=1</button><br />
+  <span class="prop">
+    <code> = max(|a|,|b|)</code>
+    <span id="prop3"></span>
+  </span>
+  <style>
+    .prop {
+      position: relative;
+      border: 1px solid black;
+      padding: 10px 10px 10px 0;
+      margin: 10px;
+      user-select: "none";
+      display: inline-block;
+    }
+    pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 10px;
+      float: left;
+    }
+    code {
+      background: #eee;
+      padding: 10px;
+      line-height: 2.6;
+      border-radius: 0 10px 10px 0;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
+
+  <script>
+    const ob = (v) => {
+      const listeners = [];
+      return {
+        on: (l) => listeners.push(l),
+        get: () => v,
+        set: (newV) => {
+          if (JSON.stringify(v) === JSON.stringify(newV)) return;
+          v = newV;
+          listeners.forEach((l) => l(v));
+        },
+      };
+    };
+    const to = (a, b, f) => {
+      a.on((v) => b.set(f(v)));
+      b.set(f(a.get()));
+    };
+  </script>
+  <!-- hack note: defined ob above in a script tag as well so its in the global scope-->
+  <pre id="obscript">
+const ob = (v) => {
+    const listeners = [];
+    return {
+    on: (l) => listeners.push(l),
+    get: () => v,
+    set: (newV) => {
+        if (JSON.stringify(v) === JSON.stringify(newV)) return;
+        v = newV;
+        listeners.forEach((l) => l(v));
+    },
+    };
+};
+const to = (a, b, f) => {
+    a.on((v) => b.set(f(v)));
+    b.set(f(a.get()));
+};
+
+const a = ob(0)
+const b = ob()
+const c = ob()
+
+to(a, b, (v) => v + 2);
+to(b, a, (v) => v - 2);
+
+to(a, c, () => Math.max(Math.abs(a.get()), Math.abs(b.get())));
+to(b, c, () => Math.max(Math.abs(a.get()), Math.abs(b.get())));
+
+[a,b,c]</pre
+  >
+  <script>
+    const [a, b, c] = window.eval(obscript.innerText);
+
+    const elob = (o, el) => {
+      const a = o;
+      a.on((v) => (el.innerText = v));
+      el.innerText = a.get();
+      return { el };
+    };
+    const { el } = elob(a, document.getElementById("prop1"));
+    document
+      .getElementById("prop1b")
+      .addEventListener("click", (e) => a.set(a.get() + 1));
+
+    const { el: elb } = elob(b, document.getElementById("prop2"));
+    document
+      .getElementById("prop2b")
+      .addEventListener("click", (e) => b.set(b.get() - 1));
+
+    elob(c, document.getElementById("prop3"));
+  </script>
+
+  <h2>Implementing Layout Combinators with Propagation</h2>
+
+  <p>
+    When we combinated graphics, we gave up the ability to draw the individual
+    graphics at an x&y to gain the ability to draw the combined graphic at an
+    x&y. We don't have to give that up though!
+  </p>
+
+  <p>
+    We can re-implement layout combinators with propagators. Now we are able to
+    set the position of the middle circle directly (we couldn't do that before)!
+  </p>
+
+  <div
+    style="
+      border: 1px solid black;
+      display: inline-block;
+      border-radius: 12px;
+      background: #eee;
+      color: gray;
+    "
+  >
+    #impl<br />
+    <canvas id="impl" style="margin: 0; background: white"></canvas>
+  </div>
+  <pre id="implp" style="float: none">
+const circle = (r) => {
+    const p = ob([0, 0]);
+    return {
+    w: r * 2,
+    h: r * 2,
+    p,
+    draw: (ctx) => {
+        const [x, y] = p.get();
+        ctx.beginPath();
+        ctx.arc(x + r, y + r, r, 0, 2 * Math.PI);
+        ctx.stroke();
+    },
+    };
+};
+const above = (a, b) => {
+    const w = Math.max(a.w, b.w);
+
+    const p = ob([0, 0]);
+    to(p, a.p, ([x, y]) => [x + w / 2 - a.w / 2, y]);
+    to(a.p, p, ([x, y]) => [x - w / 2 + a.w / 2, y]);
+    to(p, b.p, ([x, y]) => [x + w / 2 - b.w / 2, y + a.h]);
+    to(b.p, p, ([x, y]) => [x - w / 2 + b.w / 2, y - a.h]);
+
+    return {
+    w,
+    h: a.h + b.h,
+    p,
+    draw: (ctx) => {
+        const [x, y] = p.get();
+        const c = x + w / 2;
+        a.draw(ctx, c - a.w / 2, y);
+        b.draw(ctx, c - b.w / 2, y + a.h);
+    },
+    };
+};
+
+const middleCircle = circle(5);
+const entireGraphic = above(above(circle(10), middleCircle), circle(30));
+middleCircle.p.set([10, 10]);
+entireGraphic.draw(impl.getContext("2d"));</pre
+  >
+  <script>
+    eval(implp.innerText);
+  </script>
+
+  <h1>Going Further</h1>
+
+  <h2>Bluefish</h2>
+  <a href="/dist/demo/2025_5/alga/">alga</a>
+
+  <h2>Optimizing propagation for groupings</h2>
+
+  By default, grouping and propagation can cause performance issues. For example
+  say you have a situation where A → B → C and A → O and B → O and C → O;
+  imagine O being something based on A,B, and C like
+  <code>O = max(A.get(),B.get(),C.get())</code>. If you update A then this chain
+  of events will happen:<br /><br />
+
+  1. A → B and A → O so B and O are updated <br />
+  2. B → C and B → O so C and O are updated<br />
+  3. C → O so O is updated<br /><br />
+
+  See how O was updated 3 times? We could have done better if we computed this
+  situation artisinally by hand: instead updatd A, then B, then C, then finally
+  updated O once at the end.
+
+  <h2>Its nice for Infinite stuff</h2>
+
+  Yea cuz you don't have to have a "root". I want to illustrate with a lil
+  implementation of a natural number line or something.
+</section>

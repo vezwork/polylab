@@ -28,6 +28,44 @@
     margin: 0 20px 20px 0;
     cursor: pointer;
   }
+  .prop {
+    position: relative;
+    border: 1px solid black;
+    padding: 10px 10px 10px 0;
+    margin: 10px;
+    user-select: "none";
+    display: inline-block;
+  }
+  pre {
+    background: #eee;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+  code {
+    background: #eee;
+    padding: 4px;
+    line-height: 1.5;
+    border-radius: 6px;
+  }
+  button {
+    cursor: pointer;
+  }
+  .id-div {
+    border: 1px solid black;
+    padding: 3px;
+    display: inline-block;
+    border-radius: 12px;
+    background: #eee;
+    color: gray;
+  }
+  .id-inner {
+    margin: 0;
+    padding: 3px;
+    background: white;
+    border: 1px solid black;
+    border-radius: 10px;
+  }
   @media (max-width: 700px) {
     body {
       margin: 20px 10px;
@@ -42,7 +80,26 @@
 <a href="https://elliot.website">elliot evans<br /></a>
 Apr 26 2026<br />
 
-<section>
+<script>
+  function setup(el, alsoDo = () => {}) {
+    eval?.(el.innerText);
+    el.addEventListener("keydown", (e) => {
+      if (e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        alsoDo();
+        try {
+          eval?.(el.innerText);
+          el.style.outline = "none";
+        } catch (e) {
+          el.style.outline = "1px solid red";
+          throw e;
+        }
+      }
+    });
+  }
+</script>
+
+<main>
   <h2>Layout</h2>
 
   Have you ever wanted to programmatically place things on a computer screen?
@@ -54,7 +111,7 @@ Apr 26 2026<br />
   graphic at certain coordinates on the screen. <br /><br />
   <div>
     <pre style="float: left"> draw(apple, 200, 200) </pre>
-    <img src="./apple.png" style="float: right; height: 200px" />
+    <img src="./apple.png" style="float: rght; height: 200px" />
   </div>
   <br style="clear: both" />
   so yea, that's kinda what layout is for the purposes of this article. It's
@@ -70,7 +127,7 @@ Apr 26 2026<br />
   combined graphic that can be drawn at an x&y!
 
   <div>
-    <pre> above(beside(apple, orange), banana) </pre>
+    <pre> above(beside(orange, apple), banana) </pre>
     <img src="./fruit_combo.png" style="float: right; height: 120px" />
   </div>
   <br style="clear: both" />
@@ -84,20 +141,13 @@ Apr 26 2026<br />
     code is also nice because it makes them easier to tweak!
   </p>
 
-  <div
-    style="
-      border: 1px solid black;
-      display: inline-block;
-      border-radius: 12px;
-      background: #eee;
-      color: gray;
-    "
-  >
-    #circ_abov_c<br />
-    <canvas id="circ_abov_c" style="margin: 0; background: white"></canvas>
-  </div>
-  <pre id="circ_abov">
-const circle = (r) => {
+  <section>
+    <div class="id-div">
+      #circ_abov_c<br />
+      <canvas id="circ_abov_c" class="id-inner"></canvas>
+    </div>
+    <pre id="circ_abov" contenteditable="plaintext-only" spellcheck="false">
+circle = (r) => {
     return {
         w: r*2,
         h: r*2,
@@ -108,7 +158,7 @@ const circle = (r) => {
         }
     }
 }
-const above = (a,b) => { 
+above = (a,b) => { 
     const w = Math.max(a.w,b.w)
     return {
         w,
@@ -123,223 +173,230 @@ const above = (a,b) => {
 
 above(above(circle(10),circle(5)),circle(30))
   .draw(circ_abov_c.getContext("2d"), 20, 20);</pre
-  >
-  <script>
-    eval(circ_abov.innerText);
-  </script>
+    >
+    <script>
+      setup(circ_abov, () => {
+        circ_abov_c
+          .getContext("2d")
+          .clearRect(0, 0, circ_abov_c.width, circ_abov_c.height);
+      });
+    </script>
+    This is cool! We now have a composite graphic
+    <code>above(above(circle(10),circle(5)),circle(30))</code> that we can draw
+    at an x&y (<code>20, 20</code> in the code above, but you can change it and
+    press shift+enter to eval). But what if we wanted to set the position of the
+    middle circle
+  </section>
 
   <h2 style="clear: both">Propagators</h2>
 
-  Its kinda like spreadsheet<br />
+  Propagators are value containers (<code>ob</code>s) that can depend on
+  eachother (via <code>to</code>). Feel free to skim the definition of
+  <code>ob</code> and <code>to</code> and check out the small demonstration
+  below that<br />
 
-  <span class="prop">
-    <code>a</code>
-    <span id="prop1"></span>
-  </span>
-  <button id="prop1b">a+=1</button><br />
-  <span class="prop">
-    <code>b = a+1</code>
-    <span id="prop2"></span>
-  </span>
-  <button id="prop2b">b-=1</button><br />
-  <span class="prop">
-    <code> = max(|a|,|b|)</code>
-    <span id="prop3"></span>
-  </span>
-  <style>
-    .prop {
-      position: relative;
-      border: 1px solid black;
-      padding: 10px 10px 10px 0;
-      margin: 10px;
-      user-select: "none";
-      display: inline-block;
-    }
-    pre {
-      background: #eee;
-      padding: 10px;
-      border-radius: 10px;
-      float: left;
-    }
-    code {
-      background: #eee;
-      padding: 10px;
-      line-height: 2.6;
-      border-radius: 0 10px 10px 0;
-    }
-    button {
-      cursor: pointer;
-    }
-  </style>
-
-  <script>
-    const ob = (v) => {
-      const listeners = [];
-      return {
+  <section>
+    <pre id="pre2" contenteditable="plaintext-only" spellcheck="false">
+ob = (v) => {
+    const listeners = [];
+    return {
         on: (l) => listeners.push(l),
         get: () => v,
         set: (newV) => {
-          if (JSON.stringify(v) === JSON.stringify(newV)) return;
-          v = newV;
-          listeners.forEach((l) => l(v));
+            // if my value didn't change, stop propagating
+            if (Math.abs(v-newV) < 0.01) return;
+            v = newV;
+            listeners.forEach((l) => l(v));
         },
-      };
-    };
-    const to = (a, b, f) => {
-      a.on((v) => b.set(f(v)));
-      b.set(f(a.get()));
-    };
-  </script>
-  <!-- hack note: defined ob above in a script tag as well so its in the global scope-->
-  <pre id="obscript">
-const ob = (v) => {
-    const listeners = [];
-    return {
-    on: (l) => listeners.push(l),
-    get: () => v,
-    set: (newV) => {
-        if (JSON.stringify(v) === JSON.stringify(newV)) return;
-        v = newV;
-        listeners.forEach((l) => l(v));
-    },
     };
 };
-const to = (a, b, f) => {
+to = (a, b, f) => {
+    // when the value of a changes, set the value of b=f(a.get())
     a.on((v) => b.set(f(v)));
+    // optional: set b=f(a.get()) right away
     b.set(f(a.get()));
-};
+};<span style="color:#aaa">
+syncObWithEl = (o, el, otherText='') => {
+    o.on((v) => (el.innerText = v + otherText));
+    el.innerText = o.get() + otherText;
+}</span></pre>
+    <script>
+      setup(pre2);
+    </script>
+  </section>
 
-const a = ob(0)
-const b = ob()
-const c = ob()
+  <section>
+    <div class="id-div">
+      #valueOfA<br />
+      <div id="valueOfA" class="id-inner"></div>
+    </div>
+    <pre id="prevalueOfA">
+a = ob(0)<span style="color:#aaa">
+syncObWithEl(a, valueOfA, ' (click for a+=1)');
+valueOfA.addEventListener('click', () => a.set(a.get()+1))
+</span></pre>
+    <script>
+      setup(prevalueOfA);
+    </script>
+  </section>
 
-to(a, b, (v) => v + 2);
-to(b, a, (v) => v - 2);
+  <section>
+    <div class="id-div">
+      #valueOfB<br />
+      <div id="valueOfB" class="id-inner"></div>
+    </div>
+    <pre id="prevalueOfB">
+b = ob()
 
-to(a, c, () => Math.max(Math.abs(a.get()), Math.abs(b.get())));
-to(b, c, () => Math.max(Math.abs(a.get()), Math.abs(b.get())));
+// make a and b depend on eachother so that
+<span style="color:orangered;">to(a, b, (v) => v+2);</span> // when a changes, b is a+2
+<span style="color:orangered;">to(b, a, (v) => v-2);</span> // when b changes, a is b-2<span style="color:#aaa">
+syncObWithEl(b, valueOfB, ' (click for b-=1)');
+valueOfB.addEventListener('click', () => b.set(b.get()-1))
+</span></pre>
+    <script>
+      setup(prevalueOfB);
+    </script>
+  </section>
 
-[a,b,c]</pre
-  >
-  <script>
-    const [a, b, c] = window.eval(obscript.innerText);
+  <section>
+    <div class="id-div">
+      #valueOfC<br />
+      <div id="valueOfC" class="id-inner"></div>
+    </div>
+    <pre id="prevalueOfC">
+c = ob()
 
-    const elob = (o, el) => {
-      const a = o;
-      a.on((v) => (el.innerText = v));
-      el.innerText = a.get();
-      return { el };
-    };
-    const { el } = elob(a, document.getElementById("prop1"));
-    document
-      .getElementById("prop1b")
-      .addEventListener("click", (e) => a.set(a.get() + 1));
+// make c depend on a and b so that when either change, c is set to a*b
+<span style="color:orangered;">to(a, c, () => a.get()*b.get());
+to(b, c, () => a.get()*b.get());</span><span style="color:#aaa">
+syncObWithEl(c, valueOfC);
+</span></pre>
+    <script>
+      setup(prevalueOfC);
+    </script>
+  </section>
 
-    const { el: elb } = elob(b, document.getElementById("prop2"));
-    document
-      .getElementById("prop2b")
-      .addEventListener("click", (e) => b.set(b.get() - 1));
-
-    elob(c, document.getElementById("prop3"));
-  </script>
+  Changing a sets b, and changing b also sets a. Propagators are a nice lil
+  framework for this bidirectionally dependent values sort of stuff.
 
   <h2>Implementing Layout Combinators with Propagation</h2>
 
   <p>
+    Now we have layout combinators and we have propagators. Let's put em
+    together.
+  </p>
+  <p>
     When we combinated graphics, we gave up the ability to draw the individual
     graphics at an x&y to gain the ability to draw the combined graphic at an
-    x&y. We don't have to give that up though!
+    x&y. What if we want to set the x&y of the combinated graphic by saying
+    where one of the individual graphics inside of it should be though?
   </p>
 
   <p>
-    We can re-implement layout combinators with propagators. Now we are able to
-    set the position of the middle circle directly (we couldn't do that before)!
+    We can gain that expressive ability by using <code>ob</code>s for the
+    positions of our graphics! Instead of positions being set in a top-down
+    fashion when we draw the combinated graphic, we will set up a bidirectional
+    dependence on the positions of parts of a combinated graphic and the whole.
+    Sorry, thats a bit hard to describe but the idea is intended to be simple!
+  </p>
+  <p>
+    The refactor consists of moving positions out of the arguments of the draw
+    method and into <code>ob</code>s, and moving layout calculations out of the
+    draw method and into <code>to</code>s.
   </p>
 
-  <div
-    style="
-      border: 1px solid black;
-      display: inline-block;
-      border-radius: 12px;
-      background: #eee;
-      color: gray;
-    "
-  >
-    #impl<br />
-    <canvas id="impl" style="margin: 0; background: white"></canvas>
-  </div>
-  <pre id="implp" style="float: none">
+  <section>
+    <div class="id-div">
+      #circ_abov2_c<br />
+      <canvas id="circ_abov2_c" class="id-inner"></canvas>
+    </div>
+    <pre id="circ_abov2" contenteditable="plaintext-only" spellcheck="false">
 const circle = (r) => {
-    const p = ob([0, 0]);
+    const x = ob(0);
+    const y = ob(0);
     return {
-    w: r * 2,
-    h: r * 2,
-    p,
-    draw: (ctx) => {
-        const [x, y] = p.get();
-        ctx.beginPath();
-        ctx.arc(x + r, y + r, r, 0, 2 * Math.PI);
-        ctx.stroke();
-    },
+        x, y, w: r * 2, h: r * 2,
+        draw: (ctx) => {
+            ctx.beginPath();
+            ctx.arc(x.get() + r, y.get() + r, r, 0, 2 * Math.PI);
+            ctx.stroke();
+        },
     };
 };
 const above = (a, b) => {
     const w = Math.max(a.w, b.w);
 
-    const p = ob([0, 0]);
-    to(p, a.p, ([x, y]) => [x + w / 2 - a.w / 2, y]);
-    to(a.p, p, ([x, y]) => [x - w / 2 + a.w / 2, y]);
-    to(p, b.p, ([x, y]) => [x + w / 2 - b.w / 2, y + a.h]);
-    to(b.p, p, ([x, y]) => [x - w / 2 + b.w / 2, y - a.h]);
+    const x = ob(0)
+    const y = ob(0)
+    to(x, a.x, v => v + w / 2 - a.w / 2)
+    to(a.x, x, v => v - w / 2 + a.w / 2)
+    to(x, b.x, v => v + w / 2 - b.w / 2)
+    to(b.x, x, v => v - w / 2 + b.w / 2)
+    to(y, a.y, v => v); to(a.y, y, v => v)
+    to(y, b.y, v => v + a.h); to(b.y, y, v => v - a.h)
 
     return {
-    w,
-    h: a.h + b.h,
-    p,
-    draw: (ctx) => {
-        const [x, y] = p.get();
-        const c = x + w / 2;
-        a.draw(ctx, c - a.w / 2, y);
-        b.draw(ctx, c - b.w / 2, y + a.h);
-    },
+        x, y, w, h: a.h + b.h,
+        draw: (ctx) => {
+            const c = x.get() + w / 2;
+            a.draw(ctx, c - a.w / 2, y.get());
+            b.draw(ctx, c - b.w / 2, y.get() + a.h);
+        },
     };
 };
 
-const middleCircle = circle(5);
-const entireGraphic = above(above(circle(10), middleCircle), circle(30));
-middleCircle.p.set([10, 10]);
-entireGraphic.draw(impl.getContext("2d"));</pre
-  >
-  <script>
-    eval(implp.innerText);
-  </script>
+let t = 0
+
+function animation() {
+    requestAnimationFrame(animation)
+    
+    const middleCircle = circle(15);
+    const entireGraphic = above(
+        above(
+            circle(Math.sin(t)*5+12), 
+            middleCircle), 
+        circle(Math.cos(t)*15+40)
+    );
+
+    <span style="color:orangered;">middleCircle.x.set(100);
+    middleCircle.y.set(20);</span>
+
+    const c = circ_abov2_c;
+    c.getContext("2d").clearRect(0,0,c.width,c.height);
+    entireGraphic.draw(c.getContext("2d"));
+     
+    t+=0.02;
+}
+requestAnimationFrame(animation)</pre>
+    <script>
+      setup(circ_abov2, () => {
+        circ_abov2_c
+          .getContext("2d")
+          .clearRect(0, 0, circ_abov2_c.width, circ_abov2_c.height);
+      });
+    </script>
+  </section>
+
+  <p>
+    Now we are able to set the position of the middle circle directly (we
+    couldn't do that before)! Neat!!!
+  </p>
 
   <h1>Going Further</h1>
 
   <h2>Bluefish</h2>
 
-  imo this is the easiest/simplest way to implement a bluefish-like. I made a
-  prototype of that:<br />
-  <a href="../../2025_5/alga/">alga (☠⚠️☣️WIP☣️⚠️☠)</a>.
-
-  <h2>Optimizing propagation for groupings</h2>
-
-  By default, grouping and propagation can cause performance issues. For example
-  say you have a situation where A → B → C and A → O and B → O and C → O;
-  imagine O being something based on A,B, and C like
-  <code>O = max(A.get(),B.get(),C.get())</code>. If you update A then this chain
-  of events will happen:<br /><br />
-
-  1. A → B and A → O so B and O are updated <br />
-  2. B → C and B → O so C and O are updated<br />
-  3. C → O so O is updated<br /><br />
-
-  See how O was updated 3 times? We could have done better if we computed this
-  situation artisinally by hand: instead updatd A, then B, then C, then finally
-  updated O once at the end.
-
-  <h2>Its nice for Infinite stuff</h2>
-
-  Yea cuz you don't have to have a "root". I want to illustrate with a lil
-  implementation of a natural number line or something.
-</section>
+  imo implementing layout combinators with propagation is the easiest/simplest
+  way to implement a <a href="https://bluefishjs.org/">Bluefish</a>-like. I made
+  a prototype of that:<br />
+  <a href="../../2025_5/alga/">alga (☠⚠️☣️WIP☣️⚠️☠)</a>.<br /><br />
+  The really cool thing about Bluefish is that you can relate the x and the y
+  parts of graphics separately, and that makes a lot of layouts easier to
+  express. Graphics often have their x related to different things than their
+  y.<br /><br />
+  Its not hard to modify the code above to make it so <code>above</code> only
+  relates the y parts of the graphics it combinates. Try removing those
+  <code>to</code>s that have to do with x, press ctrl+enter, and see what
+  happens!
+</main>

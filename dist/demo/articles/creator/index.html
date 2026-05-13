@@ -1,0 +1,84 @@
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  pre {
+    background: #eee;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1 contenteditable="plaintext-only">Layout Combinators with Propagation</h1>
+<a href="https://elliot.website">elliot evans</a>
+<div contenteditable="plaintext-only">Apr 26 2026</div>
+
+<main>
+  <div
+    style="
+      border: 1px solid black;
+      border-radius: 12px;
+      overflow: hidden;
+      padding: 5px;
+    "
+  >
+    <div>#div1</div>
+    <div
+      id="div1"
+      style="
+        border-top: 1px solid black;
+        border-radius: 12px;
+        overflow: hidden;
+        padding: 5px;
+      "
+    >
+      hello
+    </div>
+  </div>
+  <pre contenteditable="plaintext-only" id="pre1">hello</pre>
+
+  <p>lets be able to insert divs, canvases, paragraphs.</p>
+</main>
+<script>
+  pre1.addEventListener("keydown", (e) => {
+    if (e.shiftKey && e.key === "Enter") {
+      eval(pre1.innerText);
+      e.preventDefault();
+    }
+  });
+</script>

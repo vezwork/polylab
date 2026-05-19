@@ -1,0 +1,224 @@
+<style>
+  body {
+    --main-color: #ca2b6d;
+    color: #060a1b;
+    background: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    max-width: 700px;
+    margin: 20px auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  hr {
+    margin: 50px 0;
+  }
+  pre {
+    font-family: "fira code";
+    white-space: pre-wrap;
+  }
+  canvas,
+  img {
+    border-radius: 10px;
+  }
+  canvas {
+    border: 1px solid black;
+    vertical-align: top;
+    margin: 0 20px 20px 0;
+    cursor: pointer;
+  }
+  .prop {
+    position: relative;
+    border: 1px solid black;
+    padding: 10px 10px 10px 0;
+    margin: 10px;
+    user-select: "none";
+    display: inline-block;
+  }
+  pre {
+    background: #eee;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+  code {
+    background: #eee;
+    padding: 4px;
+    line-height: 1.5;
+    border-radius: 6px;
+  }
+  button {
+    cursor: pointer;
+  }
+  .id-div {
+    border: 1px solid black;
+    padding: 3px;
+    display: inline-block;
+    border-radius: 12px;
+    background: #eee;
+    color: gray;
+  }
+  .id-inner {
+    margin: 0;
+    padding: 3px;
+    background: white;
+    border: 1px solid black;
+    border-radius: 10px;
+  }
+  @media (max-width: 700px) {
+    body {
+      margin: 20px 10px;
+    }
+    canvas {
+      margin: 0 400px 20px 0;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<h1>Layout Combinators with Propagation</h1>
+<a href="https://elliot.website">elliot evans<br /></a>
+Apr 26 2026<br />
+
+<script>
+  function setup(el, alsoDo = () => {}) {
+    eval?.(el.innerText);
+    el.addEventListener("keydown", (e) => {
+      if (e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        alsoDo();
+        try {
+          eval?.(el.innerText);
+          el.style.outline = "none";
+        } catch (e) {
+          el.style.outline = "1px solid red";
+          throw e;
+        }
+      }
+    });
+  }
+</script>
+
+<main>
+  <section>
+    <pre id="pre2" contenteditable="plaintext-only" spellcheck="false">
+toStr = json => JSON.stringify(
+    json,
+    (k,v)=>typeof v ==='number'?v.toFixed(1):v
+)
+ob = (v) => {
+    const listeners = [];
+    return {
+        on: (l) => listeners.push(l),
+        get: () => v,
+        set: (newV) => {
+            // if my value didn't change, stop propagating
+            if (toStr(v)===toStr(newV)) return;
+            v = newV;
+            listeners.forEach((l) => l(v));
+        },
+    };
+};
+to = (a, b, f) => {
+    // when the value of a changes, set the value of b=f(a.get())
+    a.on((v) => b.set(f(v)));
+    // optional: set b=f(a.get()) right away
+    b.set(f(a.get()));
+};
+and = (...obs) => {
+    const res = ob(Array(obs.length))
+    obs.forEach((o,i)=>to(o,res,v=>res.get().with(i,v)))
+    return res
+} 
+eq = (a, b) => {
+    to(a,b,v=>v)
+    to(b,a,v=>v)
+}
+set = (b,a) => to(a,b,v=>v)
+lift = (f) => (...obs) => {
+    const res = ob()
+    to(and(...obs),res,(args)=>f(...args))
+    return res
+}
+    </pre>
+    <script>
+      setup(pre2);
+    </script>
+  </section>
+
+  <div class="id-div">
+    #circ_abov2_c<br />
+    <canvas id="circ_abov2_c" class="id-inner"></canvas>
+  </div>
+  <pre id="circ_abov2" contenteditable="plaintext-only" spellcheck="false">
+square = (ix,iy,iw,ih=iw) => {
+    const x = ob(ix)
+    const y = ob(iy)
+    const w = ob(iw)
+    const h = ob(ih)
+    return {
+        x, y, w, h,
+        draw: (ctx) => ctx.fillRect(x.get(),y.get(),w.get(),h.get()),
+    };
+};
+max = lift(Math.max)
+add = lift((a,b)=>a+b)
+sub = lift((a,b)=>a-b)
+above = (a, b) => {
+    const w = max(a.w,b.w)
+    const h = add(a.h,b.h)
+
+    const x = ob(0)
+    const y = ob(0)
+    eq(x,a.x)
+    eq(x,b.x)
+
+    eq(y,a.y)
+    set(b.y, add(y,a.h))
+    set(y, sub(b.y,a.h))
+
+    return {
+        x, y, w, h,
+        draw: (ctx) => {
+            a.draw(ctx);
+            b.draw(ctx);
+        },
+    };
+};
+
+let t = 0
+
+function animation() {
+    //requestAnimationFrame(animation)
+    
+    const a = square(0,0,10)
+    const middleCircle = square(0,0,15);
+    const entireGraphic = above(
+            a, 
+            middleCircle);
+
+            console.log('before set')
+    a.x.set(100);
+    a.y.set(30);
+
+    const c = circ_abov2_c;
+    c.getContext("2d").clearRect(0,0,c.width,c.height);
+    entireGraphic.draw(c.getContext("2d"));
+     
+    t+=0.02;
+}
+requestAnimationFrame(animation)</pre
+  >
+  <script>
+    setup(circ_abov2, () => {
+      circ_abov2_c
+        .getContext("2d")
+        .clearRect(0, 0, circ_abov2_c.width, circ_abov2_c.height);
+    });
+  </script>
+
+  What do we need for an editor? We need to be able to insert and delete things
+  from a line! That means adding and removing `to`s and updating the `and`s that
+  contribute to the line's W and H. That means we need to be able to remove
+  listeners.
+</main>

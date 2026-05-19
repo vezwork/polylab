@@ -185,15 +185,15 @@ above(above(circle(10),circle(5)),circle(30))
     <code>above(above(circle(10),circle(5)),circle(30))</code> that we can draw
     at an x&y (<code>20, 20</code> in the code above, but you can change it and
     press shift+enter to eval). But what if we wanted to set the position of the
-    middle circle
+    middle circle and have the position of the whole composite based on that? We
+    can't using this method, but we'll come back to this.
   </section>
 
   <h2 style="clear: both">Propagators</h2>
 
   Propagators are value containers (<code>ob</code>s) that can depend on
-  eachother (via <code>to</code>). Feel free to skim the definition of
-  <code>ob</code> and <code>to</code> and check out the small demonstration
-  below that<br />
+  eachother (via <code>to</code>). Skim the definition of <code>ob</code> and
+  <code>to</code> and check out the small demonstration below that<br />
 
   <section>
     <pre id="pre2" contenteditable="plaintext-only" spellcheck="false">
@@ -277,28 +277,30 @@ syncObWithEl(c, valueOfC);
     </script>
   </section>
 
-  Changing a sets b, and changing b also sets a. Propagators are a nice lil
-  framework for this bidirectionally dependent values sort of stuff.
+  Changing a sets b, and changing b also sets a; and changing either a or b sets
+  c! Propagators are a nice lil framework for this bidirectionally dependent
+  values sort of stuff.
 
   <h2>Implementing Layout Combinators with Propagation</h2>
 
   <p>
-    Now we have layout combinators and we have propagators. Let's put em
+    Now we have layout combinators and we have propagators. Let's put em'
     together.
   </p>
   <p>
     When we combinated graphics, we gave up the ability to draw the individual
     graphics at an x&y to gain the ability to draw the combined graphic at an
     x&y. What if we want to set the x&y of the combinated graphic by saying
-    where one of the individual graphics inside of it should be though?
+    where one of the individual graphics inside of it should be though? Like why
+    can't we just set the middle circle position right?
   </p>
 
   <p>
     We can gain that expressive ability by using <code>ob</code>s for the
     positions of our graphics! Instead of positions being set in a top-down
-    fashion when we draw the combinated graphic, we will set up a bidirectional
-    dependence on the positions of parts of a combinated graphic and the whole.
-    Sorry, thats a bit hard to describe but the idea is intended to be simple!
+    fashion when we draw the combinated graphic, we will set up a mutual
+    dependence between the positions of parts of a combinated graphic and the
+    position of the whole.
   </p>
   <p>
     The refactor consists of moving positions out of the arguments of the draw
@@ -314,7 +316,7 @@ syncObWithEl(c, valueOfC);
       <canvas id="circ_abov2_c" class="id-inner"></canvas>
     </div>
     <pre id="circ_abov2" contenteditable="plaintext-only" spellcheck="false">
-const circle = (r) => {
+circle = (r) => {
     const x = ob(0);
     const y = ob(0);
     return {
@@ -326,7 +328,7 @@ const circle = (r) => {
         },
     };
 };
-const above = (a, b) => {
+above = (a, b) => {
     const w = Math.max(a.w, b.w);
 
     const x = ob(0)
@@ -341,9 +343,8 @@ const above = (a, b) => {
     return {
         x, y, w, h: a.h + b.h,
         draw: (ctx) => {
-            const c = x.get() + w / 2;
-            a.draw(ctx, c - a.w / 2, y.get());
-            b.draw(ctx, c - b.w / 2, y.get() + a.h);
+            a.draw(ctx);
+            b.draw(ctx);
         },
     };
 };

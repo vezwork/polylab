@@ -1,8 +1,12 @@
 <style>
   body {
     background: #8d9987;
-  }</style
-><canvas
+    color: #384133;
+    font-family: sans-serif;
+    text-align: center;
+  }
+</style>
+<canvas
   id="c"
   height="700"
   width="700"
@@ -13,6 +17,14 @@
     display: block;
   "
 ></canvas>
+<h1>Bubble Sort Response</h1>
+By <a href="https://elliot.website">Elliot Evans</a>
+<br />
+<br /><br />
+This small game is a creative response to
+<a href="https://patrickgh3.itch.io/bubble-sort">Bubble Sort</a> by
+<a href="https://cwpat.me/about/">Patrick Traynor</a>, please play it!
+
 <script type="module">
   import { randomCssRgb } from "../../../lib/math/Color.js";
   import { Sounds } from "../../../lib/sound/sound.js";
@@ -69,7 +81,7 @@
   const lerp = (start, end, t) => add(start, smul(t, sub(end, start)));
 
   // DRAWING
-  function drawArrow(from, to, color = "black") {
+  function drawArrow(from, to, color) {
     const headlen = 14; // length of head in pixels
     const d = sub(to, from);
     const angle = angleOf(d);
@@ -153,7 +165,7 @@
     let layer = -1;
     while (og(cur).length > 0) {
       cur = og(cur)[0];
-      layer++;
+      if (cur !== me) layer++;
     }
     return layer;
   };
@@ -249,6 +261,7 @@
   };
 
   let targetCircle = [...at];
+
   let instrSpace = 0;
   let instrWin = 0;
 
@@ -264,7 +277,7 @@
   let mouse = [0, 0];
 
   const dirs = () => {
-    const back = ogd(at).map((e) => ["ArrowLeft", ogd(at)[0]]);
+    const back = ogd(at).map((e) => ["ArrowLeft", e]);
     if (grabbing === at) return new Map(back);
     const toi = god(at).sort((a, b) => a.p[1] - b.p[1]);
     if (toi.length === 0) return new Map(back);
@@ -304,7 +317,9 @@
         closest = edge.p;
     if (closest !== null) closestToMouse = closest;
   };
-  const checkButtonPressed = () =>
+  const checkButtonPressed = () => {
+    if (at === box1) box1[1] += 15;
+    if (at === box2) box2[1] += 15;
     setTimeout(() => {
       // button pressing
       se.detune = -100;
@@ -315,6 +330,7 @@
         if (orangeGrandParent === undefined) return;
         if (isGood(orangeParent, orangeGrandParent)) {
           movee(orangeParent, orange, orangeGrandParent.p, orange);
+          sp.detune = -layern(orange) * 100;
           sp.play();
         } else {
           se.play();
@@ -328,6 +344,7 @@
         )[0];
         if (orangeSibling !== undefined) {
           movee(orangeParent, orange, orangeSibling.p, orange);
+          sp.detune = -layern(orange) * 100;
           sp.play();
         } else {
           se.play();
@@ -337,6 +354,7 @@
       se.detune = 0;
       sp.detune = 0;
     }, 100);
+  };
   //addEventListener("mousemove", (ev) => {
   //  mouse = [ev.offsetX, ev.offsetY];
   //  pickClosest()
@@ -373,24 +391,39 @@
       }
       movee(at, me, nxt.get(ev.key).p, me);
       at = nxt.get(ev.key).p;
+      sp.detune = layern(at) * 100;
       sp.play();
     } else if (nxt.has(ev.key)) {
       se.play();
       rumble.set(nxt.get(ev.key), 1);
       return;
+    } else if (ev.key.startsWith("Arrow")) {
+      se.play();
+      rumble.set(at, 1);
     }
 
     if (ev.key === " ") {
       // pick up grabbing
       if (grabbing === null) {
-        grabbing = at;
-        su.play();
+        if (ogd(at)[0].data === undefined) {
+          grabbing = at;
+          su.detune = layern(at) * 100;
+          su.play();
+        } else {
+          se.play();
+          rumble.set(ogd(at)[0].to, 1);
+          ogd(at)[0].to.dontBadgeRumble = true;
+          setTimeout(() => {
+            ogd(at)[0].to.dontBadgeRumble = false;
+          }, 1000);
+        }
       }
       // drop grabbing
       else if (grabbingParent !== null) {
         movee(me, grabbing, at, grabbing);
         grabbing = null;
         grabbingParent = null;
+        sd.detune = layern(at) * 100;
         sd.play();
       }
     }
@@ -453,13 +486,17 @@
       const mid = lerp(s, q, 1 / 2);
       const isGrabbing = q === grabbing && s === grabbingParent;
 
-      if (isGrabbing) {
-        ctx.save();
-        ctx.setLineDash([15, 5]);
-        ctx.lineDashOffset = t / 2;
-        drawArrow(from, to, "white");
-        ctx.restore();
-      } else drawArrow(from, to);
+      drawArrow(
+        from,
+        to,
+        q === me
+          ? "lightgray"
+          : q === orange
+          ? "rgb(255, 140, 23)"
+          : edge.data !== undefined
+          ? "#394133"
+          : "black"
+      );
 
       const good = isGood(s, edge);
       // edge data
@@ -470,7 +507,7 @@
           Math.random(),
         ]);
         if (len(rmb) > 1) ctx.fillStyle = "red";
-        badgeRumbles.set(s, rmb);
+        if (!edge.dontBadgeRumble) badgeRumbles.set(s, rmb);
         const m = add(mid, rmb);
         ctx.font = "16px monospace";
         ctx.strokeStyle = "#5a6b4d";
@@ -517,7 +554,7 @@
       drawNode(q, ...add(q, rmb), R * 2);
 
       // layer badge
-      if (q === me) continue;
+      if (q === me || q === box1 || q === box2) continue;
       ctx.fillStyle = "white";
       ctx.strokeStyle = "#5a6b4d";
       ctx.font = "18px sans-serif";
@@ -539,6 +576,11 @@
       }
     }
 
+    // draw robot indicator
+    ctx.strokeStyle = "rgb(255, 140, 23)";
+    ctx.lineWidth = 2;
+    drawCircle(og(orange)[0], R + 4, true);
+
     // draw player indicator
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
@@ -558,11 +600,15 @@
 
     ctx.save();
     ctx.globalAlpha = 40 / t;
-    ctx.fillText("arrow keys to move", 350, 600);
+    ctx.fillText("arrow keys to move", 350, 580);
     if (at === purp1) instrSpace = 1;
     else instrSpace *= 0.999;
     ctx.globalAlpha = instrSpace;
-    ctx.fillText("space to grab", 350, 650);
+    ctx.fillText(
+      "space to grab bubs with no #→ restrictions into them",
+      350,
+      610
+    );
 
     if (at === green4) instrWin = 1;
     else instrWin *= 0.999;

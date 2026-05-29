@@ -1,0 +1,575 @@
+<canvas id="c" height="700" width="700"></canvas>
+<script type="module">
+  import { randomCssRgb } from "../../../lib/math/Color.js";
+  import { Sounds } from "../../../lib/sound/sound.js";
+
+  const ctx = c.getContext("2d");
+
+  ctx.fillText("loading", 50, 50);
+
+  // make things crispy
+  const dpr = window.devicePixelRatio;
+  const h = c.height;
+  const w = c.width;
+  c.width = w * dpr;
+  c.height = h * dpr;
+  c.style.width = w + "px";
+  c.style.height = h + "px";
+  ctx.scale(dpr, dpr);
+
+  // sounds
+  const S = new Sounds();
+  const se = await S.load("../../../lib/sound/drop_2_piano.ogg");
+  const sp = await S.load("../../../lib/sound/pop.ogg");
+  const su = await S.load("../../../lib/sound/up_piano.ogg");
+  const sd = await S.load("../../../lib/sound/down_piano.ogg");
+
+  // images
+  const loadImage = (url) =>
+    new Promise((res) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.src = url;
+    });
+  const ime = await loadImage("../../../lib/img/small_guy.png");
+  const iro = await loadImage("../../../lib/img/small_robot.png");
+  const ifi = await loadImage("../../../lib/img/star.png");
+
+  //VEC2
+  const smul = (n, [x, y]) => [n * x, n * y];
+  const len = ([x, y]) => (x ** 2 + y ** 2) ** (1 / 2);
+  const unit = (p) => smul(1 / len(p), p);
+  const add = ([x, y], [p, q]) => [x + p, y + q];
+  const sub = ([x, y], [p, q]) => [x - p, y - q];
+  const dist = (p, q) => len(sub(p, q));
+  const rot90 = ([x, y]) => [y, -x];
+  const set = (p, [x, y]) => {
+    p[0] = x;
+    p[1] = y;
+  };
+  const angleOf = (v) => Math.atan2(v[1], v[0]);
+  const fromPolar = (length, theta) => [
+    length * Math.cos(theta),
+    length * Math.sin(theta),
+  ];
+  const lerp = (start, end, t) => add(start, smul(t, sub(end, start)));
+
+  // DRAWING
+  function drawArrow(from, to, color = "black") {
+    const headlen = 14; // length of head in pixels
+    const d = sub(to, from);
+    const angle = angleOf(d);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(...from);
+    ctx.lineTo(...to);
+    ctx.lineTo(...sub(to, fromPolar(headlen, angle - Math.PI / 6)));
+    ctx.moveTo(...to);
+    ctx.lineTo(...sub(to, fromPolar(headlen, angle + Math.PI / 6)));
+
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#5a6b4d";
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  }
+  function drawCircle(p, r, stroke = false) {
+    ctx.beginPath();
+    ctx.ellipse(p[0], p[1], r, r, 0, 0, Math.PI * 2);
+    if (stroke) ctx.stroke();
+    else ctx.fill();
+  }
+
+  const mid = [c.width / 2, c.height / 2];
+
+  // NODES AND EDGES
+  const start = [300, 300, "black"];
+  const green1 = [310, 310, "hsl(110 50% 70%)"];
+  const green2 = [310, 15, "hsl(110 50% 50%)"];
+  const green3 = [310, 0, "hsl(110 50% 30%)"];
+  const green4 = [310, 17, "star"];
+  const blue1 = [310, 311, "hsl(172 60% 60%)"];
+  const blue2 = [310, 312, "hsl(172 80% 80%)"];
+  const pink1 = [311, 113, "hsl(252 50% 70%)"];
+  const pink2 = [320, 360, "hsl(312 50% 70%)"];
+  const box1 = [330, 330, "box", "←"];
+  const box2 = [331, 330, "box", "→"];
+  const purp1 = [310, 12, "hsl(252 50% 90%)"];
+  const purp2 = [310, 14, "hsl(252 50% 70%)"];
+  const purp3 = [312, 15, "hsl(252 50% 50%)"];
+  const orange = [310, 20, "orange"];
+  const me = [0, 0, "me"];
+  const p = [
+    start,
+    green1,
+    pink1,
+    box1,
+    box2,
+    blue1,
+    purp1,
+    purp2,
+    green2,
+    green3,
+    green4,
+    orange,
+    blue2,
+    pink2,
+    purp3,
+    me,
+  ];
+  const e = new Map();
+  const re = new Map();
+
+  let at = p[0];
+  let grabbing = null;
+  let grabbingParent = null;
+
+  const god = (p1) => (e.get(p1) ?? []).filter(({ p }) => p !== me);
+  const ogd = (p1) => re.get(p1) ?? [];
+  const go = (p1) => god(p1).map(({ p }) => p);
+  const gowithme = (p1) => (e.get(p1) ?? []).map(({ p }) => p);
+  const og = (p1) => ogd(p1).map(({ p }) => p);
+  const es = () =>
+    e.entries().flatMap(([k, v]) => v.map((edge) => [k, edge.p, edge]));
+
+  const layern = (p1) => {
+    let cur = p1;
+    let layer = -1;
+    while (og(cur).length > 0) {
+      cur = og(cur)[0];
+      layer++;
+    }
+    return layer;
+  };
+  const movee = (p1, p2, p1n, p2n) => {
+    const d = e.get(p1).find(({ p }) => p === p2)?.data;
+    dele(p1, p2);
+    adde(p1n, p2n, d);
+  };
+  const adde = (p1, p2, data) => {
+    const to = { p: p2, data, re };
+    const fr = { p: p1, data, isRe: true, to };
+    e.set(p1, [...(e.get(p1) ?? []), to]);
+    re.set(p2, [...(re.get(p2) ?? []), fr]);
+  };
+  const dele = (p1, p2) => {
+    e.set(
+      p1,
+      (e.get(p1) ?? []).filter(({ p }) => p !== p2)
+    );
+    re.set(
+      p2,
+      (re.get(p2) ?? []).filter(({ p }) => p !== p1)
+    );
+  };
+
+  adde(start, me);
+
+  adde(start, green1);
+  adde(pink2, box1);
+  adde(pink2, box2);
+  adde(green1, blue1);
+  adde(blue1, blue2, 1);
+  adde(blue2, purp1);
+
+  adde(pink1, purp2, 1);
+  adde(purp3, orange);
+
+  adde(purp1, pink1, 2);
+  adde(pink1, pink2);
+
+  adde(green1, green2, 3);
+  adde(green2, green3, 2);
+  adde(green3, green4, 5);
+  adde(purp2, purp3, 3);
+
+  const goto = () => (grabbing === at ? og(at) : [...go(at), ...og(at)]);
+  const gotod = () => (grabbing === at ? ogd(at) : [...god(at), ...ogd(at)]);
+
+  // DRAWING NODES
+  const margin = 1;
+  const nodeTree = (q, depth) => {
+    if (depth === 0) return { q, size: 0, childNodes: [] };
+    const childNodes = gowithme(q).map((nxt) => nodeTree(nxt, depth - 1));
+    return {
+      q,
+      size: childNodes.reduce((acc, cur) => cur.size + acc + margin, margin),
+      childNodes,
+    };
+  };
+  const drawNode = (q, x, y, size = 50, depth = 10) => {
+    const t = nodeTree(q, depth);
+    ctx.lineWidth = 1;
+    drawNodeTree(t, x, y, size);
+  };
+  const drawNodeTree = (nt, x, y, size) => {
+    let circle = false;
+    if (nt.q[2] === "me")
+      ctx.drawImage(ime, x - size / 2, y - size / 2, size, size);
+    else if (nt.q[2] === "orange")
+      ctx.drawImage(iro, x - size / 2, y - size / 2, size, size);
+    else if (nt.q[2] === "star")
+      ctx.drawImage(ifi, x - size / 2, y - size / 2, size, size);
+    else if (nt.q[2] === "box") {
+      ctx.fillStyle = "brown";
+      ctx.fillRect(x - size / 2, y - size / 2 + 6, size, size);
+      ctx.fillStyle = "rgb(255, 140, 23)";
+      ctx.fillRect(x - size / 2, y - size / 2, size, size);
+      ctx.font = `${size / 2}px serif`;
+      ctx.fillStyle = "black";
+      ctx.fillText(nt.q[3], x, y);
+    } else {
+      circle = true;
+      ctx.fillStyle = nt.q[2];
+      drawCircle([x, y], size / 2);
+    }
+    const m = (size * margin) / nt.size;
+    let s = x - size / 2 + m;
+    for (const nxt of nt.childNodes) {
+      const pns = (size * nxt.size) / nt.size;
+      drawNodeTree(nxt, s + pns / 2, y - 10, pns);
+      s += pns + m;
+    }
+  };
+
+  let targetCircle = [...at];
+  let instrSpace = 0;
+
+  const isGood = (from, ed) =>
+    ed?.p !== undefined &&
+    (ed.data === undefined ||
+      (ed.isRe === true && layern(ed.p) === ed.data) ||
+      (ed.isRe === undefined && layern(from) === ed.data));
+
+  const rumble = new Map();
+  // INPUT
+  let closestToMouse = at;
+  let mouse = [0, 0];
+
+  const dirs = () => {
+    const back = ogd(at).map((e) => ["ArrowLeft", ogd(at)[0]]);
+    if (grabbing === at) return new Map(back);
+    const toi = god(at).sort((a, b) => a.p[1] - b.p[1]);
+    if (toi.length === 0) return new Map(back);
+    if (toi.length === 1) return new Map([...back, ["ArrowRight", toi[0]]]);
+    if (toi.length === 2)
+      return new Map([
+        ...back,
+        ["ArrowUp", toi[0]],
+        ["ArrowRight", isGood(at, toi[1]) ? toi[1] : toi[0]],
+        ["ArrowDown", toi[1]],
+      ]);
+    return new Map(
+      new Map([
+        ...back,
+        ["ArrowUp", toi[0]],
+        ["ArrowRight", toi[1]],
+        ["ArrowDown", toi[2]],
+        ...toi.slice(3).map((e, i) => [i, e]),
+      ])
+    );
+  };
+  const dirLabel = (name) =>
+    ({
+      ArrowLeft: "←",
+      ArrowUp: "↑",
+      ArrowRight: "→",
+      ArrowDown: "↓",
+    }[name] ?? name);
+  const pickClosest = () => {
+    const nxt = gotod();
+    let closest = null;
+    for (const edge of nxt)
+      if (
+        isGood(at, edge) &&
+        (closest === null || dist(edge.p, mouse) < dist(closest, mouse))
+      )
+        closest = edge.p;
+    if (closest !== null) closestToMouse = closest;
+  };
+  const checkButtonPressed = () =>
+    setTimeout(() => {
+      // button pressing
+      se.detune = -100;
+      sp.detune = -100;
+      if (at === box1) {
+        const orangeParent = og(orange)[0];
+        const orangeGrandParent = ogd(orangeParent)[0];
+        if (orangeGrandParent === undefined) return;
+        if (isGood(orangeParent, orangeGrandParent)) {
+          movee(orangeParent, orange, orangeGrandParent.p, orange);
+          sp.play();
+        } else {
+          se.play();
+          rumble.set(orangeGrandParent.to, 1);
+        }
+      }
+      if (at === box2) {
+        const orangeParent = og(orange)[0];
+        const orangeSibling = god(orangeParent).filter(
+          (s) => s.p !== orange && isGood(orangeParent, s)
+        )[0];
+        if (orangeSibling !== undefined) {
+          movee(orangeParent, orange, orangeSibling.p, orange);
+          sp.play();
+        } else {
+          se.play();
+          rumble.set(orangeParent, 1);
+        }
+      }
+      se.detune = 0;
+      sp.detune = 0;
+    }, 100);
+  //addEventListener("mousemove", (ev) => {
+  //  mouse = [ev.offsetX, ev.offsetY];
+  //  pickClosest()
+  //});
+  //addEventListener("mousedown", (ev) => {
+  //  if (at === grabbing) grabbingParent = closestToMouse;
+  //  movee(at,me,closestToMouse,me)
+  //  at = closestToMouse;
+  //  sp.play()
+  //  checkButtonPressed()
+  //  pickClosest()
+  //});
+
+  addEventListener("keydown", (ev) => {
+    const to = go(at);
+    const from = og(at);
+    ev.preventDefault();
+
+    // cancel grabbing & set grabbing parent
+    if (grabbing === at) {
+      if (ev.key === " ") {
+        grabbing = null;
+        grabbingParent = null;
+        return;
+      }
+    }
+
+    // normal movement
+    const nxt = dirs();
+    if (isGood(at, nxt.get(ev.key))) {
+      if (grabbing === at) {
+        grabbingParent = nxt.get(ev.key).p;
+        movee(grabbingParent, grabbing, me, grabbing);
+      }
+      movee(at, me, nxt.get(ev.key).p, me);
+      at = nxt.get(ev.key).p;
+      sp.play();
+    } else if (nxt.has(ev.key)) {
+      se.play();
+      rumble.set(nxt.get(ev.key), 1);
+      return;
+    }
+
+    if (ev.key === " ") {
+      // pick up grabbing
+      if (grabbing === null) {
+        grabbing = at;
+        su.play();
+      }
+      // drop grabbing
+      else if (grabbingParent !== null) {
+        movee(me, grabbing, at, grabbing);
+        grabbing = null;
+        grabbingParent = null;
+        sd.play();
+      }
+    }
+    checkButtonPressed();
+  });
+
+  // FORCE
+  const PUSH = (x) => 60 / x;
+  const PULL = (x) => (x / 180) ** 3;
+  const R = 30;
+
+  requestAnimationFrame(draw);
+  function draw() {
+    requestAnimationFrame(draw);
+
+    let forces = p.map((p) => [0, 0]);
+    for (let ii = 0; ii < 4; ii++) {
+      for (let i = 0; i < p.length; i++) {
+        for (let j = i + 1; j < p.length; j++) {
+          const dir = unit(sub(p[i], p[j]));
+          const v = PUSH(dist(p[i], p[j]));
+          const f = smul(v, dir);
+          forces[i] = add(forces[i], f);
+          forces[j] = sub(forces[j], f);
+        }
+        const nxt = go(p[i]) ?? [];
+        nxt.forEach((q) => {
+          const dir = unit(sub(q, p[i]));
+          const v = PULL(dist(p[i], q));
+          forces[i] = add(forces[i], smul(v, dir));
+        });
+        const nxtr = og(p[i]) ?? [];
+        nxtr.forEach((q) => {
+          const dir = unit(sub(q, p[i]));
+          const v = PULL(dist(p[i], q));
+          forces[i] = add(forces[i], smul(v, dir));
+        });
+        // towards mid force
+        const m = lerp([220, 350], [450, 350], (layern(p[i]) + 1) / 7);
+        forces[i] = add(forces[i], smul(1 / 50, sub(m, p[i])));
+      }
+    }
+    forces.forEach((f, i) => set(p[i], add(p[i], f)));
+
+    // DRAWING
+    ctx.fillStyle = "#394133";
+    ctx.fillRect(0, 0, c.width, c.height);
+    const t = performance.now() / 50;
+    for (const [k, v] of rumble) rumble.set(k, v * 0.92);
+
+    let badgeRumbles = new Map();
+    // draw edges
+    for (const [s, q, edge] of es()) {
+      const data = edge.data;
+      const d = dist(s, q);
+      if (d < R * 2 + 12) continue;
+      const from = lerp(s, q, (0 + R + 8) / d);
+      const to = lerp(s, q, (d - R - 6) / d);
+      const mid = lerp(s, q, 1 / 2);
+      const isGrabbing = q === grabbing && s === grabbingParent;
+
+      if (isGrabbing) {
+        ctx.save();
+        ctx.setLineDash([15, 5]);
+        ctx.lineDashOffset = t / 2;
+        drawArrow(from, to, "white");
+        ctx.restore();
+      } else drawArrow(from, to);
+
+      const good = isGood(s, edge);
+      // edge data
+      if (data !== undefined) {
+        ctx.fillStyle = good ? "YellowGreen" : "Orange";
+        const rmb = smul((rumble.get(edge) ?? 0) * 20, [
+          Math.random(),
+          Math.random(),
+        ]);
+        if (len(rmb) > 1) ctx.fillStyle = "red";
+        badgeRumbles.set(s, rmb);
+        const m = add(mid, rmb);
+        ctx.font = "16px monospace";
+        ctx.strokeStyle = "#5a6b4d";
+        ctx.font = "18px sans-serif";
+        ctx.lineWidth = 4;
+        ctx.strokeText(data + "→", ...m);
+        ctx.fillText(data + "→", ...m);
+      }
+    }
+
+    // mouse highlight
+    const q = closestToMouse;
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#5a6b4d";
+    const pos = add(q, smul(1 / 150, sub(mouse, q)));
+    if (closestToMouse === q) drawCircle(pos, R + 6, true);
+
+    // draw arrow movement indicators
+    ctx.font = "16px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 8;
+
+    for (const [name, edge] of dirs()) {
+      const label = dirLabel(name);
+      const q = edge.p;
+
+      ctx.strokeStyle = "#5a6b4d";
+      ctx.fillStyle = isGood(at, edge) ? "white" : "gray";
+      const d = dist(at, q);
+      const pos = lerp(at, q, (R + 14) / d);
+      ctx.strokeText(label, ...pos);
+
+      ctx.fillText(label, ...pos);
+    }
+    ctx.fillStyle = "#5a6b4d";
+
+    // draw nodes
+    for (const q of p) {
+      const rmb = smul((rumble.get(q) ?? 0) * 20, [
+        Math.random(),
+        Math.random(),
+      ]);
+      drawNode(q, ...add(q, rmb), R * 2);
+
+      // layer badge
+      if (q === me) continue;
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "#5a6b4d";
+      ctx.font = "18px sans-serif";
+      ctx.lineWidth = 4;
+      if (layern(q) !== -1) {
+        const rmb = badgeRumbles.get(q) ?? [0, 0];
+        if (len(rmb) > 3) ctx.fillStyle = "red";
+        ctx.save();
+        const s =
+          (Math.max(0.9, Math.sin((t - layern(q) * 5) / 20)) - 0.9) * 2.5;
+
+        const pos = add(rmb, [q[0] + R - 8, q[1] + R - 8]);
+        ctx.translate(...pos);
+        ctx.scale(1 + s, 1 + s);
+        ctx.translate(...smul(-1, pos));
+        ctx.strokeText(layern(q), ...pos);
+        ctx.fillText(layern(q), ...pos);
+        ctx.restore();
+      }
+    }
+
+    // draw player indicator
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    targetCircle = lerp(targetCircle, at, 0.4);
+    drawCircle(targetCircle, R + 4, true);
+
+    // drawing grabbing indicator
+    const dl = (2 * Math.PI * R) / 8;
+    ctx.setLineDash([dl, dl]);
+    ctx.lineDashOffset = t;
+
+    ctx.lineWidth = 2;
+
+    ctx.strokeStyle = "white";
+    if (grabbing) drawCircle(grabbing, R, true);
+    ctx.setLineDash([]);
+
+    ctx.save();
+    ctx.globalAlpha = 40 / t;
+    ctx.fillText("arrow keys to move", 180, 650);
+    ctx.restore();
+    ctx.save();
+    if (at === purp1) instrSpace = 1;
+    else instrSpace *= 0.999;
+    ctx.globalAlpha = instrSpace;
+    ctx.fillText("space to grab", 380, 650);
+    ctx.restore();
+  }
+  // mechanics:
+  // -[x] directed graph
+  //  -[x] moving directedly
+  // -[x] "grabbing"
+  // -[x] buttons that move a node "up" and "down"
+  // vis:
+  // -[x] node colors
+  // -[x] nested node vis
+  // -[] button press
+  // -[x] red flash when trying to visit locked edge
+  // -[x] color for unlock
+  // game:
+  // -[] arrow key controls
+  // -[x] gates (idea: vis as chain of things o -> o -> o)
+  // -[] incremental instructions/reveal
+  // -[x] sfx
+
+  // tangent ideas:
+  // -[] multi-arrows
+  // -[] graph inside node
+  // -[] parent color(s) "halo"
+</script>

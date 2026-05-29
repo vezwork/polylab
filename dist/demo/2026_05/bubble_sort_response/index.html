@@ -1,4 +1,14 @@
-<canvas id="c" height="700" width="700"></canvas>
+<canvas
+  id="c"
+  height="700"
+  width="700"
+  style="
+    margin: 0 auto;
+    border-radius: 100%;
+    position: relative;
+    display: block;
+  "
+></canvas>
 <script type="module">
   import { randomCssRgb } from "../../../lib/math/Color.js";
   import { Sounds } from "../../../lib/sound/sound.js";
@@ -236,6 +246,7 @@
 
   let targetCircle = [...at];
   let instrSpace = 0;
+  let instrWin = 0;
 
   const isGood = (from, ed) =>
     ed?.p !== undefined &&
@@ -267,7 +278,7 @@
         ["ArrowUp", toi[0]],
         ["ArrowRight", toi[1]],
         ["ArrowDown", toi[2]],
-        ...toi.slice(3).map((e, i) => [i, e]),
+        ...toi.slice(3).map((e, i) => [i + "", e]),
       ])
     );
   };
@@ -398,7 +409,8 @@
           const dir = unit(sub(p[i], p[j]));
           const v = PUSH(dist(p[i], p[j]));
           const f = smul(v, dir);
-          forces[i] = add(forces[i], f);
+          if (p[j] !== me) forces[i] = add(forces[i], f);
+          else forces[i] = add(forces[i], smul(1 / 4, f));
           forces[j] = sub(forces[j], f);
         }
         const nxt = go(p[i]) ?? [];
@@ -542,13 +554,17 @@
 
     ctx.save();
     ctx.globalAlpha = 40 / t;
-    ctx.fillText("arrow keys to move", 180, 650);
-    ctx.restore();
-    ctx.save();
+    ctx.fillText("arrow keys to move", 350, 600);
     if (at === purp1) instrSpace = 1;
     else instrSpace *= 0.999;
     ctx.globalAlpha = instrSpace;
-    ctx.fillText("space to grab", 380, 650);
+    ctx.fillText("space to grab", 350, 650);
+
+    if (at === green4) instrWin = 1;
+    else instrWin *= 0.999;
+    ctx.fillStyle = "YellowGreen";
+    ctx.globalAlpha = instrWin;
+    ctx.fillText("you did it! Thanks for playing", 350, 650);
     ctx.restore();
   }
   // mechanics:

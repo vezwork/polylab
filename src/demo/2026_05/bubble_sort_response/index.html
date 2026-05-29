@@ -60,6 +60,7 @@ This small game is a creative response to
   const ime = await loadImage("../../../lib/img/small_guy.png");
   const iro = await loadImage("../../../lib/img/small_robot.png");
   const ifi = await loadImage("../../../lib/img/star.png");
+  const ilo = await loadImage("../../../lib/img/lock.png");
 
   //VEC2
   const smul = (n, [x, y]) => [n * x, n * y];
@@ -333,8 +334,11 @@ This small game is a creative response to
           sp.detune = -layern(orange) * 100;
           sp.play();
         } else {
+          se.detune = -300;
           se.play();
+          se.detune = 0;
           rumble.set(orangeGrandParent.to, 1);
+          rumble.set(orange, 0.5);
         }
       }
       if (at === box2) {
@@ -347,8 +351,12 @@ This small game is a creative response to
           sp.detune = -layern(orange) * 100;
           sp.play();
         } else {
+          se.detune = -300;
           se.play();
+          se.detune = 0;
+          god(orangeParent).forEach((ed) => rumble.set(ed, 1));
           rumble.set(orangeParent, 1);
+          rumble.set(orange, 0.5);
         }
       }
       se.detune = 0;
@@ -395,11 +403,15 @@ This small game is a creative response to
       sp.play();
     } else if (nxt.has(ev.key)) {
       se.play();
-      rumble.set(nxt.get(ev.key), 1);
+      const nxtk = nxt.get(ev.key);
+      rumble.set(nxtk.isRe ? nxtk.to : nxtk, 1);
+      rumble.set(me, 0.5);
       return;
     } else if (ev.key.startsWith("Arrow")) {
       se.play();
+      god(at).forEach((ed) => rumble.set(ed, 1));
       rumble.set(at, 1);
+      rumble.set(me, 0.5);
     }
 
     if (ev.key === " ") {
@@ -476,47 +488,6 @@ This small game is a creative response to
     for (const [k, v] of rumble) rumble.set(k, v * 0.92);
 
     let badgeRumbles = new Map();
-    // draw edges
-    for (const [s, q, edge] of es()) {
-      const data = edge.data;
-      const d = dist(s, q);
-      if (d < R * 2 + 12) continue;
-      const from = lerp(s, q, (0 + R + 8) / d);
-      const to = lerp(s, q, (d - R - 6) / d);
-      const mid = lerp(s, q, 1 / 2);
-      const isGrabbing = q === grabbing && s === grabbingParent;
-
-      drawArrow(
-        from,
-        to,
-        q === me
-          ? "lightgray"
-          : q === orange
-          ? "rgb(255, 140, 23)"
-          : edge.data !== undefined
-          ? "#394133"
-          : "black"
-      );
-
-      const good = isGood(s, edge);
-      // edge data
-      if (data !== undefined) {
-        ctx.fillStyle = good ? "YellowGreen" : "Orange";
-        const rmb = smul((rumble.get(edge) ?? 0) * 20, [
-          Math.random(),
-          Math.random(),
-        ]);
-        if (len(rmb) > 1) ctx.fillStyle = "red";
-        if (!edge.dontBadgeRumble) badgeRumbles.set(s, rmb);
-        const m = add(mid, rmb);
-        ctx.font = "16px monospace";
-        ctx.strokeStyle = "#5a6b4d";
-        ctx.font = "18px sans-serif";
-        ctx.lineWidth = 4;
-        ctx.strokeText(data + "→", ...m);
-        ctx.fillText(data + "→", ...m);
-      }
-    }
 
     // mouse highlight
     const q = closestToMouse;
@@ -525,12 +496,60 @@ This small game is a creative response to
     const pos = add(q, smul(1 / 150, sub(mouse, q)));
     if (closestToMouse === q) drawCircle(pos, R + 6, true);
 
+    ctx.fillStyle = "#5a6b4d";
+
+    // draw nodes
+    for (const q of p) {
+      const rmb = smul((rumble.get(q) ?? 0) * 20, [
+        Math.random(),
+        Math.random(),
+      ]);
+      drawNode(q, ...add(q, rmb), R * 2);
+    }
+
+    // draw edges
+    for (const [s, q, edge] of es()) {
+      const data = edge.data;
+      const d = dist(s, q);
+      if (d < R * 2 + 12) continue;
+      const from = lerp(s, q, (0 + R + 8) / d);
+      const rmb = smul((rumble.get(q) ?? 0) * 20, [
+        Math.random(),
+        Math.random(),
+      ]);
+      const to = lerp(s, add(q, rmb), (d - R - 6) / d);
+      const mid = lerp(s, q, (d - R - 14) / d);
+      const isGrabbing = q === grabbing && s === grabbingParent;
+
+      drawArrow(
+        from,
+        to,
+        q === me ? "lightgray" : q === orange ? "rgb(255, 140, 23)" : "black"
+      );
+
+      const good = isGood(s, edge);
+      // edge data (locks)
+      if (data !== undefined) {
+        ctx.fillStyle = good ? "YellowGreen" : "#ff596a";
+        const rmb = smul((rumble.get(edge) ?? 0) * 20, [
+          Math.random(),
+          Math.random(),
+        ]);
+        if (len(rmb) > 1) ctx.fillStyle = "white";
+        if (!edge.dontBadgeRumble) badgeRumbles.set(s, rmb);
+        const m = add(mid, rmb);
+        ctx.font = "16px sans-serif";
+        ctx.lineWidth = 4;
+        ctx.drawImage(ilo, ...sub(m, [12, 16]));
+        ctx.fillText(data, ...m);
+      }
+    }
+
     // draw arrow movement indicators
     ctx.font = "16px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineWidth = 8;
-
     for (const [name, edge] of dirs()) {
       const label = dirLabel(name);
       const q = edge.p;
@@ -543,17 +562,36 @@ This small game is a creative response to
 
       ctx.fillText(label, ...pos);
     }
-    ctx.fillStyle = "#5a6b4d";
 
-    // draw nodes
+    // draw robot indicator
+    ctx.strokeStyle = "rgb(255, 140, 23)";
+    ctx.lineWidth = 2;
+    let rmb = smul((rumble.get(og(orange)[0]) ?? 0) * 20, [
+      Math.random(),
+      Math.random(),
+    ]);
+    drawCircle(add(rmb, og(orange)[0]), R + 4, true);
+
+    // draw player indicator
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    rmb = smul((rumble.get(at) ?? 0) * 20, [Math.random(), Math.random()]);
+    targetCircle = lerp(targetCircle, add(rmb, at), 0.4);
+    drawCircle(targetCircle, R + 4, true);
+
+    // drawing grabbing indicator
+    const dl = (2 * Math.PI * R) / 8;
+    ctx.setLineDash([dl, dl]);
+    ctx.lineDashOffset = t;
+
+    ctx.lineWidth = 2;
+
+    ctx.strokeStyle = "white";
+    if (grabbing) drawCircle(grabbing, R, true);
+    ctx.setLineDash([]);
+
+    // draw node layer badges
     for (const q of p) {
-      const rmb = smul((rumble.get(q) ?? 0) * 20, [
-        Math.random(),
-        Math.random(),
-      ]);
-      drawNode(q, ...add(q, rmb), R * 2);
-
-      // layer badge
       if (q === me || q === box1 || q === box2) continue;
       ctx.fillStyle = "white";
       ctx.strokeStyle = "#5a6b4d";
@@ -576,39 +614,13 @@ This small game is a creative response to
       }
     }
 
-    // draw robot indicator
-    ctx.strokeStyle = "rgb(255, 140, 23)";
-    ctx.lineWidth = 2;
-    drawCircle(og(orange)[0], R + 4, true);
-
-    // draw player indicator
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
-    targetCircle = lerp(targetCircle, at, 0.4);
-    drawCircle(targetCircle, R + 4, true);
-
-    // drawing grabbing indicator
-    const dl = (2 * Math.PI * R) / 8;
-    ctx.setLineDash([dl, dl]);
-    ctx.lineDashOffset = t;
-
-    ctx.lineWidth = 2;
-
-    ctx.strokeStyle = "white";
-    if (grabbing) drawCircle(grabbing, R, true);
-    ctx.setLineDash([]);
-
     ctx.save();
     ctx.globalAlpha = 40 / t;
     ctx.fillText("arrow keys to move", 350, 580);
     if (at === purp1) instrSpace = 1;
     else instrSpace *= 0.999;
     ctx.globalAlpha = instrSpace;
-    ctx.fillText(
-      "space to grab bubs with no #→ restrictions into them",
-      350,
-      610
-    );
+    ctx.fillText("space to grab bubs without locks on them", 350, 610);
 
     if (at === green4) instrWin = 1;
     else instrWin *= 0.999;

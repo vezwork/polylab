@@ -328,7 +328,14 @@ This small game is a creative response to
       if (at === box1) {
         const orangeParent = og(orange)[0];
         const orangeGrandParent = ogd(orangeParent)[0];
-        if (orangeGrandParent === undefined) return;
+        if (orangeGrandParent === undefined) {
+          se.detune = -300;
+          se.play();
+          se.detune = 0;
+          rumble.set(orangeParent, 1);
+          rumble.set(orange, 0.5);
+          return;
+        }
         if (isGood(orangeParent, orangeGrandParent)) {
           movee(orangeParent, orange, orangeGrandParent.p, orange);
           sp.detune = -layern(orange) * 100;

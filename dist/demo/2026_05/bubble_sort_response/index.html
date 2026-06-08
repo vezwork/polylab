@@ -23,8 +23,9 @@ By <a href="https://elliot.website">Elliot Evans</a> <br />
 <img src="../../../lib/img/lock.png" height="20" /> to the
 <img src="../../../lib/img/star.png" height="20" /> with the help of
 <img src="../../../lib/img/small_robot.png" height="20" /><br /><br />
-Arrow keys to move. Space bar to pick up bubbles without locks on them.<br />Also
-you can't pick up the 0th node.<br /><br />
+Arrow keys to move. Space bar to pick up bubbles without
+<img src="../../../lib/img/lock.png" height="20" /> on them.<br />Also you can't
+pick up the starting bubble.<br /><br />
 This small game is a creative response to
 <a href="https://patrickgh3.itch.io/bubble-sort">Bubble Sort</a> by
 <a href="https://cwpat.me/about/">Patrick Traynor</a>.<br />This game might make
@@ -338,6 +339,7 @@ Thanks to Ivy and Sharon for playtesting.
     if (closest !== null) closestToMouse = closest;
   };
   const checkButtonPressed = () => {
+    if (grabbing === orange) return;
     if (at === box1) box1[1] += 15;
     if (at === box2) box2[1] += 15;
     setTimeout(() => {
@@ -445,7 +447,7 @@ Thanks to Ivy and Sharon for playtesting.
 
     if (ev.key === " ") {
       // pick up grabbing
-      if (grabbing === null) {
+      if (grabbing === null && ogd(at)[0] !== undefined) {
         if (ogd(at)[0].data === undefined) {
           grabbing = at;
           move("ArrowLeft");
@@ -521,6 +523,7 @@ Thanks to Ivy and Sharon for playtesting.
       ctx.lineWidth = 70;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
+      if (l?.[0]?.[0] === undefined) continue;
       ctx.beginPath();
       ctx.moveTo(l[0][0], 0);
       for (const ll of l) {

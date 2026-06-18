@@ -1,225 +1,301 @@
-<style>
-  body {
-    --main-color: #ca2b6d;
-    color: #060a1b;
-    background: white;
-    font-family: sans-serif;
-    font-size: 16px;
-    max-width: 700px;
-    margin: 20px auto;
-  }
-  li {
-    margin: 10px 0;
-  }
-  hr {
-    margin: 50px 0;
-  }
-  pre {
-    font-family: "fira code";
-    white-space: pre-wrap;
-  }
-  canvas,
-  img {
-    border-radius: 10px;
-  }
-  canvas {
-    border: 1px solid black;
-    vertical-align: top;
-    margin: 0 20px 20px 0;
-    cursor: pointer;
-  }
-  .prop {
-    position: relative;
-    border: 1px solid black;
-    padding: 10px 10px 10px 0;
-    margin: 10px;
-    user-select: "none";
-    display: inline-block;
-  }
-  pre {
-    background: #eee;
-    padding: 10px;
-    border-radius: 10px;
-    font-size: 15px;
-  }
-  code {
-    background: #eee;
-    padding: 4px;
-    line-height: 1.5;
-    border-radius: 6px;
-  }
-  button {
-    cursor: pointer;
-  }
-  .id-div {
-    border: 1px solid black;
-    padding: 3px;
-    display: inline-block;
-    border-radius: 12px;
-    background: #eee;
-    color: gray;
-  }
-  .id-inner {
-    margin: 0;
-    padding: 3px;
-    background: white;
-    border: 1px solid black;
-    border-radius: 10px;
-  }
-  @media (max-width: 700px) {
+<head>
+  <style>
     body {
-      margin: 20px 10px;
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
     }
-    canvas {
-      margin: 0 400px 20px 0;
+    @media (max-width: 700px) {
+      body {
+        margin: 20px 10px;
+      }
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body cz-shortcut-listen="true">
+  <h1 contenteditable="plaintext-only">Notebook</h1>
+  <a href="https://elliot.website" contenteditable="plaintext-only">elliot evans<br></a>
+  Apr 26 2026<br>
+
+  <main>
+    <div style="height: 50px"></div>
+    
+    <my-cell><p contenteditable="plaintext-only" style="
+    color: rebeccapurple;
+">Now I want to support 
+- inserting editable text (like this)
+- promote to editor (what becomes `value`?)
+- promote to inline? or remove my-code but keep iframe?
+- add template/processor to code (e.g. canvas, shader)
+
+- drag and drop side-by-side layouts DONE
+  - fix nested dropping
+  - pinning
+- drop in images, videos, audio, other assets
+- JS Object viewer
+- reactive history (reset to previous state)
+- undo deleting nodes
+
+- better saving mechanism using chrome crap
+
+- reactive wiring proper disposal DONE
+- shader sketcher DONE 
+- text editing DONE 
+- inserting nodes DONE
+- deleting nodes DONE
+- reactive wiring DONE 
+- html editing DONE 
+- simple inputs DONE
+- drag&amp;drop DONE
+
+Note
+- content editable is bad for anything other than plain text</p>
+</my-cell><my-cell><p>Hello my friend shader: <iframed-code style="vertical-align: middle; height: 50px; width: 50px;" value="import { shader } from './shader.js';
+document.body.append(shader({ width: 50, height: 50 })`
+  float zeronessFunction( in vec2 v ){
+    // varying pixel color
+    float x = v.x;
+    float y = v.y;
+    float lhs = x + y;
+    float rhs = y * x;
+
+    float closenessToZero = abs(lhs - rhs);
+
+
+    return closenessToZero;
+  }
+
+
+  void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5))*10.;
+      float x = uv.x;
+      float y = uv.y;
+
+      // evaluating lhs - rhs at x, y
+      float closenessToZero = zeronessFunction(uv.xy);
+      
+      vec3 col = vec3(1,0,1) - pow(closenessToZero, 1.0) * vec3(1,0,0);
+
+      fragColor = vec4(col,1.0);
+  }
+`)"></iframed-code>!!</p></my-cell>
+
+
+    <my-cell><my-editor2 value="dom`&lt;p contenteditable=&quot;plaintext-only&quot;&gt;hi. problem: I don't get serialized if I'm edited!&lt;/p&gt;`"></my-editor2></my-cell><my-cell><my-editor2 value="import {} from './iframed-code.js'
+
+dom(`
+ hello! 
+ &lt;iframed-code value=&quot;document.body.append('hi')&quot;&gt;&lt;/iframed-code&gt;
+`)"></my-editor2></my-cell>
+
+<my-cell><my-editor2 value="ap(get('dog'))"></my-editor2></my-cell><my-cell><my-editor2 value="ap(window.top.listeners.get('dog').length)"></my-editor2></my-cell>
+
+<my-cell><my-editor2 value="dom`
+ &lt;input type=&quot;range&quot; min=0 max=100 style=&quot;width:600px;&quot;&gt;&lt;/input&gt;
+`
+const node = document.querySelector('input')
+node.value = window.top.val('dog', Number(node.value)) 
+node.addEventListener('input',e=&gt;seto('dog',Number(node.value)))"></my-editor2></my-cell>
+
+  <my-cell><my-editor2 value="ap(JSON.stringify(
+  get('p').map(v=&gt;v.map(n=&gt;Number(n.toFixed())))
+))"></my-editor2></my-cell>
+
+    <my-cell><my-editor2 value="const c = document.createElement('canvas')
+c.height='300'
+c.width='660'
+document.body.append(c)
+const ctx = c.getContext('2d');
+
+const smul = (n, [x, y]) =&gt; [n * x, n * y];
+const len = ([x, y]) =&gt; (x ** 2 + y ** 2) ** (1 / 2);
+const unit = (p) =&gt; smul(1 / len(p), p);
+const add = ([x, y], [p, q]) =&gt; [x + p, y + q];
+const sub = ([x, y], [p, q]) =&gt; [x - p, y - q];
+const dist = (p, q) =&gt; len(sub(p, q));
+const set = (p, [x, y]) =&gt; {
+  p[0] = x;
+  p[1] = y;
+};
+
+const mid = [c.width/2, c.height / 2];
+
+const p = val('p',[
+  [300, 300],
+  [310, 310],
+  [320, 300],
+  [400, 400],
+]);
+const e = window.top.val('e',new Map());
+
+const adde = (p1, p2) =&gt; {
+  e.set(p1, [...(e.get(p1) ?? []), p2]);
+  e.set(p2, [...(e.get(p2) ?? []), p1]);
+};
+
+addEventListener(&quot;mousedown&quot;, (e) =&gt; {
+ const np = [e.offsetX, e.offsetY];
+ for (const q of p) if (dist(q, np) &lt; 40) adde(np, q);
+ p.push(np);
+ window.top.set('p',p)
+});
+
+let forces = p.map((p) =&gt; [0, 0]);
+
+requestAnimationFrame(draw);
+function draw() {
+  requestAnimationFrame(draw);
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  forces = forces.map((f) =&gt; smul(960/1000,f))  
+
+  for (let i = 0; i &lt; p.length; i++) {
+    for (let j = i + 1; j &lt; p.length; j++) {
+      const dir = unit(sub(p[i], p[j]));
+      const v = (1 / dist(p[i], p[j])) ** (1 / 2.5);
+      const f = smul(v, dir);
+      forces[i] = add(forces[i]??[0,0], f);
+      forces[j] = sub(forces[j]??[0,0], f);
+    }
+    const nxt = e.get(p[i]) ?? [];
+    nxt.forEach((q) =&gt; {
+      const dir = unit(sub(q, p[i]));
+      const v = (dist(p[i], q) / 100) ** 3;
+      forces[i] = add(forces[i], smul(v, dir));
+    });
+    forces[i] = add(forces[i], smul(1 / 30, sub(mid, p[i])));
+  }
+
+  forces.forEach((f, i) =&gt; set(p[i], add(p[i], f)));
+
+  for (const [s, ss] of e) {
+    for (const q of ss) {
+      ctx.beginPath();
+      ctx.moveTo(...s);
+      ctx.lineTo(...q);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = &quot;white&quot;;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = &quot;black&quot;;
+      ctx.stroke();
     }
   }
-</style>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<h1>Layout Combinators with Propagation</h1>
-<a href="https://elliot.website">elliot evans<br /></a>
-Apr 26 2026<br />
 
-<script>
-  function setup(el, alsoDo = () => {}) {
-    eval?.(el.innerText);
-    el.addEventListener("keydown", (e) => {
-      if (e.shiftKey && e.key === "Enter") {
-        e.preventDefault();
-        alsoDo();
-        try {
-          eval?.(el.innerText);
-          el.style.outline = "none";
-        } catch (e) {
-          el.style.outline = "1px solid red";
-          throw e;
+  for (const [x, y] of p) ctx.fillRect(x - 3, y - 3, 6, 6);
+}"></my-editor2></my-cell>
+
+    
+
+  
+
+
+  
+  <my-cell><div id="side" style="display:grid;grid-template-columns: 1fr 1fr; padding: 10px 0; border:1px solid lightgray; border-radius: 10px;">
+    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="dom`&lt;input&gt;&lt;/input&gt;`
+
+const node = document.querySelector('input')
+node.value = window.top.val('ye', 'x * y') 
+node.addEventListener('keydown',e=&gt;{
+ if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('ye',node.value)
+})"></my-editor2></my-cell><my-cell><my-editor2 value="dom`&lt;input&gt;&lt;/input&gt;`
+
+const node = document.querySelector('input')
+node.value = window.top.val('xe', 'x + y') 
+node.addEventListener('keydown',e=&gt;{
+ if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('xe',node.value)
+})"></my-editor2></my-cell></div>
+<div class="side2" style="min-height:100px; overflow:scroll; padding: 0 10px;"><my-cell><my-editor2 value="import {shader} from './shader.js'
+
+ap(shader({ width: 1400, height: 400 })`
+  float zeronessFunction( in vec2 v ){
+    // varying pixel color
+    float x = v.x;
+    float y = v.y;
+    float lhs = ${get('xe')};
+    float rhs = ${get('ye')};
+
+    float closenessToZero = abs(lhs - rhs);
+
+
+    return closenessToZero;
+  }
+
+
+  void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5))*10.;
+      float x = uv.x;
+      float y = uv.y;
+
+      // evaluating lhs - rhs at x, y
+      float closenessToZero = zeronessFunction(uv.xy);
+      
+      vec3 col = vec3(1,0,1) - pow(closenessToZero, 1.0) * vec3(1,0,0);
+
+      fragColor = vec4(col,1.0);
+  }
+`)"></my-editor2></my-cell></div>
+  </div>
+  </my-cell></main>
+
+  <script type="module">
+    const things = new Map();
+    const listeners = new Map();
+    const on = (name, l) => {
+      listeners.set(name, [...(listeners.get(name) ?? []), l]);
+    };
+    const set = (name, value) => {
+      things.set(name, value);
+      for (const l of listeners.get(name) ?? []) l(value);
+      return value;
+    };
+    const get = (name) => things.get(name);
+    const val = (name, defaultValue) =>
+      get(name) === undefined ? set(name, defaultValue) : get(name);
+
+    window.on = on;
+    window.set = set;
+    window.get = get;
+    window.val = val;
+    window.listeners=listeners
+    window.things=things
+  </script>
+  <script type="module">
+    const mainEl = document.getElementsByTagName("main")[0];
+
+    mainEl.addEventListener("dragover", (event) => {
+      // Test a custom type we will set later
+      if (event.dataTransfer.types.includes("cell")) {
+        event.preventDefault();
+      }
+    });
+    mainEl.addEventListener("drop", (event) => {
+      event.preventDefault();
+
+      const draggedTask = document.getElementById("dragged-cell");
+
+      for (const el of document.elementsFromPoint(
+        event.clientX,
+        event.clientY
+      )) {
+        if (el.parentNode === mainEl) {
+          el.after(draggedTask);
+          break;
         }
       }
     });
-  }
-</script>
 
-<main>
-  <section>
-    <pre id="pre2" contenteditable="plaintext-only" spellcheck="false">
-toStr = json => JSON.stringify(
-    json,
-    (k,v)=>typeof v ==='number'?v.toFixed(1):v
-)
-ob = (v) => {
-    const listeners = [];
-    return {
-        on: (l) => listeners.push(l),
-        get: () => v,
-        set: (newV) => {
-            // if my value didn't change, stop propagating
-            if (toStr(v)===toStr(newV)) return;
-            v = newV;
-            listeners.forEach((l) => l(v));
-        },
-    };
-};
-to = (a, b, f) => {
-    // when the value of a changes, set the value of b=f(a.get())
-    a.on((v) => b.set(f(v)));
-    // optional: set b=f(a.get()) right away
-    b.set(f(a.get()));
-};
-and = (...obs) => {
-    const res = ob(Array(obs.length))
-    obs.forEach((o,i)=>to(o,res,v=>res.get().with(i,v)))
-    return res
-} 
-eq = (a, b) => {
-    to(a,b,v=>v)
-    to(b,a,v=>v)
-}
-set = (b,a) => to(a,b,v=>v)
-lift = (f) => (...obs) => {
-    const res = ob()
-    to(and(...obs),res,(args)=>f(...args))
-    return res
-}
-    </pre>
-    <script>
-      setup(pre2);
-    </script>
-  </section>
-
-  <div class="id-div">
-    #circ_abov2_c<br />
-    <canvas id="circ_abov2_c" class="id-inner"></canvas>
-  </div>
-  <pre id="circ_abov2" contenteditable="plaintext-only" spellcheck="false">
-square = (ix,iy,iw,ih=iw) => {
-    const x = ob(ix)
-    const y = ob(iy)
-    const w = ob(iw)
-    const h = ob(ih)
-    return {
-        x, y, w, h,
-        draw: (ctx) => ctx.fillRect(x.get(),y.get(),w.get(),h.get()),
-    };
-};
-max = lift(Math.max)
-add = lift((a,b)=>a+b)
-sub = lift((a,b)=>a-b)
-above = (a, b) => {
-    const w = max(a.w,b.w)
-    const h = add(a.h,b.h)
-
-    const x = ob(0)
-    const y = ob(0)
-    eq(x,a.x)
-    eq(x,b.x)
-
-    eq(y,a.y)
-    set(b.y, add(y,a.h))
-    set(y, sub(b.y,a.h))
-
-    return {
-        x, y, w, h,
-        draw: (ctx) => {
-            a.draw(ctx);
-            b.draw(ctx);
-        },
-    };
-};
-
-let t = 0
-
-function animation() {
-    //requestAnimationFrame(animation)
-    
-    const a = square(0,0,10)
-    const middleCircle = square(0,0,15);
-    const entireGraphic = above(
-            a, 
-            middleCircle);
-
-            console.log('before set')
-    a.x.set(100);
-    a.y.set(30);
-
-    const c = circ_abov2_c;
-    c.getContext("2d").clearRect(0,0,c.width,c.height);
-    entireGraphic.draw(c.getContext("2d"));
-     
-    t+=0.02;
-}
-requestAnimationFrame(animation)</pre
-  >
-  <script>
-    setup(circ_abov2, () => {
-      circ_abov2_c
-        .getContext("2d")
-        .clearRect(0, 0, circ_abov2_c.width, circ_abov2_c.height);
-    });
+    [...document.querySelectorAll('.side2')].forEach(o=>o.addEventListener("drop", (event) => {
+      event.preventDefault();
+      event.stopPropagation()
+      o.append(document.getElementById("dragged-cell"))
+    }));
   </script>
-
-  What do we need for an editor? We need to be able to insert and delete things
-  from a line! That means adding and removing `to`s and updating the `and`s that
-  contribute to the line's W and H. That means we need to be able to remove
-  listeners.<br /><br />
-  Ok, case for inserting: we need a line/n-arity beside combinator.
-</main>
+  <script type="module" src="./iframed-code.js"></script>
+  <script type="module" src="./save.js"></script>
+  <script type="module" src="./editor.js"></script>
+  <script type="module" src="./cell.js"></script>
+<a href="blob:http://localhost:8080/b8784fa4-f361-4635-b025-e05b547e18c9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6195bbe7-02aa-499b-a9ee-590d9c9743f2" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/b896040f-2287-4058-9ba9-f0395df1889e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/e8143a73-6d57-4517-bdb2-85b1e1fcbcdd" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6432e26d-22a1-43b0-83b6-eddb66b6ef23" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/38a50076-25be-43a8-b1dc-f98e6d1e35a7" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/23c120ee-09b9-4845-adee-54fe2b374d87" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/eba47406-43a3-4d19-a38a-9054269948b4" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/2dd53555-4353-4817-9b97-7d443f6c5d22" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4b7abe0f-5314-45df-b781-3b96f3bf7026" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4e2eb59f-20d2-4eef-b380-dd041a833bf9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/5cd7463c-7e7c-4534-8c75-69f7fe0da66c" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/93a4ef45-e901-4f94-b5a8-767388c6c530" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6549d2a1-3b6f-4c15-98ba-40b06679858c" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/9ee992b6-fcf6-49d0-9c1c-74cb9990684e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/9da7a144-23c5-4495-9859-d0e54be031ed" download="editor.html" hidden=""></a></body>

@@ -1,0 +1,285 @@
+<head>
+  <style>
+    body {
+      --main-color: #ca2b6d;
+      color: #060a1b;
+      background: white;
+      font-family: sans-serif;
+      font-size: 16px;
+      max-width: 700px;
+      margin: 20px auto;
+    }
+    li {
+      margin: 10px 0;
+    }
+    hr {
+      margin: 50px 0;
+    }
+    canvas,
+    img {
+      border-radius: 10px;
+    }
+    canvas {
+      border: 1px solid black;
+      vertical-align: top;
+      margin: 0 20px 20px 0;
+      cursor: pointer;
+    }
+    .prop {
+      position: relative;
+      border: 1px solid black;
+      padding: 10px 10px 10px 0;
+      margin: 10px;
+      user-select: "none";
+      display: inline-block;
+    }
+
+    code {
+      background: #eee;
+      padding: 4px;
+      line-height: 1.5;
+      border-radius: 6px;
+    }
+    button {
+      cursor: pointer;
+    }
+    .id-div {
+      border: 1px solid black;
+      padding: 3px;
+      display: inline-block;
+      border-radius: 12px;
+      background: #eee;
+      color: gray;
+    }
+    .id-inner {
+      margin: 0;
+      padding: 3px;
+      background: white;
+      border: 1px solid black;
+      border-radius: 10px;
+    }
+    @media (max-width: 700px) {
+      body {
+        margin: 20px 10px;
+      }
+      canvas {
+        margin: 0 400px 20px 0;
+      }
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body cz-shortcut-listen="true">
+  <h1 contenteditable="plaintext-only">Notebook</h1>
+  <a href="https://elliot.website" contenteditable="plaintext-only">elliot evans<br></a>
+  Apr 26 2026<br>
+
+  <main>
+    <p contenteditable="plaintext-only">Now I want to support 
+- shader sketcher DONE 
+- text editing DONE 
+- inserting nodes 
+- deleting nodes
+- reactive wiring DONE 
+- reactive wiring proper disposal
+- html editing DONE 
+- simple inputs
+- markdown editing?
+- pinning
+- drag&amp;drop
+- build editor!
+- local storage &amp; disk serialization of things
+- JS Object viewer
+- reactive history (reset to previous state)
+
+Note
+- contenteditable is bad for anything other than plain text</p><my-editor2 value="get('dog') + 33"></my-editor2><my-editor2 value="(() =&gt; {
+  
+  const node = document.createElement('input')
+  node.type = 'range'
+  node.min = 0
+  node.max = 10
+  node.value = window.top.get('dog') // non-refreshing `get`
+  node.addEventListener('input',e=&gt;seto('dog',node.value))
+
+  return node
+})()"></my-editor2>
+    <my-editor2 value="new DOMParser().parseFromString(`
+
+&lt;div&gt;${
+  JSON.stringify(get('p').map(v=&gt;v.map(n=&gt;Number(n.toFixed(0)))))
+}&lt;/div&gt;
+
+`,'text/html').body.firstChild"></my-editor2>
+    <my-editor value="const smul = (n, [x, y]) =&gt; [n * x, n * y];
+const len = ([x, y]) =&gt; (x ** 2 + y ** 2) ** (1 / 2);
+const unit = (p) =&gt; smul(1 / len(p), p);
+const add = ([x, y], [p, q]) =&gt; [x + p, y + q];
+const sub = ([x, y], [p, q]) =&gt; [x - p, y - q];
+const dist = (p, q) =&gt; len(sub(p, q));
+const set = (p, [x, y]) =&gt; {
+  p[0] = x;
+  p[1] = y;
+};
+
+const mid = [c.width/2, c.height / 2];
+
+const p = val('p',[
+  [300, 300],
+  [310, 310],
+  [320, 300],
+  [400, 400],
+]);
+const e = window.top.val('e',new Map());
+
+const adde = (p1, p2) =&gt; {
+  e.set(p1, [...(e.get(p1) ?? []), p2]);
+  e.set(p2, [...(e.get(p2) ?? []), p1]);
+};
+
+addEventListener(&quot;mousedown&quot;, (e) =&gt; {
+ const np = [e.offsetX, e.offsetY];
+ for (const q of p) if (dist(q, np) &lt; 40) adde(np, q);
+ p.push(np);
+ window.top.set('p',p)
+});
+
+let forces = p.map((p) =&gt; [0, 0]);
+
+requestAnimationFrame(draw);
+function draw() {
+  requestAnimationFrame(draw);
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  forces = forces.map((f) =&gt; smul(960/1000,f))  
+
+  for (let i = 0; i &lt; p.length; i++) {
+    for (let j = i + 1; j &lt; p.length; j++) {
+      const dir = unit(sub(p[i], p[j]));
+      const v = (1 / dist(p[i], p[j])) ** (1 / 2.5);
+      const f = smul(v, dir);
+      forces[i] = add(forces[i]??[0,0], f);
+      forces[j] = sub(forces[j]??[0,0], f);
+    }
+    const nxt = e.get(p[i]) ?? [];
+    nxt.forEach((q) =&gt; {
+      const dir = unit(sub(q, p[i]));
+      const v = (dist(p[i], q) / 100) ** 3;
+      forces[i] = add(forces[i], smul(v, dir));
+    });
+    forces[i] = add(forces[i], smul(1 / 30, sub(mid, p[i])));
+  }
+
+  forces.forEach((f, i) =&gt; set(p[i], add(p[i], f)));
+
+  for (const [s, ss] of e) {
+    for (const q of ss) {
+      ctx.beginPath();
+      ctx.moveTo(...s);
+      ctx.lineTo(...q);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = &quot;white&quot;;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = &quot;black&quot;;
+      ctx.stroke();
+    }
+  }
+
+  for (const [x, y] of p) ctx.fillRect(x - 3, y - 3, 6, 6);
+}"></my-editor>
+    <my-editor2 value="shader({ width: 1400, height: 400 })`
+  float zeronessFunction( in vec2 v ){
+    // varying pixel color
+    float x = v.x;
+    float y = v.y;
+    float lhs = x + y;
+    float rhs = y * x;
+
+    float closenessToZero = abs(lhs - rhs);
+
+
+    return closenessToZero;
+  }
+
+
+  void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5))*10.;
+      float x = uv.x;
+      float y = uv.y;
+
+      // evaluating lhs - rhs at x, y
+      float closenessToZero = zeronessFunction(uv.xy);
+      
+      vec3 col = vec3(1,0,1) - pow(closenessToZero, 1.0) * vec3(1,0,0);
+
+      fragColor = vec4(col,1.0);
+  }
+`"></my-editor2>
+    <p>Hello my friend shader: <iframed-code style="vertical-align: middle" value="import { shader } from './shader.js';
+document.body.append(shader({ width: 50, height: 50 })`
+  float zeronessFunction( in vec2 v ){
+    // varying pixel color
+    float x = v.x;
+    float y = v.y;
+    float lhs = x + y;
+    float rhs = y * x;
+
+    float closenessToZero = abs(lhs - rhs);
+
+
+    return closenessToZero;
+  }
+
+
+  void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5))*10.;
+      float x = uv.x;
+      float y = uv.y;
+
+      // evaluating lhs - rhs at x, y
+      float closenessToZero = zeronessFunction(uv.xy);
+      
+      vec3 col = vec3(1,0,1) - pow(closenessToZero, 1.0) * vec3(1,0,0);
+
+      fragColor = vec4(col,1.0);
+  }
+`)"></iframed-code>!!</p>
+  </main>
+
+  <script type="module">
+    const things = new Map();
+    const listeners = new Map();
+    const on = (name, l) => {
+      listeners.set(name, [...(listeners.get(name) ?? []), l]);
+    };
+    const set = (name, value) => {
+      things.set(name, value);
+      for (const l of listeners.get(name) ?? []) l(value);
+      return value;
+    };
+    const get = (name) => things.get(name);
+    const val = (name, defaultValue) =>
+      get(name) === undefined ? set(name, defaultValue) : get(name);
+
+    window.on = on;
+    window.set = set;
+    window.get = get;
+    window.val = val;
+  </script>
+  <script type="module">
+    const mainEl = document.getElementsByTagName("main")[0];
+
+    document.addEventListener("mousedown", (e) => {
+      if (e.shiftKey && mainEl.contains(e.target)) {
+        // TODO: insert editor chooser
+        e.target.after(document.createElement("my-editor2"));
+      }
+    });
+  </script>
+  <script type="module" src="./iframed-code.js"></script>
+  <script type="module" src="./save.js"></script>
+  <script type="module" src="./editor.js"></script>
+<a href="blob:http://localhost:8080/b8784fa4-f361-4635-b025-e05b547e18c9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6195bbe7-02aa-499b-a9ee-590d9c9743f2" download="editor.html" hidden=""></a></body>

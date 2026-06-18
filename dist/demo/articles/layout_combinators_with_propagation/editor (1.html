@@ -9,12 +9,54 @@
       max-width: 700px;
       margin: 20px auto;
     }
+    li {
+      margin: 10px 0;
+    }
     hr {
       margin: 50px 0;
+    }
+    canvas,
+    img {
+      border-radius: 10px;
+    }
+    canvas {
+      border: 1px solid black;
+      vertical-align: top;
+      margin: 0 20px 20px 0;
+      cursor: pointer;
+    }
+    .prop {
+      position: relative;
+      border: 1px solid black;
+      padding: 10px 10px 10px 0;
+      margin: 10px;
+      user-select: "none";
+      display: inline-block;
+    }
+    button {
+      cursor: pointer;
+    }
+    .id-div {
+      border: 1px solid black;
+      padding: 3px;
+      display: inline-block;
+      border-radius: 12px;
+      background: #eee;
+      color: gray;
+    }
+    .id-inner {
+      margin: 0;
+      padding: 3px;
+      background: white;
+      border: 1px solid black;
+      border-radius: 10px;
     }
     @media (max-width: 700px) {
       body {
         margin: 20px 10px;
+      }
+      canvas {
+        margin: 0 400px 20px 0;
       }
     }
   </style>
@@ -26,27 +68,18 @@
   Apr 26 2026<br>
 
   <main>
-    <div style="height: 50px"></div>
-    
-    <my-cell><p contenteditable="plaintext-only" style="
-    color: rebeccapurple;
-">Now I want to support 
-- inserting editable text (like this)
-- promote to editor (what becomes `value`?)
-- promote to inline? or remove my-code but keep iframe?
-- add template/processor to code
-
-- drag and drop side-by-side layouts DONE
-  - fix nested dropping
-  - pinning
+    <div style="height: 50px"></div><my-cell><p contenteditable="plaintext-only">Now I want to support 
+- inserting editable text
+- undo moving and deleting nodes
+- reactive wiring proper disposal
+- markdown editing?
+- pinning
 - drop in images, videos, audio, other assets
+- build editor!
+- local storage &amp; disk serialization of things
 - JS Object viewer
 - reactive history (reset to previous state)
-- undo deleting nodes
 
-- better saving mechanism using chrome crap
-
-- reactive wiring proper disposal DONE
 - shader sketcher DONE 
 - text editing DONE 
 - inserting nodes DONE
@@ -57,10 +90,8 @@
 - drag&amp;drop DONE
 
 Note
-- content editable is bad for anything other than plain text</p>
-</my-cell>
-
-<my-cell><p>Hello my friend shader: <iframed-code style="vertical-align: middle; height: 50px; width: 50px;" value="import { shader } from './shader.js';
+- contenteditable is bad for anything other than plain text</p>
+</my-cell><my-cell><p>Hello my friend shader: <iframed-code style="vertical-align: middle; height: 50px; width: 50px;" value="import { shader } from './shader.js';
 document.body.append(shader({ width: 50, height: 50 })`
   float zeronessFunction( in vec2 v ){
     // varying pixel color
@@ -90,39 +121,32 @@ document.body.append(shader({ width: 50, height: 50 })`
       fragColor = vec4(col,1.0);
   }
 `)"></iframed-code>!!</p></my-cell>
-    <my-cell><my-editor2 value="dom`&lt;p contenteditable=&quot;plaintext-only&quot;&gt;hi. problem: I don't get serialized!&lt;/p&gt;`"></my-editor2></my-cell><my-cell><my-editor2 value="import {} from './iframed-code.js'
+    <my-cell><my-editor2 value="import {} from './iframed-code.js'
 
-dom(`
- &lt;div style=&quot;background:red&quot;&gt;
- hello! 
- &lt;iframed-code value=&quot;document.body.append('hi')&quot;&gt;&lt;/iframed-code&gt;
- &lt;/div&gt;
-`)"></my-editor2></my-cell>
+dom(`&lt;div&gt;
+ hello! &lt;iframed-code value=&quot;console.log('hi')&quot;&gt;&lt;/iframed-code&gt;
+&lt;/div&gt;`)"></my-editor2></my-cell>
 
-<my-cell><my-editor2 value="ap(get('dog'))"></my-editor2></my-cell><my-cell><my-editor2 value="ap(window.top.listeners.get('dog').length)"></my-editor2></my-cell>
+<my-cell><my-editor2 value="document.body.append(get('dog') + 33)"></my-editor2></my-cell>
 
 <my-cell><my-editor2 value="const node = document.createElement('input')
 node.type = 'range'
 node.min = 0
-node.max = 100
-node.style.width = '600px'
-// non-refresh `get`
-node.value = window.top.val('dog', Number(node.value)) 
-node.addEventListener('input',e=&gt;seto('dog',Number(node.value)))
+node.max = 10
+node.value = window.top.val('dog', node.value) // non-refreshing `get`
+node.addEventListener('input',e=&gt;seto('dog',node.value))
 
 document.body.append(node)"></my-editor2></my-cell>
 
-  <my-cell><my-editor2 value="ap(JSON.stringify(
-  get('p').map(v=&gt;v.map(n=&gt;Number(n.toFixed())))
-))"></my-editor2></my-cell>
+  <my-cell><my-editor2 value="dom(`
 
-    <my-cell><my-editor2 value="const c = document.createElement('canvas')
-c.height='300'
-c.width='660'
-document.body.append(c)
-const ctx = c.getContext('2d');
+&lt;div&gt;${
+  JSON.stringify(get('p').map(v=&gt;v.map(n=&gt;Number(n.toFixed(0)))))
+}&lt;/div&gt;
 
-const smul = (n, [x, y]) =&gt; [n * x, n * y];
+`)"></my-editor2></my-cell>
+
+    <my-cell><my-editor value="const smul = (n, [x, y]) =&gt; [n * x, n * y];
 const len = ([x, y]) =&gt; (x ** 2 + y ** 2) ** (1 / 2);
 const unit = (p) =&gt; smul(1 / len(p), p);
 const add = ([x, y], [p, q]) =&gt; [x + p, y + q];
@@ -198,18 +222,9 @@ function draw() {
   }
 
   for (const [x, y] of p) ctx.fillRect(x - 3, y - 3, 6, 6);
-}"></my-editor2></my-cell>
+}"></my-editor></my-cell>
 
-    
-
-  
-
-
-  
-  <my-cell><div id="side" style="display:grid;grid-template-columns: 1fr 1fr; padding: 10px 0; border:1px solid lightgray; border-radius: 10px;">
-    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="document.body.append(33)"></my-editor2></my-cell><my-cell><my-editor2 value="ap(33)"></my-editor2></my-cell><my-cell><my-editor2 value="dom`33`
-dom`&lt;br&gt;44`"></my-editor2></my-cell></div>
-<div class="side2" style="min-height:100px; overflow:scroll; padding: 0 10px;"><my-cell><my-editor2 value="ap(shader({ width: 1400, height: 400 })`
+    <my-cell><my-editor2 value="document.body.append(shader({ width: 1400, height: 400 })`
   float zeronessFunction( in vec2 v ){
     // varying pixel color
     float x = v.x;
@@ -237,9 +252,14 @@ dom`&lt;br&gt;44`"></my-editor2></my-cell></div>
 
       fragColor = vec4(col,1.0);
   }
-`)"></my-editor2></my-cell></div>
-  </div>
-  </my-cell></main>
+`)"></my-editor2></my-cell>
+
+  <my-cell><my-editor2 value="document.body.append(33)"></my-editor2></my-cell>
+
+
+  
+
+  </main>
 
   <script type="module">
     const things = new Map();
@@ -260,8 +280,6 @@ dom`&lt;br&gt;44`"></my-editor2></my-cell></div>
     window.set = set;
     window.get = get;
     window.val = val;
-    window.listeners=listeners
-    window.things=things
   </script>
   <script type="module">
     const mainEl = document.getElementsByTagName("main")[0];
@@ -287,15 +305,9 @@ dom`&lt;br&gt;44`"></my-editor2></my-cell></div>
         }
       }
     });
-
-    [...document.querySelectorAll('.side2')].forEach(o=>o.addEventListener("drop", (event) => {
-      event.preventDefault();
-      event.stopPropagation()
-      o.append(document.getElementById("dragged-cell"))
-    }));
   </script>
   <script type="module" src="./iframed-code.js"></script>
   <script type="module" src="./save.js"></script>
   <script type="module" src="./editor.js"></script>
   <script type="module" src="./cell.js"></script>
-<a href="blob:http://localhost:8080/b8784fa4-f361-4635-b025-e05b547e18c9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6195bbe7-02aa-499b-a9ee-590d9c9743f2" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/b896040f-2287-4058-9ba9-f0395df1889e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/e8143a73-6d57-4517-bdb2-85b1e1fcbcdd" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6432e26d-22a1-43b0-83b6-eddb66b6ef23" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/38a50076-25be-43a8-b1dc-f98e6d1e35a7" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/23c120ee-09b9-4845-adee-54fe2b374d87" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/eba47406-43a3-4d19-a38a-9054269948b4" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/2dd53555-4353-4817-9b97-7d443f6c5d22" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4b7abe0f-5314-45df-b781-3b96f3bf7026" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4e2eb59f-20d2-4eef-b380-dd041a833bf9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/5cd7463c-7e7c-4534-8c75-69f7fe0da66c" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/93a4ef45-e901-4f94-b5a8-767388c6c530" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6549d2a1-3b6f-4c15-98ba-40b06679858c" download="editor.html" hidden=""></a></body>
+<a href="blob:http://localhost:8080/b8784fa4-f361-4635-b025-e05b547e18c9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6195bbe7-02aa-499b-a9ee-590d9c9743f2" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/b896040f-2287-4058-9ba9-f0395df1889e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/e8143a73-6d57-4517-bdb2-85b1e1fcbcdd" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6432e26d-22a1-43b0-83b6-eddb66b6ef23" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/38a50076-25be-43a8-b1dc-f98e6d1e35a7" download="editor.html" hidden=""></a></body>

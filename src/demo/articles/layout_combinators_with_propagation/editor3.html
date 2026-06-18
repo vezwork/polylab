@@ -1,0 +1,19 @@
+<script type="module">
+  customElements.define(
+    "my-el",
+    class extends HTMLElement {
+      constructor() {
+        super();
+      }
+    }
+  );
+</script>
+
+<iframe
+  srcdoc="
+  <my-el></my-el>
+  <script>
+    customElements.define('my-el', window.top.customElements.get('my-el'))
+  </script>"
+>
+</iframe>

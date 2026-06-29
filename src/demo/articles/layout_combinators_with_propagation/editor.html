@@ -194,16 +194,14 @@ function draw() {
 
   
   <my-cell><div id="side" style="display:grid;grid-template-columns: 1fr 1fr; padding: 10px 0; border:1px solid lightgray; border-radius: 10px;">
-    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="dom`&lt;input&gt;&lt;/input&gt;`
+    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="const v = window.top.val('ye', 'x * y')
+const [node] = dom(`&lt;input value=&quot;${v}&quot;&gt;&lt;/input&gt;`)
 
-const node = document.querySelector('input')
-node.value = window.top.val('ye', 'x * y') 
 node.addEventListener('keydown',e=&gt;{
  if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('ye',node.value)
-})"></my-editor2></my-cell><my-cell><my-editor2 value="dom`&lt;input&gt;&lt;/input&gt;`
+})"></my-editor2></my-cell><my-cell><my-editor2 value="const v = window.top.val('xe', 'x + y')
+const [node] = dom(`&lt;input value=&quot;${v}&quot;&gt;&lt;/input&gt;`)
 
-const node = document.querySelector('input')
-node.value = window.top.val('xe', 'x + y') 
 node.addEventListener('keydown',e=&gt;{
  if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('xe',node.value)
 })"></my-editor2></my-cell></div>
@@ -298,4 +296,4 @@ ap(shader({ width: 1400, height: 400 })`
   <script type="module" src="./save.js"></script>
   <script type="module" src="./editor.js"></script>
   <script type="module" src="./cell.js"></script>
-<a href="blob:http://localhost:8080/b8784fa4-f361-4635-b025-e05b547e18c9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6195bbe7-02aa-499b-a9ee-590d9c9743f2" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/b896040f-2287-4058-9ba9-f0395df1889e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/e8143a73-6d57-4517-bdb2-85b1e1fcbcdd" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6432e26d-22a1-43b0-83b6-eddb66b6ef23" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/38a50076-25be-43a8-b1dc-f98e6d1e35a7" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/23c120ee-09b9-4845-adee-54fe2b374d87" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/eba47406-43a3-4d19-a38a-9054269948b4" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/2dd53555-4353-4817-9b97-7d443f6c5d22" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4b7abe0f-5314-45df-b781-3b96f3bf7026" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4e2eb59f-20d2-4eef-b380-dd041a833bf9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/5cd7463c-7e7c-4534-8c75-69f7fe0da66c" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/93a4ef45-e901-4f94-b5a8-767388c6c530" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6549d2a1-3b6f-4c15-98ba-40b06679858c" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/9ee992b6-fcf6-49d0-9c1c-74cb9990684e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/9da7a144-23c5-4495-9859-d0e54be031ed" download="editor.html" hidden=""></a></body>
+</body>

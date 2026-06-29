@@ -1,0 +1,673 @@
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+    }
+    @media (max-width: 700px) {
+      body {
+        margin: 20px 10px;
+      }
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body cz-shortcut-listen="true">
+  <h1 contenteditable="plaintext-only">Notebook</h1>
+  <a href="https://elliot.website" contenteditable="plaintext-only">elliot evans<br></a>
+  Apr 26 2026<br>
+
+  <main>
+    <div style="height: 50px"></div>
+    
+    <my-cell><p contenteditable="plaintext-only" style="
+    color: rebeccapurple;
+">Now I want to support 
+- inserting editable text (like this)
+- promote to editor (what becomes `value`?)
+- promote to inline? or remove my-code but keep iframe?
+- add template/processor to code (e.g. canvas, shader)
+- NO non-visible-scripts!
+
+- drag and drop side-by-side layouts DONE
+  - fix nested dropping
+  - pinning
+- drop in images, videos, audio, other assets
+- JS Object viewer
+- reactive history (reset to previous state)
+- undo deleting nodes
+
+- better saving mechanism using chrome crap
+
+- reactive wiring proper disposal DONE
+- shader sketcher DONE 
+- text editing DONE 
+- inserting nodes DONE
+- deleting nodes DONE
+- reactive wiring DONE 
+- html editing DONE 
+- simple inputs DONE
+- drag&amp;drop DONE
+
+Note
+- content editable is bad for anything other than plain text</p>
+</my-cell><my-cell><p>Hello my friend shader: <iframed-code style="vertical-align: middle; height: 50px; width: 50px;" value="import { shader } from './shader.js';
+document.body.append(shader({ width: 50, height: 50 })`
+  float zeronessFunction( in vec2 v ){
+    // varying pixel color
+    float x = v.x;
+    float y = v.y;
+    float lhs = x + y;
+    float rhs = y * x;
+
+    float closenessToZero = abs(lhs - rhs);
+
+
+    return closenessToZero;
+  }
+
+
+  void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5))*10.;
+      float x = uv.x;
+      float y = uv.y;
+
+      // evaluating lhs - rhs at x, y
+      float closenessToZero = zeronessFunction(uv.xy);
+      
+      vec3 col = vec3(1,0,1) - pow(closenessToZero, 1.0) * vec3(1,0,0);
+
+      fragColor = vec4(col,1.0);
+  }
+`)"></iframed-code>!!</p></my-cell>
+
+
+    <my-cell><my-editor2 value="dom`&lt;p contenteditable=&quot;plaintext-only&quot;&gt;hi. problem: I don't get serialized if I'm edited!&lt;/p&gt;`"></my-editor2></my-cell><my-cell><my-editor2 value="import {} from './iframed-code.js'
+
+dom(`
+ hello! 
+ &lt;iframed-code value=&quot;document.body.append('hi')&quot;&gt;&lt;/iframed-code&gt;
+`)"></my-editor2></my-cell>
+
+<my-cell><my-editor2 value="ap(get('dog'))"></my-editor2></my-cell><my-cell><my-editor2 value="ap(window.top.listeners.get('dog').length)"></my-editor2></my-cell>
+
+<my-cell><my-editor2 value="dom`
+ &lt;input type=&quot;range&quot; min=0 max=100 style=&quot;width:600px;&quot;&gt;&lt;/input&gt;
+`
+const node = document.querySelector('input')
+node.value = window.top.val('dog', Number(node.value)) 
+node.addEventListener('input',e=&gt;seto('dog',Number(node.value)))"></my-editor2></my-cell>
+
+  <my-cell><my-editor2 value="ap(JSON.stringify(
+  get('p').map(v=&gt;v.map(n=&gt;Number(n.toFixed())))
+))"></my-editor2></my-cell>
+
+    <my-cell><my-editor2 value="const c = document.createElement('canvas')
+c.height='300'
+c.width='660'
+document.body.append(c)
+const ctx = c.getContext('2d');
+
+const smul = (n, [x, y]) =&gt; [n * x, n * y];
+const len = ([x, y]) =&gt; (x ** 2 + y ** 2) ** (1 / 2);
+const unit = (p) =&gt; smul(1 / len(p), p);
+const add = ([x, y], [p, q]) =&gt; [x + p, y + q];
+const sub = ([x, y], [p, q]) =&gt; [x - p, y - q];
+const dist = (p, q) =&gt; len(sub(p, q));
+const set = (p, [x, y]) =&gt; {
+  p[0] = x;
+  p[1] = y;
+};
+
+const mid = [c.width/2, c.height / 2];
+
+const p = val('p',[
+  [300, 300],
+  [310, 310],
+  [320, 300],
+  [400, 400],
+]);
+const e = window.top.val('e',new Map());
+
+const adde = (p1, p2) =&gt; {
+  e.set(p1, [...(e.get(p1) ?? []), p2]);
+  e.set(p2, [...(e.get(p2) ?? []), p1]);
+};
+
+addEventListener(&quot;mousedown&quot;, (e) =&gt; {
+ const np = [e.offsetX, e.offsetY];
+ for (const q of p) if (dist(q, np) &lt; 40) adde(np, q);
+ p.push(np);
+ window.top.set('p',p)
+});
+
+let forces = p.map((p) =&gt; [0, 0]);
+
+requestAnimationFrame(draw);
+function draw() {
+  requestAnimationFrame(draw);
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  forces = forces.map((f) =&gt; smul(960/1000,f))  
+
+  for (let i = 0; i &lt; p.length; i++) {
+    for (let j = i + 1; j &lt; p.length; j++) {
+      const dir = unit(sub(p[i], p[j]));
+      const v = (1 / dist(p[i], p[j])) ** (1 / 2.5);
+      const f = smul(v, dir);
+      forces[i] = add(forces[i]??[0,0], f);
+      forces[j] = sub(forces[j]??[0,0], f);
+    }
+    const nxt = e.get(p[i]) ?? [];
+    nxt.forEach((q) =&gt; {
+      const dir = unit(sub(q, p[i]));
+      const v = (dist(p[i], q) / 100) ** 3;
+      forces[i] = add(forces[i], smul(v, dir));
+    });
+    forces[i] = add(forces[i], smul(1 / 30, sub(mid, p[i])));
+  }
+
+  forces.forEach((f, i) =&gt; set(p[i], add(p[i], f)));
+
+  for (const [s, ss] of e) {
+    for (const q of ss) {
+      ctx.beginPath();
+      ctx.moveTo(...s);
+      ctx.lineTo(...q);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = &quot;white&quot;;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = &quot;black&quot;;
+      ctx.stroke();
+    }
+  }
+
+  for (const [x, y] of p) ctx.fillRect(x - 3, y - 3, 6, 6);
+}"></my-editor2></my-cell>
+
+    
+
+  
+
+
+  
+  <my-cell><div id="side" style="display:grid;grid-template-columns: 1fr 1fr; padding: 10px 0; border:1px solid lightgray; border-radius: 10px;">
+    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="const v = window.top.val('ye', 'x * y')
+const [node] = dom(`&lt;input value=&quot;${v}&quot;&gt;&lt;/input&gt;`)
+
+node.addEventListener('keydown',e=&gt;{
+ if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('ye',node.value)
+})"></my-editor2></my-cell><my-cell><my-editor2 value="const v = window.top.val('xe', 'x + y')
+const [node] = dom(`&lt;input value=&quot;${v}&quot;&gt;&lt;/input&gt;`)
+
+node.addEventListener('keydown',e=&gt;{
+ if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('xe',node.value)
+})"></my-editor2></my-cell></div>
+<div class="side2" style="min-height:100px; overflow:scroll; padding: 0 10px;"><my-cell><my-editor2 value="import {shader} from 'https://vezwork.github.io/polylab/src/demo/articles/layout_combinators_with_propagation/shader.js'
+
+ap(shader({ width: 1400, height: 400 })`
+  float zeronessFunction( in vec2 v ){
+    // varying pixel color
+    float x = v.x;
+    float y = v.y;
+    float lhs = ${get('xe')};
+    float rhs = ${get('ye')};
+
+    float closenessToZero = abs(lhs - rhs);
+
+
+    return closenessToZero;
+  }
+
+
+  void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5))*10.;
+      float x = uv.x;
+      float y = uv.y;
+
+      // evaluating lhs - rhs at x, y
+      float closenessToZero = zeronessFunction(uv.xy);
+      
+      vec3 col = vec3(1,0,1) - pow(closenessToZero, 1.0) * vec3(1,0,0);
+
+      fragColor = vec4(col,1.0);
+  }
+`)"></my-editor2></my-cell></div>
+  </div>
+  </my-cell></main>
+
+  <script type="module">
+    const things = new Map();
+    const listeners = new Map();
+    const on = (name, l) => {
+      listeners.set(name, [...(listeners.get(name) ?? []), l]);
+    };
+    const set = (name, value) => {
+      things.set(name, value);
+      for (const l of listeners.get(name) ?? []) l(value);
+      return value;
+    };
+    const get = (name) => things.get(name);
+    const val = (name, defaultValue) =>
+      get(name) === undefined ? set(name, defaultValue) : get(name);
+
+    window.on = on;
+    window.set = set;
+    window.get = get;
+    window.val = val;
+    window.listeners=listeners
+    window.things=things
+  </script>
+  <script type="module">
+    const mainEl = document.getElementsByTagName("main")[0];
+
+    mainEl.addEventListener("dragover", (event) => {
+      // Test a custom type we will set later
+      if (event.dataTransfer.types.includes("cell")) {
+        event.preventDefault();
+      }
+    });
+    mainEl.addEventListener("drop", (event) => {
+      event.preventDefault();
+
+      const draggedTask = document.getElementById("dragged-cell");
+
+      for (const el of document.elementsFromPoint(
+        event.clientX,
+        event.clientY
+      )) {
+        if (el.parentNode === mainEl) {
+          el.after(draggedTask);
+          break;
+        }
+      }
+    });
+
+    [...document.querySelectorAll('.side2')].forEach(o=>o.addEventListener("drop", (event) => {
+      event.preventDefault();
+      event.stopPropagation()
+      o.append(document.getElementById("dragged-cell"))
+    }));
+  </script>
+  <script type="module">
+function resizeIframeToFitContent(iframe) {
+  // iframe.style.width = iframe.contentWindow.document.body.scrollWidth;
+  iframe.style.height = iframe.contentWindow.document.body.scrollHeight;
+}
+
+function sandboxedEval(toEval, me, callback = () => {}) {
+  const htmlString = `
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        display: inline-block;
+        overflow:hidden;
+      }
+      canvas {
+        margin-bottom: -4px;
+      }
+    </style>
+    <script type="module">
+      ${toEval}
+    \u003c/script\u003e`;
+  const iframe = document.createElement("iframe");
+  iframe.srcdoc = htmlString;
+  iframe.style.height = "30px";
+  iframe.style.width = "100%";
+  iframe.style.display = "inline-block";
+  iframe.style.border = "none";
+
+  iframe.onload = function () {
+    resizeIframeToFitContent(iframe);
+
+    const obs = new MutationObserver(() => {
+      resizeIframeToFitContent(iframe);
+      me.style.height = iframe.style.height;
+    });
+    obs.observe(iframe.contentDocument.body, {
+      subtree: true,
+      attributes: true,
+      childList: true,
+      characterData: true,
+    });
+
+    callback(iframe);
+    me.style.height = iframe.style.height;
+  };
+  return iframe;
+}
+
+customElements.define(
+  "iframed-code",
+  class extends HTMLElement {
+    connectedCallback() {
+      this.eval();
+    }
+    static get observedAttributes() {
+      return ["value"];
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+      this.eval();
+    }
+    constructor() {
+      super();
+
+      const shadow = this.attachShadow({ mode: "open" });
+      this.shadow = shadow;
+
+      const style = document.createElement("style");
+      style.textContent = `
+         :host {
+          overflow: hidden;
+          border-radius: 10px;
+          border: 1px solid black;
+          display: inline-block;
+         }
+        `;
+      shadow.appendChild(style);
+    }
+    eval() {
+      const oldIframes = this.shadow.querySelectorAll("iframe");
+      const newIframe = sandboxedEval(
+        this.getAttribute("value"),
+        this,
+        (iframe) => {
+          for (const oldIframe of oldIframes) {
+            // clean up listeners
+            for (const [k, ls] of window.top.listeners) {
+              window.top.listeners.set(
+                k,
+                ls.filter(
+                  (l) => !(oldIframe.contentWindow?.listeners ?? []).includes(l)
+                )
+              );
+            }
+            // clean up iframe
+            oldIframe?.remove();
+          }
+        }
+      );
+      this.shadow.append(newIframe);
+    }
+  }
+);
+  </script>
+  <script type="module">
+function save(content, name = "index.html") {
+  const bl = new Blob([content], { type: "text/html" });
+  const a = document.createElement("a");
+  const url = URL.createObjectURL(bl);
+  a.href = url;
+  a.download = name;
+  a.hidden = true;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.body.addEventListener("keydown", (e) => {
+  if (e.key === "s" && e.metaKey) {
+    e.preventDefault();
+    const doc = document.getElementsByTagName("html")[0].getHTML();
+    save(doc, "editor.html");
+  }
+});
+  </script>
+  <script type="module">
+// mostly just:
+// - syncs iframed-code and my-code
+// - syncs this.value with my-code.value
+const createEditor = (valueToCode = (v) => v, name) =>
+  customElements.define(
+    name,
+    class extends HTMLElement {
+      static get observedAttributes() {
+        return ["value"];
+      }
+      attributeChangedCallback(name, oldValue, newValue) {
+        if (this.getAttribute("value") !== this.p.getAttribute("value"))
+          this.p.setAttribute("value", this.getAttribute("value"));
+      }
+      connectedCallback() {
+        if (this.getAttribute("value") !== this.p.getAttribute("value"))
+          this.p.setAttribute("value", this.getAttribute("value"));
+        this.iframe.setAttribute(
+          "value",
+          valueToCode(this.getAttribute("value"))
+        );
+      }
+      constructor() {
+        super();
+
+        const shadow = this.attachShadow({ mode: "open" });
+        this.shadow = shadow;
+
+        const iframe = document.createElement("iframed-code");
+        this.iframe = iframe;
+        shadow.append(iframe);
+
+        const p = document.createElement("my-code");
+        this.p = p;
+        const me = this;
+        new MutationObserver(() => {
+          if (me.getAttribute("value") !== p.getAttribute("value"))
+            me.setAttribute("value", p.getAttribute("value"));
+        }).observe(p, { attributes: true });
+
+        p.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && e.shiftKey) {
+            e.preventDefault();
+            this.iframe.setAttribute(
+              "value",
+              valueToCode(this.getAttribute("value"))
+            );
+          }
+        });
+        shadow.append(p);
+
+        const style = document.createElement("style");
+        style.textContent = `
+         iframed-code {
+            width: calc(100% - 2px);
+         }
+        `;
+        shadow.appendChild(style);
+      }
+    }
+  );
+
+// editor
+createEditor(
+  (value) => `
+const refresh = () => {
+    window?.frameElement?.parentNode?.host?.eval()
+}
+window.listeners = [refresh] // for cleanup
+
+const get = (name) => {
+    const v = window.top.get(name)
+    window.top.on(name, refresh)
+    return v
+}
+const val = (name, defaultValue) => {
+    const v = window.top.val(name, defaultValue)
+    window.top.on(name, refresh)
+    return v
+}
+const seto = (name, value) => {
+    return window.top.set(name, value)
+}
+const dom = (str) => {
+  const { childNodes } = new DOMParser().parseFromString(
+    str,
+    'text/html'
+  ).body
+  let ret = [...childNodes]
+  document.body.append(...childNodes)
+  return ret
+}
+const ap = (v) => document.body.append(v)
+
+${value}`,
+  "my-editor2"
+);
+  </script>
+  <script type="module">
+customElements.define(
+  "my-cell",
+  class extends HTMLElement {
+    constructor() {
+      super();
+
+      const shadow = this.attachShadow({ mode: "open" });
+      this.shadow = shadow;
+
+      const style = document.createElement("style");
+      style.textContent = `
+
+:host {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    margin: 10px 0;  
+}
+
+.bar {
+    color: gray;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 10px 0 0;
+
+    button {
+        border: none;
+        border-radius: 5px;  
+        color: gray;
+    }
+}
+
+        `;
+      shadow.appendChild(style);
+
+      shadow.append(
+        ...new DOMParser().parseFromString(
+          `
+
+<div class="bar">
+    <button id="b1">+</button>
+    <div id="dragHandle" style="cursor: grab; user-select: none;">⠇</div>
+    <button id="remove">⊗</button>
+    <!--<button id="b3">[]</button>-->
+    <button id="b2">+</button>
+</div>
+<slot></slot>
+
+
+`,
+          "text/html"
+        ).body.childNodes
+      );
+      const me = this;
+      // shadow.querySelector("#b3").addEventListener("click", (e) => {
+      //   const d = document.createElement("div");
+      //   const iframeHTML = me
+      //     .querySelector("my-editor2")
+      //     .shadowRoot.querySelector("iframed-code")
+      //     .shadowRoot.querySelector("iframe").contentDocument.body.innerHTML;
+
+      //   d.innerHTML = iframeHTML;
+      //   this.after(d);
+      //   this.remove();
+      // });
+      shadow.querySelector("#b1").addEventListener("click", (e) => {
+        const cellEl = document.createElement("my-cell");
+        cellEl.append(document.createElement("my-editor2"));
+        this.before(cellEl);
+      });
+      shadow.querySelector("#b2").addEventListener("click", (e) => {
+        const cellEl = document.createElement("my-cell");
+        cellEl.append(document.createElement("my-editor2"));
+        this.after(cellEl);
+      });
+      shadow.querySelector("#remove").addEventListener("click", (e) => {
+        this.remove();
+      });
+      const handle = shadow.querySelector("#dragHandle");
+      handle.onmousedown = (e) => this.setAttribute("draggable", "true");
+
+      this.addEventListener("dragstart", (event) => {
+        this.id = "dragged-cell";
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("cell", "");
+
+        // this makes it so you can drag the cell out into other apps!
+        event.dataTransfer.setData(
+          "text/plain",
+          me.querySelector("my-editor2").getAttribute("value")
+        );
+
+        event.stopPropagation();
+      });
+      this.addEventListener("dragend", (event) => {
+        console.log("yo", event);
+        this.removeAttribute("id");
+        this.removeAttribute("draggable");
+        event.stopPropagation();
+      });
+    }
+  }
+);
+  </script>
+  <script type="module">
+customElements.define(
+  "my-code",
+  class extends HTMLElement {
+    connectedCallback() {
+      this.p.textContent = this.getAttribute("value");
+    }
+    static get observedAttributes() {
+      return ["value"];
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+      if (this.p.textContent !== this.getAttribute("value"))
+        this.p.textContent = this.getAttribute("value");
+    }
+    constructor() {
+      super();
+
+      const shadow = this.attachShadow({ mode: "open" });
+      this.shadow = shadow;
+
+      const p = document.createElement("pre");
+      this.p = p;
+      p.contentEditable = "plaintext-only";
+      p.setAttribute("spellcheck", "false");
+      const me = this;
+      p.addEventListener("input", () => {
+        me.setAttribute("value", p.textContent);
+      });
+      shadow.append(p);
+
+      const style = document.createElement("style");
+      style.textContent = `
+          pre {
+            font-family: "fira code";
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: #eee;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 15px;
+            margin: 0;
+          }
+        `;
+      shadow.appendChild(style);
+    }
+  }
+);
+  </script>
+<a href="blob:http://localhost:8080/ef36ffb2-7237-41a0-9d07-b0986727cfaa" download="editor.html" hidden=""></a></body>

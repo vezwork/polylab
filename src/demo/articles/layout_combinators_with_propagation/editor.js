@@ -84,9 +84,15 @@ const val = (name, defaultValue) => {
 const seto = (name, value) => {
     return window.top.set(name, value)
 }
-const dom = (str) => document.body.append(...new DOMParser().parseFromString(
-        str,'text/html'
-    ).body.childNodes)
+const dom = (str) => {
+  const { childNodes } = new DOMParser().parseFromString(
+    str,
+    'text/html'
+  ).body
+  let ret = [...childNodes]
+  document.body.append(...childNodes)
+  return ret
+}
 const ap = (v) => document.body.append(v)
 
 ${value}`,

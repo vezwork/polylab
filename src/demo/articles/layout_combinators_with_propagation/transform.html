@@ -1,0 +1,402 @@
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+    }
+    @media (max-width: 700px) {
+      body {
+        margin: 20px 10px;
+      }
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body cz-shortcut-listen="true">
+  <h1 contenteditable="plaintext-only">2D Projective Transform</h1>
+  <a href="https://elliot.website" contenteditable="plaintext-only">elliot evans<br></a>
+  Apr 26 2026<br>
+
+  <main>
+    <div style="height: 50px"></div>
+    
+    <my-cell><p contenteditable="plaintext-only" style="
+">You can do them with:
+- matrices
+- geometrically
+
+geometrically is easier, but matrices give a way to invert them. 
+
+
+</p>
+</my-cell>
+
+
+    
+
+
+
+
+
+  
+
+    <my-cell><my-editor2 value="const c = document.createElement('canvas')
+c.height='300'
+c.width='660'
+document.body.append(c)
+const ctx = c.getContext('2d');
+
+// April 11 2026
+// this has all the projective stuff
+// it also has interpolation of projective transforms
+// not a geodesic the lie group, but a custom one that I like
+
+const mod = (a, n, nL = 0) =&gt;
+  ((((a - nL) % (n - nL)) + (n - nL)) % (n - nL)) + nL;
+const subAngles = (theta1, theta2) =&gt;
+  mod(theta2 - theta1 + Math.PI, Math.PI * 2) - Math.PI;
+
+const findMax = (ar) =&gt;
+  ar.reduce(
+    ([maxv, maxi], cur, i) =&gt; (cur &gt; maxv ? [cur, i] : [maxv, maxi]),
+    [-Infinity, 0]
+  )[1];
+
+const sum = (vs) =&gt; vs.reduce((ac, n) =&gt; ac + n, 0);
+const aprow = (r, v) =&gt; sum(r.map((rv, i) =&gt; rv * v[i]));
+const apl = (m, v) =&gt; m.map((r) =&gt; aprow(r, v));
+
+const dot = (v1, v2) =&gt; {
+  if (v1.length !== v2.length) throw &quot;dotting different length vectors&quot;;
+  let sum = 0;
+  for (let i = 0; i &lt; v1.length; i++) sum += v1[i] * v2[i];
+  return sum;
+};
+const sub = (as, bs) =&gt; as.map((_, i) =&gt; as[i] - bs[i]);
+const smul = (n, as) =&gt; as.map((ai) =&gt; n * ai);
+const angleOf = ([x, y]) =&gt; Math.atan2(y, x);
+const add = (v1, v2) =&gt; [v1[0] + v2[0], v1[1] + v2[1]];
+const lerp = (start, end, t) =&gt; add(start, smul(t, sub(end, start)));
+
+const row = (m, ri) =&gt; m[ri];
+const col = (m, ci) =&gt; m.map((r) =&gt; r[ci]);
+const rows = (mat) =&gt; mat;
+const cols = (mat) =&gt; mat[0].map((_, i) =&gt; col(mat, i));
+
+const idm = () =&gt; [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
+
+const mmul = (m1, m2) =&gt; {
+  let m = [];
+  for (let y = 0; y &lt; m1.length; y++) {
+    m[y] = [];
+    for (let x = 0; x &lt; m2[0].length; x++) {
+      m[y][x] = dot(row(m1, y), col(m2, x));
+    }
+  }
+  return m;
+};
+const mmuls = (...ms) =&gt; ms.reduce(mmul, idm());
+
+// ref: https://onecompiler.com/javascript/44fgk8nxt
+function gaussianElimination(A, B) {
+  const M = A.length; // Number of equations
+  const N = A[0].length; // Number of variables
+
+  // Combine the matrix A and the matrix B into an augmented matrix
+  const augmentedMatrix = A.map((ai, i) =&gt; [...ai, ...B[i]]);
+
+  // Perform Gaussian Elimination
+  for (let col = 0; col &lt; N; col++) {
+    const maxRow =
+      findMax(
+        rows(augmentedMatrix.slice(col)).map((row) =&gt; Math.abs(row[col]))
+      ) + col;
+
+    if (maxRow !== col)
+      // swap
+      [augmentedMatrix[col], augmentedMatrix[maxRow]] = [
+        augmentedMatrix[maxRow],
+        augmentedMatrix[col],
+      ];
+
+    // eliminate other rows
+    for (let i = 0; i &lt; M; i++) {
+      if (i !== col) {
+        augmentedMatrix[i] = sub(
+          augmentedMatrix[i],
+          smul(
+            augmentedMatrix[i][col] / augmentedMatrix[col][col],
+            augmentedMatrix[col]
+          )
+        );
+      }
+    }
+  }
+
+  // divide gaussian'd B values by diagonal elements and return
+  //
+  // if for each row A part of augmented matrix is non-zero and B part is also non-zero:
+  //  unique soln
+  // if there is a row where A part is 0s and B part is not:
+  //  no soln
+  // if there is a row where A part is 0s and so is B part:
+  //  infinite soln
+  return augmentedMatrix.map((ai, i) =&gt; smul(1 / ai[i], ai.slice(N)));
+}
+
+const minv = (m) =&gt; gaussianElimination(m, idm());
+
+const cos = Math.cos;
+const sin = Math.sin;
+
+const rotm = (t) =&gt; [
+  [cos(t), -sin(t), 0],
+  [sin(t), cos(t), 0],
+  [0, 0, 1],
+];
+const scalem = (x, y = x) =&gt; [
+  [x, 0, 0],
+  [0, y, 0],
+  [0, 0, 1],
+];
+const transm = (x, y = x) =&gt; [
+  [1, 0, x],
+  [0, 1, y],
+  [0, 0, 1],
+];
+const perspm = (x, y = x) =&gt; [
+  [1, 0, 0],
+  [0, 1, 0],
+  [x, y, 1],
+];
+
+console.log(
+  gaussianElimination(
+    [
+      [-3, -5, 36],
+      [-1, 0, 7],
+      [1, 1, -10],
+    ],
+    [[10], [5], [-4]]
+  )
+);
+
+const nrm = ([x, y, z]) =&gt; [x / z, y / z, 1];
+const dhp = ([x, y, z]) =&gt; ctx.fillRect(x / z, y / z, 2, 2);
+
+let mouse = [0, 0, 1];
+addEventListener(&quot;mousemove&quot;, (e) =&gt; {
+  mouse = [e.offsetX, e.offsetY, 1];
+});
+
+const go = (p10, p01, p00, p11) =&gt; {
+  const m = [
+    [p00[0], p10[0], p01[0]],
+    [p00[1], p10[1], p01[1]],
+    [1, 1, 1],
+  ];
+
+  const a = gaussianElimination(m, [[p11[0]], [p11[1]], [1]]);
+
+  return mmul(m, [
+    [a[0][0], 0, 0],
+    [0, a[1][0], 0],
+    [0, 0, a[2][0]],
+  ]);
+};
+
+const mFromPs = ([p10, p01, p00, p11]) =&gt; {
+  // ref: https://math.stackexchange.com/questions/296794/finding-the-transform-matrix-from-4-projected-points-with-javascript
+  // ainv maps from source locations to basis vectors
+  const a = go([1, 0], [0, 1], [0, 0], [1, 1]);
+  const ainv = minv(a);
+  // b maps from basis vectors to dest locations
+  const b = go(p10, p01, p00, p11);
+  return mmul(b, ainv);
+};
+const psFromM = (m) =&gt; [
+  nrm(apl(m, [1, 0, 1])),
+  nrm(apl(m, [0, 1, 1])),
+  nrm(apl(m, [0, 0, 1])),
+  nrm(apl(m, [1, 1, 1])),
+];
+
+const avgP = (...ps) =&gt; [
+  sum(ps.map(([x]) =&gt; x)) / ps.length,
+  sum(ps.map(([x, y]) =&gt; y)) / ps.length,
+];
+
+const stats = (ps) =&gt; {
+  const center = avgP(...ps);
+  const relPs = ps.map((p) =&gt; sub(p, center));
+  const angles = relPs.map(angleOf);
+  return { center, angles };
+};
+const idealPs = [
+  [1, 0],
+  [0, 1],
+  [0, 0],
+  [1, 1],
+];
+const { angles: idealAngles } = stats(idealPs);
+
+// TODO: avgAngle not yet correct, only works for right half of circle
+const stats2 = (ps) =&gt; {
+  const { center, angles } = stats(ps);
+  const diffAs = angles.map((a, i) =&gt; subAngles(a, idealAngles[i]));
+  const avgAngle = mod(sum(diffAs) / diffAs.length, 2 * Math.PI);
+  return { center, avgAngle };
+};
+
+let t = 0;
+draw();
+function draw() {
+  requestAnimationFrame(draw);
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  const inPs = [
+    [200, 100],
+    [100, 200],
+    [100, 100],
+    [200, 200],
+  ];
+
+  let m = mFromPs(inPs);
+
+  //const aa = gaussianElimination(m,mouse.map(v=&gt;[v]))
+  //const angle = Math.atan2(aa[1][0],aa[0][0])
+  //m = mmuls(m, rotm(angle))
+
+  let ps = psFromM(m);
+
+  const { center: cp, avgAngle } = stats2(ps);
+  const factorM = mmuls(rotm(avgAngle), transm(-cp[0], -cp[1]), m);
+  const factorPs = psFromM(factorM);
+
+  //const targetPs = [
+  //[446.31,128.44,1],[539.98,390.54,1],[362.1,306.33,1],[624.19,312.66,1]
+  //]
+  const targetPs = inPs.map((p) =&gt;
+    apl(
+      mmuls(
+        transm(cp[0] + 20, cp[1] + 20),
+        rotm(2.2),
+        transm(-cp[0], -cp[1])
+      ),
+      [...p, 1]
+    )
+  );
+  targetPs[3][1] += 30;
+
+  let targetM = mFromPs(targetPs);
+  let { center: tcp, avgAngle: ta } = stats2(targetPs);
+  ta = ta;
+  const targetFactorM = mmuls(rotm(ta), transm(-tcp[0], -tcp[1]), targetM);
+  const targetFactorPs = psFromM(targetFactorM);
+
+  const tt = (t / 200) % 1;
+  const lps = factorPs.map((p, i) =&gt; lerp(p, targetFactorPs[i], tt));
+  const la = avgAngle + subAngles(avgAngle, ta) * tt;
+  const lcp = lerp(cp, tcp, tt);
+
+  ctx.fillText(tt.toFixed(2), 10, 10);
+  ctx.fillText(ta.toFixed(2), 10, 20);
+
+  //m = m.map((r,y)=&gt;r.map((e,x)=&gt;e + (targetM[y][x]-e)*tt))
+  //m = mmuls(transm(lcp[0],lcp[1]),rotm(-la),mFromPs(lps))
+  m = mFromPs(inPs.map((p, i) =&gt; [...lerp(p, targetPs[i], tt), 1]));
+
+  ps = psFromM(m);
+
+  for (let x = -70; x &lt; 70; x += 1) {
+    for (let y = -70; y &lt; 70; y += 1) {
+      ctx.beginPath();
+      const gg = nrm(apl(m, [x, y, 1]));
+      dhp(apl(m, [x, y, 1]));
+    }
+  }
+
+  ctx.save();
+  ctx.fillStyle = &quot;red&quot;;
+  ps.forEach((p) =&gt; ctx.fillRect(...p.slice(0, 2), 10, 10));
+  ctx.fillStyle = &quot;blue&quot;;
+  inPs.forEach((p) =&gt; ctx.fillRect(...p.slice(0, 2), 10, 10));
+  ctx.fillStyle = &quot;green&quot;;
+  targetPs.forEach((p) =&gt; ctx.fillRect(...p.slice(0, 2), 10, 10));
+  ctx.restore();
+
+  t += 1;
+}
+"></my-editor2></my-cell>
+
+    
+
+  
+
+
+  
+  </main>
+
+  <script type="module">
+    const things = new Map();
+    const listeners = new Map();
+    const on = (name, l) => {
+      listeners.set(name, [...(listeners.get(name) ?? []), l]);
+    };
+    const set = (name, value) => {
+      things.set(name, value);
+      for (const l of listeners.get(name) ?? []) l(value);
+      return value;
+    };
+    const get = (name) => things.get(name);
+    const val = (name, defaultValue) =>
+      get(name) === undefined ? set(name, defaultValue) : get(name);
+
+    window.on = on;
+    window.set = set;
+    window.get = get;
+    window.val = val;
+    window.listeners=listeners
+    window.things=things
+  </script>
+  <script type="module">
+    const mainEl = document.getElementsByTagName("main")[0];
+
+    mainEl.addEventListener("dragover", (event) => {
+      // Test a custom type we will set later
+      if (event.dataTransfer.types.includes("cell")) {
+        event.preventDefault();
+      }
+    });
+    mainEl.addEventListener("drop", (event) => {
+      event.preventDefault();
+
+      const draggedTask = document.getElementById("dragged-cell");
+
+      for (const el of document.elementsFromPoint(
+        event.clientX,
+        event.clientY
+      )) {
+        if (el.parentNode === mainEl) {
+          el.after(draggedTask);
+          break;
+        }
+      }
+    });
+
+    [...document.querySelectorAll('.side2')].forEach(o=>o.addEventListener("drop", (event) => {
+      event.preventDefault();
+      event.stopPropagation()
+      o.append(document.getElementById("dragged-cell"))
+    }));
+  </script>
+  <script type="module" src="./iframed-code.js"></script>
+  <script type="module" src="./save.js"></script>
+  <script type="module" src="./editor.js"></script>
+  <script type="module" src="./cell.js"></script>
+<a href="blob:http://localhost:8080/9efac63c-f2dc-4abd-a856-43a1c184e1d6" download="editor.html" hidden=""></a></body>

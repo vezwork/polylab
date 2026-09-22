@@ -1,0 +1,416 @@
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+    }
+    @media (max-width: 700px) {
+      body {
+        margin: 20px 10px;
+      }
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body cz-shortcut-listen="true">
+  <h1 contenteditable="plaintext-only">Notebook</h1>
+  <a href="https://elliot.website" contenteditable="plaintext-only"
+    >elliot evans<br /></a
+  ><br />
+
+  <main>
+    <my-editor2 value="document.body.append('hello'+1)"></my-editor2>
+    <blob-module-editor
+      name="my mo2"
+      value="const {hi} = await importBlobModule('my mo');
+console.log(hi)"
+    ></blob-module-editor>
+    <blob-module-editor
+      name="my mo"
+      value="export const hi = 'hi everyone!'"
+    ></blob-module-editor>
+  </main>
+  <!------------------------------------------------------------
+DEFINITIONS!
+-------------------------------------------------------------->
+  <details>
+    <summary>Internal HTML notebook definitions</summary>
+
+    <script type="module">
+      window.top.blobModulePromises = {};
+      window.top.blobModules = {};
+
+      window.top.blobModule = (name, def) => {
+        window.top.blobModules[name] = URL.createObjectURL(
+          new Blob([def], { type: "application/javascript" })
+        );
+
+        window.top.blobModulePromises[name]?.forEach((resolve) => resolve());
+      };
+
+      window.top.importBlobModule = async (name) => {
+        if (window.top.blobModules[name] === undefined)
+          await new Promise((resolve, reject) => {
+            setTimeout(reject, 1000);
+            window.top.blobModulePromises[name] = [
+              ...(window.top.blobModulePromises[name] ?? []),
+              resolve,
+            ];
+          }).catch(() =>
+            console.error(`couldn't resolve blobModule:${name} in less than 1s`)
+          );
+
+        return await import(window.top.blobModules[name]);
+      };
+    </script>
+    <script type="module">
+      const define = (name, def) => {
+        let C = customElements.get(name);
+
+        if (C === undefined) {
+          customElements.define(
+            name,
+            class C extends HTMLElement {
+              static definition = def;
+              static instances = new Set();
+
+              static get observedAttributes() {
+                return C.definition.observedAttributes?.call(this);
+              }
+
+              attributeChangedCallback(attr, oldV, newV) {
+                // note: even though _construct has code that could
+                // copy the definition of `attributeChangedCallback`
+                // onto this instance, we can't do that because
+                // `customElements.define` caches class methods
+                // at the time of definition.
+                C.definition.attributeChangedCallback?.call(
+                  this,
+                  attr,
+                  oldV,
+                  newV
+                );
+              }
+              _hotswap() {
+                this.shadow.innerHTML = "";
+                this.teardown?.();
+                this._construct();
+                this.connectedCallback();
+              }
+              _construct() {
+                for (const key of Object.keys(C.definition))
+                  this[key] ??= C.definition[key];
+
+                C.definition.constructor?.call(this);
+              }
+              connectedCallback() {
+                // See note on `attributeChangedCallback` for why we do this
+                C.definition.connectedCallback?.call(this);
+              }
+              constructor() {
+                super();
+
+                const shadow = this.attachShadow({ mode: "open" });
+                this.shadow = shadow;
+
+                this._construct();
+
+                C.instances.add(this);
+              }
+            }
+          );
+        } else {
+          C.definition = def;
+
+          for (const node of [...C.instances]) node._hotswap();
+        }
+      };
+      window.define = define;
+    </script>
+    <script type="module">
+      define("my-code", {
+        connectedCallback() {
+          this.p.textContent = this.getAttribute("value");
+        },
+        observedAttributes() {
+          return ["value"];
+        },
+        attributeChangedCallback(name, oldValue, newValue) {
+          if (this.p.textContent !== this.getAttribute("value"))
+            this.p.textContent = this.getAttribute("value");
+        },
+        constructor() {
+          const p = document.createElement("pre");
+          this.p = p;
+          p.contentEditable = "plaintext-only";
+          p.setAttribute("spellcheck", "false");
+          const me = this;
+          p.addEventListener("input", () => {
+            me.setAttribute("value", p.textContent);
+          });
+          this.shadow.append(p);
+
+          const style = document.createElement("style");
+          style.textContent = `
+  pre {
+    font-family: 'fira code';
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: #eee;
+    padding: 10px;
+    font-size: 15px;
+    margin: 0;
+  }
+`;
+          this.shadow.appendChild(style);
+        },
+      });
+    </script>
+    <script type="module">
+      define("blob-module-editor", {
+        observedAttributes() {
+          return ["value", "name"];
+        },
+        attributeChangedCallback(name, oldValue, newValue) {
+          if (this.getAttribute("value") !== this.p.getAttribute("value"))
+            this.p.setAttribute("value", this.getAttribute("value"));
+          if (this.getAttribute("name") !== this.inp.value)
+            this.inp.value = this.getAttribute("name");
+        },
+        connectedCallback() {
+          if (!this.getAttribute("delayDefine")) this.exec();
+
+          if (this.getAttribute("value") !== this.p.getAttribute("value"))
+            this.p.setAttribute("value", this.getAttribute("value"));
+          if (this.getAttribute("name") !== this.inp.getAttribute("value"))
+            this.inp.value = this.getAttribute("name");
+        },
+        async exec() {
+          window.top.blobModule(
+            this.getAttribute("name"),
+            this.getAttribute("value")
+          );
+          window.top.importBlobModule(this.getAttribute("name"));
+        },
+        constructor() {
+          const shadow = this.shadow;
+
+          const me = this;
+
+          this.inp = document.createElement("input");
+          shadow.append(this.inp);
+          this.inp.style.borderRadius = "10px 10px 0 0";
+
+          const p = document.createElement("my-code");
+          this.p = p;
+
+          p.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && e.shiftKey) {
+              e.preventDefault();
+              me.setAttribute("value", p.getAttribute("value"));
+              me.setAttribute("name", this.inp.value);
+              this.exec();
+            }
+          });
+          shadow.append(p);
+        },
+      });
+    </script>
+
+    <script type="module">
+      function resizeIframeToFitContent(iframe) {
+        // iframe.style.width = iframe.contentWindow.document.body.scrollWidth;
+        iframe.style.height = iframe.contentWindow.document.body.scrollHeight;
+      }
+
+      function sandboxedEval(toEval, me, callback = () => {}) {
+        const htmlString = `
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        display: inline-block;
+        overflow:hidden;
+      }
+      canvas {
+        margin-bottom: -4px;
+      }
+    </style>
+    <script type="module">
+      ${toEval}
+    \u003c/script\u003e`;
+        const iframe = document.createElement("iframe");
+        iframe.srcdoc = htmlString;
+        iframe.style.height = "30px";
+        iframe.style.width = "100%";
+        iframe.style.display = "inline-block";
+        iframe.style.border = "none";
+
+        iframe.onload = function () {
+          resizeIframeToFitContent(iframe);
+
+          const obs = new MutationObserver(() => {
+            resizeIframeToFitContent(iframe);
+            me.style.height = iframe.style.height;
+          });
+          obs.observe(iframe.contentDocument.body, {
+            subtree: true,
+            attributes: true,
+            childList: true,
+            characterData: true,
+          });
+
+          callback(iframe);
+          me.style.height = iframe.style.height;
+        };
+        return iframe;
+      }
+
+      define("iframed-code", {
+        connectedCallback() {
+          this.eval();
+        },
+        observedAttributes() {
+          return ["value"];
+        },
+        attributeChangedCallback(name, oldValue, newValue) {
+          this.eval();
+        },
+        constructor() {
+          const shadow = this.shadow;
+
+          const style = document.createElement("style");
+          style.textContent = `
+         :host {
+          overflow: hidden;
+          border: 1px solid black;
+          display: inline-block;
+         }
+        `;
+          shadow.appendChild(style);
+        },
+        eval() {
+          const oldIframes = this.shadow.querySelectorAll("iframe");
+          const newIframe = sandboxedEval(
+            this.getAttribute("value"),
+            this,
+            (iframe) => {
+              for (const oldIframe of oldIframes) {
+                // clean up iframe
+                oldIframe?.remove();
+              }
+            }
+          );
+          this.shadow.append(newIframe);
+        },
+      });
+    </script>
+    <script type="module">
+      define("my-editor2", {
+        observedAttributes() {
+          return ["value"];
+        },
+        attributeChangedCallback(name, oldValue, newValue) {
+          if (this.getAttribute("value") !== this.p.getAttribute("value"))
+            this.p.setAttribute("value", this.getAttribute("value"));
+        },
+        connectedCallback() {
+          if (this.getAttribute("value") !== this.p.getAttribute("value"))
+            this.p.setAttribute("value", this.getAttribute("value"));
+          this.iframe.setAttribute("value", this.getAttribute("value"));
+        },
+        constructor() {
+          const shadow = this.shadow;
+
+          const iframe = document.createElement("iframed-code");
+          this.iframe = iframe;
+          shadow.append(iframe);
+
+          const p = document.createElement("my-code");
+          this.p = p;
+          const me = this;
+          new MutationObserver(() => {
+            if (me.getAttribute("value") !== p.getAttribute("value"))
+              me.setAttribute("value", p.getAttribute("value"));
+          }).observe(p, { attributes: true });
+
+          p.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && e.shiftKey) {
+              e.preventDefault();
+              this.iframe.setAttribute("value", this.getAttribute("value"));
+            }
+          });
+          shadow.append(p);
+
+          const style = document.createElement("style");
+          style.textContent = `iframed-code { width: calc(100% - 2px); }`;
+          shadow.appendChild(style);
+        },
+      });
+    </script>
+    <script type="module">
+      function save(content, name = "index.html") {
+        const bl = new Blob([content], { type: "text/html" });
+        const a = document.createElement("a");
+        const url = URL.createObjectURL(bl);
+        a.href = url;
+        a.download = name;
+        a.hidden = true;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      document.body.addEventListener("keydown", (e) => {
+        if (e.key === "s" && e.metaKey) {
+          e.preventDefault();
+          // note: a bit hacky, we should probably do something better
+          // like matching up blob-module-editors to scripts
+          // and not re-creating blob-module-editors for scripts that already
+          // have one (on page load in the script below)
+          for (const el of document.querySelectorAll("blob-module-editor")) {
+            if (el.hasAttribute("delaydefine")) el.remove();
+          }
+          const doc = document.getElementsByTagName("html")[0].getHTML();
+          save(doc, "editor.html");
+        }
+      });
+    </script>
+    <script>
+      // create blob-module-editor for each script tag, synchronized with it
+      let i = 0;
+      console.log(...document.querySelectorAll("script"));
+      for (const scriptEl of document.querySelectorAll("script")) {
+        if (scriptEl.textContent.trim() === "") continue;
+        const editorEl = document.createElement("blob-module-editor");
+        editorEl.setAttribute("name", "script" + i);
+        editorEl.setAttribute("delayDefine", true);
+        editorEl.setAttribute("value", scriptEl.textContent);
+        new MutationObserver(() => {
+          scriptEl.textContent = editorEl.getAttribute("value");
+        }).observe(editorEl, { attributes: true });
+        scriptEl.after(editorEl);
+        i++;
+      }
+    </script>
+  </details>
+  <!--
+two blockers to distributing this:
+- medium block: usage of `iframed-code` inside a cell requires import
+  - how much do I care about using components inside cells?
+    I probably should care if I care about reuse / factoring at all
+  - can await import a blob potentially
+- soft block: script definitions are not visible nor editable
+  in the notebook
+  - This makes the notebook significantly less self-editing
+  - can use https://codepen.io/editor/vez/pen/01a0affd-2bf3-768d-896d-3df82219f579
+    technique to make web component definitions editable
+  - maybe side-effectful scripts like `save` and definition of `val` etc.
+    should be visible but read-only? Changing them would basically
+    require saving and reloading right?
+  - actually nah, people should be able to edit and re-execute; but
+    the mental model is that script editors are side-effectful and
+    we must be mindful of what the last run did. E.g. the codepen above
+    allows for the side-effect of re-defining web components.
+--></body>

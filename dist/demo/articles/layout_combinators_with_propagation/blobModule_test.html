@@ -1,0 +1,91 @@
+<script type="module">
+  window.top.blobModulePromises = {};
+  window.top.blobModules = {};
+
+  window.top.blobModule = (name, def) => {
+    window.top.blobModules[name] = URL.createObjectURL(
+      new Blob([def], { type: "application/javascript" })
+    );
+
+    window.top.blobModulePromises[name]?.forEach((resolve) => resolve());
+  };
+
+  window.top.importBlobModule = async (name) => {
+    if (window.top.blobModules[name] === undefined)
+      await new Promise((resolve, reject) => {
+        setTimeout(reject, 1000);
+        window.top.blobModulePromises[name] = [
+          ...(window.top.blobModulePromises[name] ?? []),
+          resolve,
+        ];
+      }).catch(() =>
+        console.error(`couldn't resolve blobModule:${name} in less than 1s`)
+      );
+
+    return await import(window.top.blobModules[name]);
+  };
+
+  blobModule(
+    "GREET",
+    `let i = 0;
+  export function greet() {
+    i++
+    return "Hello from a dynamic Blob module!"+i;
+  }
+
+  document.body.append('imported GREET!')`
+  );
+
+  const { greet } = await importBlobModule("GREET");
+  console.log("hoyo", greet());
+  console.log("hoyo", greet());
+</script>
+
+<iframe
+  srcdoc="
+<script type='module'>
+  const blobModule = window.top.blobModule
+  // need to eval this here so imported modules lives in the iframe!
+  const importBlobModule = eval(window.top.importBlobModule.toString())
+
+  const {greet} = await importBlobModule('GREET')
+  console.log('hola', greet())
+
+  blobModule('YO', `
+  let i = 0;
+  export function yo() {
+    i++
+    return 'yo yoyo yo go yo!'+i;
+  }
+
+  document.body.append('imported YO!')
+`);
+
+  const { yo } = await importBlobModule('YO');
+  console.log('hodo', yo());
+  console.log('hodo', yo());
+</script>
+"
+></iframe>
+
+<script type="module">
+  const { yo } = await importBlobModule("YO");
+  console.log("bobo", yo());
+
+  const { greet } = await importBlobModule("GREET");
+  console.log("hogo", greet());
+  console.log("hogo", greet());
+</script>
+
+<pre>
+notes:
+- you can declare and redeclare `blobModule`s
+- `blobModule`s don't share state across iframe boundary, but
+  they do share state across modules in the same page.
+- import code has to be defined inside the iframe otherwise `window`
+  in the imported library will be `window.top` not the iframe's window.
+  This would break importing web component modules because you can't use
+  web componenets defined/registered in the host page inside of an iframe,
+  you have to register them inside the iframe.
+</pre>
+now I want a webcomponent that can edit blobModules

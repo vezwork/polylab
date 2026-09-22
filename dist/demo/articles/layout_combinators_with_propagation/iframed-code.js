@@ -10,6 +10,7 @@ function sandboxedEval(toEval, me, callback = () => {}) {
         margin: 0;
         padding: 0;
         display: inline-block;
+        overflow:hidden;
       }
       canvas {
         margin-bottom: -4px;
@@ -96,15 +97,6 @@ customElements.define(
         }
       );
       this.shadow.append(newIframe);
-    }
-  }
-);
-
-customElements.define(
-  "iframed-code2",
-  class extends HTMLElement {
-    constructor() {
-      super();
     }
   }
 );

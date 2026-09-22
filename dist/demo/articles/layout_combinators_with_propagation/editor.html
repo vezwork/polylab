@@ -1,16 +1,9 @@
 <head>
   <style>
     body {
-      --main-color: #ca2b6d;
-      color: #060a1b;
-      background: white;
       font-family: sans-serif;
-      font-size: 16px;
       max-width: 700px;
       margin: 20px auto;
-    }
-    hr {
-      margin: 50px 0;
     }
     @media (max-width: 700px) {
       body {
@@ -34,7 +27,7 @@
 - inserting editable text (like this)
 - promote to editor (what becomes `value`?)
 - promote to inline? or remove my-code but keep iframe?
-- add template/processor to code
+- add template/processor to code (e.g. canvas, shader)
 
 - drag and drop side-by-side layouts DONE
   - fix nested dropping
@@ -58,9 +51,7 @@
 
 Note
 - content editable is bad for anything other than plain text</p>
-</my-cell>
-
-<my-cell><p>Hello my friend shader: <iframed-code style="vertical-align: middle; height: 50px; width: 50px;" value="import { shader } from './shader.js';
+</my-cell><my-cell><p>Hello my friend shader: <iframed-code style="vertical-align: middle; height: 50px; width: 50px;" value="import { shader } from './shader.js';
 document.body.append(shader({ width: 50, height: 50 })`
   float zeronessFunction( in vec2 v ){
     // varying pixel color
@@ -90,27 +81,23 @@ document.body.append(shader({ width: 50, height: 50 })`
       fragColor = vec4(col,1.0);
   }
 `)"></iframed-code>!!</p></my-cell>
-    <my-cell><my-editor2 value="dom`&lt;p contenteditable=&quot;plaintext-only&quot;&gt;hi. problem: I don't get serialized!&lt;/p&gt;`"></my-editor2></my-cell><my-cell><my-editor2 value="import {} from './iframed-code.js'
+
+
+    <my-cell><my-editor2 value="dom`&lt;p contenteditable=&quot;plaintext-only&quot;&gt;hi. problem: I don't get serialized if I'm edited!&lt;/p&gt;`"></my-editor2></my-cell><my-cell><my-editor2 value="import {} from './iframed-code.js'
 
 dom(`
- &lt;div style=&quot;background:red&quot;&gt;
  hello! 
  &lt;iframed-code value=&quot;document.body.append('hi')&quot;&gt;&lt;/iframed-code&gt;
- &lt;/div&gt;
 `)"></my-editor2></my-cell>
 
 <my-cell><my-editor2 value="ap(get('dog'))"></my-editor2></my-cell><my-cell><my-editor2 value="ap(window.top.listeners.get('dog').length)"></my-editor2></my-cell>
 
-<my-cell><my-editor2 value="const node = document.createElement('input')
-node.type = 'range'
-node.min = 0
-node.max = 100
-node.style.width = '600px'
-// non-refresh `get`
+<my-cell><my-editor2 value="dom`
+ &lt;input type=&quot;range&quot; min=0 max=100 style=&quot;width:600px;&quot;&gt;&lt;/input&gt;
+`
+const node = document.querySelector('input')
 node.value = window.top.val('dog', Number(node.value)) 
-node.addEventListener('input',e=&gt;seto('dog',Number(node.value)))
-
-document.body.append(node)"></my-editor2></my-cell>
+node.addEventListener('input',e=&gt;seto('dog',Number(node.value)))"></my-editor2></my-cell>
 
   <my-cell><my-editor2 value="ap(JSON.stringify(
   get('p').map(v=&gt;v.map(n=&gt;Number(n.toFixed())))
@@ -207,15 +194,26 @@ function draw() {
 
   
   <my-cell><div id="side" style="display:grid;grid-template-columns: 1fr 1fr; padding: 10px 0; border:1px solid lightgray; border-radius: 10px;">
-    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="document.body.append(33)"></my-editor2></my-cell><my-cell><my-editor2 value="ap(33)"></my-editor2></my-cell><my-cell><my-editor2 value="dom`33`
-dom`&lt;br&gt;44`"></my-editor2></my-cell></div>
-<div class="side2" style="min-height:100px; overflow:scroll; padding: 0 10px;"><my-cell><my-editor2 value="ap(shader({ width: 1400, height: 400 })`
+    <div class="side2" style=" border-right:1px solid lightgray; min-height:100px; overflow:scroll; padding: 0 10px"><my-cell><my-editor2 value="const v = window.top.val('ye', 'x * y')
+const [node] = dom(`&lt;input value=&quot;${v}&quot;&gt;&lt;/input&gt;`)
+
+node.addEventListener('keydown',e=&gt;{
+ if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('ye',node.value)
+})"></my-editor2></my-cell><my-cell><my-editor2 value="const v = window.top.val('xe', 'x + y')
+const [node] = dom(`&lt;input value=&quot;${v}&quot;&gt;&lt;/input&gt;`)
+
+node.addEventListener('keydown',e=&gt;{
+ if (e.key==='Enter'&amp;&amp;e.shiftKey) seto('xe',node.value)
+})"></my-editor2></my-cell></div>
+<div class="side2" style="min-height:100px; overflow:scroll; padding: 0 10px;"><my-cell><my-editor2 value="import {shader} from './shader.js'
+
+ap(shader({ width: 1400, height: 400 })`
   float zeronessFunction( in vec2 v ){
     // varying pixel color
     float x = v.x;
     float y = v.y;
-    float lhs = x + y;
-    float rhs = y * x;
+    float lhs = ${get('xe')};
+    float rhs = ${get('ye')};
 
     float closenessToZero = abs(lhs - rhs);
 
@@ -298,4 +296,4 @@ dom`&lt;br&gt;44`"></my-editor2></my-cell></div>
   <script type="module" src="./save.js"></script>
   <script type="module" src="./editor.js"></script>
   <script type="module" src="./cell.js"></script>
-<a href="blob:http://localhost:8080/b8784fa4-f361-4635-b025-e05b547e18c9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6195bbe7-02aa-499b-a9ee-590d9c9743f2" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/b896040f-2287-4058-9ba9-f0395df1889e" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/e8143a73-6d57-4517-bdb2-85b1e1fcbcdd" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6432e26d-22a1-43b0-83b6-eddb66b6ef23" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/38a50076-25be-43a8-b1dc-f98e6d1e35a7" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/23c120ee-09b9-4845-adee-54fe2b374d87" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/eba47406-43a3-4d19-a38a-9054269948b4" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/2dd53555-4353-4817-9b97-7d443f6c5d22" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4b7abe0f-5314-45df-b781-3b96f3bf7026" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/4e2eb59f-20d2-4eef-b380-dd041a833bf9" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/5cd7463c-7e7c-4534-8c75-69f7fe0da66c" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/93a4ef45-e901-4f94-b5a8-767388c6c530" download="editor.html" hidden=""></a><a href="blob:http://localhost:8080/6549d2a1-3b6f-4c15-98ba-40b06679858c" download="editor.html" hidden=""></a></body>
+</body>
